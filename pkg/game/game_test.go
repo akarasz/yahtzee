@@ -16,7 +16,7 @@ func TestNewGame(t *testing.T) {
 	t.Run("should add dices", func(t *testing.T) {
 		g := New()
 
-		if got, want := len(g.dices), NumberOfDices; got != want {
+		if got, want := len(g.dices), numberOfDices; got != want {
 			t.Errorf("number of dices is invalid, got %d, want %d.", got, want)
 		}
 	})
@@ -81,16 +81,87 @@ func TestGame_AddPlayer(t *testing.T) {
 func TestGame_Roll(t *testing.T) {
 	t.Run("should set valid values for dices", func(t *testing.T) {
 		g := New()
+		g.AddPlayer("alice")
 		for _, d := range g.dices {
 			d.value = -1
 		}
 
-		g.Roll(&Player{})
+		got := g.Roll(g.players[0])
 
+		if got != nil {
+			t.Errorf("returned an error: [%v]", got)
+		}
 		for i, d := range g.dices {
 			if got := d.Value(); got < 1 || got > 6 {
 				t.Errorf("%dth dice has an invalid value, %d.", i, got)
 			}
+		}
+	})
+
+	t.Run("should not roll locked dices", func(t *testing.T) {
+		g := New()
+		g.AddPlayer("alice")
+		g.dices[2].locked = true
+		g.dices[2].value = -1
+
+		got := g.Roll(g.players[0])
+
+		if got != nil {
+			t.Errorf("returned an error: [%v]", got)
+		}
+		if g.dices[2].value != -1 {
+			t.Errorf("value of locked dice got changed")
+		}
+	})
+
+	t.Run("should increment roll count", func(t *testing.T) {
+		g := New()
+		g.AddPlayer("alice")
+
+		got := g.Roll(g.players[0])
+
+		if got != nil {
+			t.Errorf("returned an error: [%v]", got)
+		}
+		if want := 1; g.roll != want {
+			t.Errorf("not got incremented")
+		}
+	})
+
+	t.Run("should return error when not player's turn", func(t *testing.T) {
+		g := New()
+		g.AddPlayer("alice")
+		g.AddPlayer("bob")
+		g.current = 1
+
+		got := g.Roll(g.players[0])
+
+		if want := ErrNotPlayersTurn; got != want {
+			t.Errorf("wrong result, got %#v wanted %#v.", got, want)
+		}
+	})
+
+	t.Run("should return error when out of rolls", func(t *testing.T) {
+		g := New()
+		g.AddPlayer("alice")
+		g.roll = 3
+
+		got := g.Roll(g.players[0])
+
+		if want := ErrOutOfRolls; got != want {
+			t.Errorf("wrong result, got %#v wanted %#v.", got, want)
+		}
+	})
+
+	t.Run("should return error when out of rounds", func(t *testing.T) {
+		g := New()
+		g.AddPlayer("alice")
+		g.round = 13
+
+		got := g.Roll(g.players[0])
+
+		if want := ErrGameOver; got != want {
+			t.Errorf("wrong result, got %#v wanted %#v.", got, want)
 		}
 	})
 }

@@ -8,8 +8,14 @@ import (
 )
 
 const (
-	// NumberOfDices shows how many dices are used for a game.
-	NumberOfDices int = 5
+	// numberOfDices shows how many dices are used for a game.
+	numberOfDices int = 5
+
+	// maxRoll shows how many rolls a player have in one of their turn.
+	maxRoll int = 3
+
+	// totalRounds is the number of turns for the game.
+	totalRounds int = 13
 )
 
 // Category represents the formations players try to roll.
@@ -33,13 +39,26 @@ const (
 	Chance
 )
 
-// ErrAlreadyStarted error is returned when pre-game operation is requested on an already started
-// game.
-var ErrAlreadyStarted = errors.New("game already started")
+var (
+	// ErrAlreadyStarted returned when pre-game operation is requested on an already started
+	// game.
+	ErrAlreadyStarted = errors.New("game already started")
+
+	// ErrNotPlayersTurn returned when the requested operator was not initiated by the player
+	// who's turn it is.
+	ErrNotPlayersTurn = errors.New("not the player's turn")
+
+	// ErrOutOfRolls returned when the player cannot roll again.
+	ErrOutOfRolls = errors.New("out of rolls")
+
+	// ErrGameOver returned when the game is over.
+	ErrGameOver = errors.New("game over")
+)
 
 // Dice represents a dice you use for the Game.
 type Dice struct {
-	value int
+	value  int
+	locked bool
 }
 
 func (d *Dice) roll() {
@@ -52,7 +71,9 @@ func (d *Dice) Value() int {
 }
 
 func newDice() *Dice {
-	d := &Dice{1}
+	d := &Dice{
+		value: 1,
+	}
 	return d
 }
 
@@ -78,8 +99,8 @@ type Game struct {
 	// current shows the index of the current player in the Players array.
 	current int
 
-	// reroll shows how many times the dices were rerolled for the current user in this round.
-	reroll int
+	// roll shows how many times the dices were rolled for the current user in this round.
+	roll int
 }
 
 // AddPlayer adds a new player with the given `name` and an empty score sheet to the game.
@@ -95,10 +116,29 @@ func (g *Game) AddPlayer(name string) error {
 	return nil
 }
 
+// Roll rolls the dices.
 func (g *Game) Roll(p *Player) error {
+	if p != g.players[g.current] {
+		return ErrNotPlayersTurn
+	}
+
+	if g.round >= totalRounds {
+		return ErrGameOver
+	}
+
+	if g.roll >= maxRoll {
+		return ErrOutOfRolls
+	}
+
 	for _, d := range g.dices {
+		if d.locked {
+			continue
+		}
+
 		d.roll()
 	}
+
+	g.roll++
 
 	return nil
 }
@@ -109,8 +149,8 @@ func (g *Game) Score(p *Player, c Category) error {
 
 // New initializes an empty Game.
 func New() *Game {
-	dd := make([]*Dice, NumberOfDices)
-	for i := 0; i < NumberOfDices; i++ {
+	dd := make([]*Dice, numberOfDices)
+	for i := 0; i < numberOfDices; i++ {
 		dd[i] = newDice()
 	}
 
