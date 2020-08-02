@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestNewGame(t *testing.T) {
+func TestNew(t *testing.T) {
 	t.Run("should create with empty Players", func(t *testing.T) {
 		g := New()
 
@@ -68,11 +68,8 @@ func TestGame_AddPlayer(t *testing.T) {
 
 			got := g.AddPlayer("alice")
 
-			if got != row.expected {
-				t.Errorf("adding to %v was incorrect, got: %v, want: %v.",
-					g,
-					got,
-					row.expected)
+			if want := row.expected; got != want {
+				t.Errorf("adding to %v was incorrect, got: %#v, want: %#v.", g, got, want)
 			}
 		}
 	})
