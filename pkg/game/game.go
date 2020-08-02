@@ -52,8 +52,7 @@ func (d *Dice) Value() int {
 }
 
 func newDice() *Dice {
-	d := &Dice{}
-	d.roll()
+	d := &Dice{1}
 	return d
 }
 
