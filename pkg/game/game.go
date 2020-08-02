@@ -1,4 +1,12 @@
-package yahtzee
+package game
+
+import (
+	"errors"
+)
+
+// ErrAlreadyStarted error is returned when pre-game operation is
+// requested on an already started game.
+var ErrAlreadyStarted = errors.New("game already started")
 
 // Box represents one field on the scoring sheet.
 type Box struct {
@@ -26,6 +34,10 @@ type Player struct {
 	Scores *Sheet
 }
 
+func newPlayer(name string) *Player {
+	return &Player{name, &Sheet{}}
+}
+
 // Game contains all data representing a game.
 type Game struct {
 	Players []*Player
@@ -35,4 +47,21 @@ type Game struct {
 
 	// Current shows the index of the current player in the Players array.
 	Current int
+}
+
+// AddPlayer adds a new player with the given `name` and an
+// empty score sheet to the game.
+func (g *Game) AddPlayer(name string) error {
+	if g.Current > 0 || g.Round > 0 {
+		return ErrAlreadyStarted
+	}
+
+	g.Players = append(g.Players, newPlayer(name))
+
+	return nil
+}
+
+// New initializes an empty Game.
+func New() *Game {
+	return &Game{}
 }
