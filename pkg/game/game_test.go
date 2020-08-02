@@ -1,32 +1,30 @@
-package game_test
+package game
 
 import (
 	"testing"
-
-	"github.com/akarasz/yahtzee/pkg/game"
 )
 
 func TestNewGame(t *testing.T) {
 	t.Run("should create with empty Players", func(t *testing.T) {
-		g := game.New()
+		g := New()
 
-		if len(g.Players) != 0 {
+		if len(g.players) != 0 {
 			t.Errorf("NewGame() should produce empty Players list")
 		}
 	})
 
 	t.Run("should add dices", func(t *testing.T) {
-		g := game.New()
+		g := New()
 
-		if got, want := len(g.Dices), game.NumberOfDices; got != want {
+		if got, want := len(g.dices), NumberOfDices; got != want {
 			t.Errorf("number of dices is invalid, got %d, want %d.", got, want)
 		}
 	})
 
 	t.Run("dices should have valid values", func(t *testing.T) {
-		g := game.New()
+		g := New()
 
-		for i, d := range g.Dices {
+		for i, d := range g.dices {
 			if got := d.Value(); got < 1 || got > 6 {
 				t.Errorf("%dth dice has an invalid value, %d.", i, got)
 			}
@@ -36,18 +34,18 @@ func TestNewGame(t *testing.T) {
 
 func TestGame(t *testing.T) {
 	t.Run("addPlayer should add with empty sheet and give name", func(t *testing.T) {
-		g := game.New()
+		g := New()
 
 		g.AddPlayer("alice")
 
-		if len(g.Players) != 1 {
+		if len(g.players) != 1 {
 			t.Fatalf("player was not added")
 		}
-		p := g.Players[0]
-		if p.Name != "alice" {
-			t.Errorf("wrong Name %q", p.Name)
+		p := g.players[0]
+		if p.name != "alice" {
+			t.Errorf("wrong Name %q", p.name)
 		}
-		if len(p.ScoreSheet) != 0 {
+		if len(p.scoreSheet) != 0 {
 			t.Errorf("ScoreSheet is not empty")
 		}
 	})
@@ -58,15 +56,15 @@ func TestGame(t *testing.T) {
 			expected       error
 		}{
 			{0, 0, nil},
-			{0, 1, game.ErrAlreadyStarted},
-			{1, 0, game.ErrAlreadyStarted},
-			{2, 3, game.ErrAlreadyStarted},
+			{0, 1, ErrAlreadyStarted},
+			{1, 0, ErrAlreadyStarted},
+			{2, 3, ErrAlreadyStarted},
 		}
 
 		for _, row := range table {
-			g := game.New()
-			g.Current = row.current
-			g.Round = row.round
+			g := New()
+			g.current = row.current
+			g.round = row.round
 
 			got := g.AddPlayer("alice")
 

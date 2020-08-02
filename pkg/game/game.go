@@ -42,7 +42,7 @@ type Dice struct {
 	value int
 }
 
-func (d *Dice) doRoll() {
+func (d *Dice) roll() {
 	d.value = rand.Intn(6) + 1
 }
 
@@ -53,14 +53,14 @@ func (d *Dice) Value() int {
 
 func newDice() *Dice {
 	d := &Dice{}
-	d.doRoll()
+	d.roll()
 	return d
 }
 
 // Player contains all data representing a player.
 type Player struct {
-	Name       string
-	ScoreSheet map[Category]int
+	name       string
+	scoreSheet map[Category]int
 }
 
 func newPlayer(name string) *Player {
@@ -69,38 +69,42 @@ func newPlayer(name string) *Player {
 
 // Game contains all data representing a game.
 type Game struct {
-	Players []*Player
+	players []*Player
 
-	Dices []*Dice
+	dices []*Dice
 
-	// Round shows how many rounds were passed already.
-	Round int
+	// round shows how many rounds were passed already.
+	round int
 
-	// Current shows the index of the current player in the Players array.
-	Current int
+	// current shows the index of the current player in the Players array.
+	current int
 
-	// Roll shows how many times the dices were rerolled for the current user in this round.
-	Roll int
+	// reroll shows how many times the dices were rerolled for the current user in this round.
+	reroll int
 }
 
 // AddPlayer adds a new player with the given `name` and an empty score sheet to the game.
 func (g *Game) AddPlayer(name string) error {
 	log.Debugf("adding a player with name %q", name)
 
-	if g.Current > 0 || g.Round > 0 {
+	if g.current > 0 || g.round > 0 {
 		return ErrAlreadyStarted
 	}
 
-	g.Players = append(g.Players, newPlayer(name))
+	g.players = append(g.players, newPlayer(name))
 
 	return nil
 }
 
-func (g *Game) DoRoll(p *Player) error {
+func (g *Game) Roll(p *Player) error {
+	for _, d := range g.dices {
+		d.roll()
+	}
+
 	return nil
 }
 
-func (g *Game) DoScore(p *Player, c Category) error {
+func (g *Game) Score(p *Player, c Category) error {
 	return nil
 }
 
@@ -112,6 +116,6 @@ func New() *Game {
 	}
 
 	return &Game{
-		Dices: dd,
+		dices: dd,
 	}
 }
