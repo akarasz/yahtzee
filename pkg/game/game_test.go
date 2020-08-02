@@ -8,10 +8,28 @@ import (
 
 func TestNewGame(t *testing.T) {
 	t.Run("should create with empty Players", func(t *testing.T) {
-		got := game.New()
+		g := game.New()
 
-		if len(got.Players) > 0 {
+		if len(g.Players) != 0 {
 			t.Errorf("NewGame() should produce empty Players list")
+		}
+	})
+
+	t.Run("should add dices", func(t *testing.T) {
+		g := game.New()
+
+		if got, want := len(g.Dices), game.NumberOfDices; got != want {
+			t.Errorf("number of dices is invalid, got %d, want %d.", got, want)
+		}
+	})
+
+	t.Run("dices should have valid values", func(t *testing.T) {
+		g := game.New()
+
+		for i, d := range g.Dices {
+			if got := d.Value(); got < 1 || got > 6 {
+				t.Errorf("%dth dice has an invalid value, %d.", i, got)
+			}
 		}
 	})
 }
@@ -29,8 +47,8 @@ func TestGame(t *testing.T) {
 		if p.Name != "alice" {
 			t.Errorf("wrong Name %q", p.Name)
 		}
-		if p.Scores == nil {
-			t.Errorf("Scores is nil")
+		if len(p.ScoreSheet) != 0 {
+			t.Errorf("ScoreSheet is not empty")
 		}
 	})
 
