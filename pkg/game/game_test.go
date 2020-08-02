@@ -32,8 +32,8 @@ func TestNewGame(t *testing.T) {
 	})
 }
 
-func TestGame(t *testing.T) {
-	t.Run("addPlayer should add with empty sheet and give name", func(t *testing.T) {
+func TestAddPlayer(t *testing.T) {
+	t.Run("should add with empty sheet and give name", func(t *testing.T) {
 		g := New()
 
 		g.AddPlayer("alice")
@@ -50,7 +50,7 @@ func TestGame(t *testing.T) {
 		}
 	})
 
-	t.Run("addPlayer should fail when game started", func(t *testing.T) {
+	t.Run("should fail when game started", func(t *testing.T) {
 		table := []struct {
 			current, round int
 			expected       error
