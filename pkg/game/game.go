@@ -2,6 +2,8 @@ package game
 
 import (
 	"errors"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // ErrAlreadyStarted error is returned when pre-game operation is
@@ -52,6 +54,8 @@ type Game struct {
 // AddPlayer adds a new player with the given `name` and an
 // empty score sheet to the game.
 func (g *Game) AddPlayer(name string) error {
+	log.Debugf("adding a player with name %q", name)
+
 	if g.Current > 0 || g.Round > 0 {
 		return ErrAlreadyStarted
 	}
