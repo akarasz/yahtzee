@@ -96,6 +96,14 @@ func (g *Game) AddPlayer(name string) error {
 	return nil
 }
 
+func (g *Game) DoRoll(p *Player) error {
+	return nil
+}
+
+func (g *Game) DoScore(p *Player, c Category) error {
+	return nil
+}
+
 // New initializes an empty Game.
 func New() *Game {
 	dd := make([]*Dice, NumberOfDices)
