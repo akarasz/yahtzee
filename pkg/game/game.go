@@ -19,24 +19,24 @@ const (
 )
 
 // Category represents the formations players try to roll.
-type Category int
+type Category string
 
 // Available categories
 const (
-	Ones Category = iota
-	Twos
-	Threes
-	Fours
-	Fives
-	Sixes
+	Ones   Category = "ones"
+	Twos            = "twos"
+	Threes          = "threes"
+	Fours           = "fours"
+	Fives           = "fives"
+	Sixes           = "sixes"
 
-	ThreeOfAKind
-	FourOfAKind
-	FullHouse
-	SmallStraight
-	LargeStraight
-	Yahtzee
-	Chance
+	ThreeOfAKind  = "three-of-a-kind"
+	FourOfAKind   = "four-of-a-kind"
+	FullHouse     = "full-house"
+	SmallStraight = "small-straight"
+	LargeStraight = "large-straight"
+	Yahtzee       = "yahtzee"
+	Chance        = "chance"
 )
 
 var (
@@ -116,7 +116,7 @@ func (g *Game) AddPlayer(name string) error {
 	return nil
 }
 
-// Roll rolls the dices.
+// Roll rolls the dices and increment the roll counters.
 func (g *Game) Roll(p *Player) error {
 	if p != g.players[g.current] {
 		return ErrNotPlayersTurn
@@ -143,7 +143,50 @@ func (g *Game) Roll(p *Player) error {
 	return nil
 }
 
+// Score saves the points for the player in the given category and handles the counters.
 func (g *Game) Score(p *Player, c Category) error {
+	v := 0
+	switch c {
+	case Ones:
+		for _, d := range g.dices {
+			if d.value == 1 {
+				v++
+			}
+		}
+	case Twos:
+		for _, d := range g.dices {
+			if d.value == 2 {
+				v += 2
+			}
+		}
+	case Threes:
+		for _, d := range g.dices {
+			if d.value == 3 {
+				v += 3
+			}
+		}
+	case Fours:
+		for _, d := range g.dices {
+			if d.value == 4 {
+				v += 4
+			}
+		}
+	case Fives:
+		for _, d := range g.dices {
+			if d.value == 5 {
+				v += 5
+			}
+		}
+	case Sixes:
+		for _, d := range g.dices {
+			if d.value == 6 {
+				v += 6
+			}
+		}
+	}
+
+	p.scoreSheet[c] = v
+
 	return nil
 }
 

@@ -162,3 +162,55 @@ func TestGame_Roll(t *testing.T) {
 		}
 	})
 }
+
+func TestGame_Scroll(t *testing.T) {
+	t.Run("should calculate points correctly", func(t *testing.T) {
+		table := []struct {
+			dices    []int
+			category Category
+			value    int
+		}{
+			{[]int{1, 2, 3, 1, 1}, Ones, 3},
+			{[]int{2, 3, 4, 2, 3}, Twos, 4},
+			{[]int{6, 4, 2, 2, 3}, Threes, 3},
+			{[]int{1, 6, 3, 3, 5}, Fours, 0},
+			{[]int{4, 4, 1, 2, 4}, Fours, 12},
+			{[]int{6, 6, 3, 5, 2}, Fives, 5},
+			{[]int{5, 3, 6, 6, 6}, Sixes, 18},
+			{[]int{2, 4, 4, 6, 4}, ThreeOfAKind, 12},
+			{[]int{3, 1, 3, 1, 3}, ThreeOfAKind, 9},
+			{[]int{2, 6, 2, 2, 2}, FourOfAKind, 8},
+			{[]int{1, 6, 6, 6, 6}, FourOfAKind, 24},
+			{[]int{5, 5, 2, 5, 2}, FullHouse, 25},
+			{[]int{3, 1, 3, 1, 3}, FullHouse, 25},
+			{[]int{6, 2, 4, 1, 3}, SmallStraight, 30},
+			{[]int{4, 2, 3, 5, 3}, SmallStraight, 30},
+			{[]int{1, 6, 3, 5, 4}, SmallStraight, 30},
+			{[]int{3, 5, 2, 1, 4}, LargeStraight, 40},
+			{[]int{5, 2, 6, 3, 4}, LargeStraight, 40},
+			{[]int{3, 3, 3, 3, 3}, Yahtzee, 50},
+			{[]int{1, 1, 1, 1, 1}, Yahtzee, 50},
+			{[]int{6, 2, 4, 1, 3}, Chance, 16},
+			{[]int{1, 6, 3, 3, 5}, Chance, 18},
+			{[]int{2, 3, 4, 2, 3}, Chance, 14},
+		}
+
+		for _, row := range table {
+			g := New()
+			g.AddPlayer("alice")
+			for i, v := range row.dices {
+				g.dices[i].value = v
+			}
+
+			g.Score(g.players[0], row.category)
+
+			if got, want := g.players[0].scoreSheet[row.category], row.value; got != want {
+				t.Errorf("%q score for [%v] should be %d but was %d.",
+					row.category,
+					row.dices,
+					want,
+					got)
+			}
+		}
+	})
+}
