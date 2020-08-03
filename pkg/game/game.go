@@ -29,6 +29,7 @@ const (
 	Fours           = "fours"
 	Fives           = "fives"
 	Sixes           = "sixes"
+	Bonus           = "bonus"
 
 	ThreeOfAKind  = "three-of-a-kind"
 	FourOfAKind   = "four-of-a-kind"
@@ -53,6 +54,12 @@ var (
 
 	// ErrGameOver returned when the game is over.
 	ErrGameOver = errors.New("game over")
+
+	// ErrInvalidCategory returned when scoring category not valid.
+	ErrInvalidCategory = errors.New("invalid category")
+
+	// ErrCategoryAlreadyScored returned when the category in the player's score sheet is filled.
+	ErrCategoryAlreadyScored = errors.New("category already scored")
 )
 
 // Dice represents a dice you use for the Game.
@@ -145,6 +152,10 @@ func (g *Game) Roll(p *Player) error {
 
 // Score saves the points for the player in the given category and handles the counters.
 func (g *Game) Score(p *Player, c Category) error {
+	if _, ok := p.scoreSheet[c]; ok {
+		return ErrCategoryAlreadyScored
+	}
+
 	s := 0
 	switch c {
 	case Ones:
@@ -256,9 +267,37 @@ func (g *Game) Score(p *Player, c Category) error {
 		for _, d := range g.dices {
 			s += d.value
 		}
+	default:
+		return ErrInvalidCategory
 	}
 
 	p.scoreSheet[c] = s
+
+	if _, ok := p.scoreSheet[Bonus]; !ok {
+		var total, types int
+		for k, v := range p.scoreSheet {
+			if k == Ones || k == Twos || k == Threes || k == Fours || k == Fives || k == Sixes {
+				types++
+				total += v
+			}
+		}
+
+		if types == 6 {
+			if total >= 63 {
+				p.scoreSheet[Bonus] = 35
+			} else {
+				p.scoreSheet[Bonus] = 0
+			}
+		}
+	}
+
+	g.roll = 0
+
+	g.current = (g.current + 1) % len(g.players)
+
+	if g.current == 0 {
+		g.round++
+	}
 
 	return nil
 }

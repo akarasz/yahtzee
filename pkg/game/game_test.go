@@ -208,8 +208,11 @@ func TestGame_Scroll(t *testing.T) {
 				g.dices[i].value = v
 			}
 
-			g.Score(g.players[0], row.category)
+			got := g.Score(g.players[0], row.category)
 
+			if got != nil {
+				t.Errorf("returned an error: [%v]", got)
+			}
 			if got, want := g.players[0].scoreSheet[row.category], row.value; got != want {
 				t.Errorf("%q score for [%v] should be %d but was %d.",
 					row.category,
@@ -218,5 +221,100 @@ func TestGame_Scroll(t *testing.T) {
 					got)
 			}
 		}
+	})
+
+	t.Run("should set bonus if upper section reaches limit", func(t *testing.T) {
+		table := []struct {
+			values    []int
+			remaining Category
+			dices     []int
+			bonus     bool
+		}{
+			{[]int{3, 6, -1, 16, 25, -1}, Sixes, []int{1, 3, 6, 2, 4}, false},
+			{[]int{-1, -1, 12, -1, 20, 36}, Fours, []int{1, 3, 6, 2, 4}, false},
+			{[]int{3, 6, 9, 16, 25, -1}, Sixes, []int{1, 3, 6, 2, 4}, true},
+			{[]int{-1, 2, 3, 4, 15, 36}, Ones, []int{1, 1, 3, 3, 3}, false},
+			{[]int{-1, 2, 3, 4, 15, 36}, Ones, []int{1, 1, 1, 3, 3}, true},
+			{[]int{-1, 2, 3, 4, 15, 36}, Ones, []int{1, 1, 1, 1, 3}, true},
+		}
+
+		for i, row := range table {
+			g := New()
+			g.AddPlayer("alice")
+			s := g.players[0].scoreSheet
+			if row.values[0] > 0 {
+				s[Ones] = row.values[0]
+			}
+			if row.values[1] > 0 {
+				s[Twos] = row.values[1]
+			}
+			if row.values[2] > 0 {
+				s[Threes] = row.values[2]
+			}
+			if row.values[3] > 0 {
+				s[Fours] = row.values[3]
+			}
+			if row.values[4] > 0 {
+				s[Fives] = row.values[4]
+			}
+			if row.values[5] > 0 {
+				s[Sixes] = row.values[5]
+			}
+			for j, d := range g.dices {
+				d.value = row.dices[j]
+			}
+
+			got := g.Score(g.players[0], row.remaining)
+
+			if got != nil {
+				t.Errorf("returned an error: [%v]", got)
+			}
+			if got, want := s[Bonus] == 35, row.bonus; got != want {
+				t.Errorf("invalid result for scenario %d", i)
+			}
+		}
+	})
+
+	t.Run("should reset roll counter", func(t *testing.T) {
+		// TODO
+	})
+
+	t.Run("should switch current to next player", func(t *testing.T) {
+		// TODO
+	})
+
+	t.Run("should increment round when first player comes again", func(t *testing.T) {
+		// TODO
+	})
+
+	t.Run("should fail when got invalid category", func(t *testing.T) {
+		g := New()
+		g.AddPlayer("alice")
+
+		got := g.Score(g.players[0], Category("fake"))
+
+		if want := ErrInvalidCategory; got != want {
+			t.Errorf("wrong result, got %#v wanted %#v.", got, want)
+		}
+	})
+
+	t.Run("should fail when category was already scored", func(t *testing.T) {
+		g := New()
+		g.AddPlayer("alice")
+		g.players[0].scoreSheet[Twos] = 4
+
+		got := g.Score(g.players[0], Twos)
+
+		if want := ErrCategoryAlreadyScored; got != want {
+			t.Errorf("wrong result, got %#v wanted %#v.", got, want)
+		}
+	})
+
+	t.Run("should fail when game is over", func(t *testing.T) {
+		// TODO
+	})
+
+	t.Run("should fail when there was no roll", func(t *testing.T) {
+		// TODO
 	})
 }
