@@ -145,47 +145,120 @@ func (g *Game) Roll(p *Player) error {
 
 // Score saves the points for the player in the given category and handles the counters.
 func (g *Game) Score(p *Player, c Category) error {
-	v := 0
+	s := 0
 	switch c {
 	case Ones:
 		for _, d := range g.dices {
 			if d.value == 1 {
-				v++
+				s++
 			}
 		}
 	case Twos:
 		for _, d := range g.dices {
 			if d.value == 2 {
-				v += 2
+				s += 2
 			}
 		}
 	case Threes:
 		for _, d := range g.dices {
 			if d.value == 3 {
-				v += 3
+				s += 3
 			}
 		}
 	case Fours:
 		for _, d := range g.dices {
 			if d.value == 4 {
-				v += 4
+				s += 4
 			}
 		}
 	case Fives:
 		for _, d := range g.dices {
 			if d.value == 5 {
-				v += 5
+				s += 5
 			}
 		}
 	case Sixes:
 		for _, d := range g.dices {
 			if d.value == 6 {
-				v += 6
+				s += 6
 			}
+		}
+	case ThreeOfAKind:
+		occurrences := map[int]int{}
+		for _, d := range g.dices {
+			occurrences[d.value]++
+		}
+
+		for k, v := range occurrences {
+			if v >= 3 {
+				s = 3 * k
+			}
+		}
+	case FourOfAKind:
+		occurrences := map[int]int{}
+		for _, d := range g.dices {
+			occurrences[d.value]++
+		}
+
+		for k, v := range occurrences {
+			if v >= 4 {
+				s = 4 * k
+			}
+		}
+	case FullHouse:
+		one, oneCount, other := g.dices[0].value, 1, 0
+		for i := 1; i < len(g.dices); i++ {
+			v := g.dices[i].value
+
+			if one == v {
+				oneCount++
+			} else if other == 0 || other == v {
+				other = v
+			} else {
+				oneCount = 4
+			}
+		}
+
+		if oneCount == 2 || oneCount == 3 {
+			s = 25
+		}
+	case SmallStraight:
+		hit := [6]bool{}
+		for _, d := range g.dices {
+			hit[d.value-1] = true
+		}
+
+		if (hit[0] && hit[1] && hit[2] && hit[3]) ||
+			(hit[1] && hit[2] && hit[3] && hit[4]) ||
+			(hit[2] && hit[3] && hit[4] && hit[5]) {
+			s = 30
+		}
+	case LargeStraight:
+		hit := [6]bool{}
+		for _, d := range g.dices {
+			hit[d.value-1] = true
+		}
+
+		if (hit[0] && hit[1] && hit[2] && hit[3] && hit[4]) ||
+			(hit[1] && hit[2] && hit[3] && hit[4] && hit[5]) {
+			s = 40
+		}
+	case Yahtzee:
+		same := true
+		for i := 0; i < len(g.dices)-1; i++ {
+			same = same && g.dices[i].value == g.dices[i+1].value
+		}
+
+		if same {
+			s = 50
+		}
+	case Chance:
+		for _, d := range g.dices {
+			s += d.value
 		}
 	}
 
-	p.scoreSheet[c] = v
+	p.scoreSheet[c] = s
 
 	return nil
 }
