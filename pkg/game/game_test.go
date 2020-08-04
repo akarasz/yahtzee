@@ -32,6 +32,21 @@ func TestNew(t *testing.T) {
 	})
 }
 
+func TestGame_Players(t *testing.T) {
+	t.Run("should return copied list of players", func(t *testing.T) {
+		g := New()
+		alice := NewPlayer("alice")
+		alice.scoreSheet[Sixes] = 12
+		g.AddPlayer(alice)
+		copied := g.Players()[0]
+		alice.scoreSheet[Sixes] = 36
+
+		if got, want := copied.scoreSheet[Sixes], alice.scoreSheet[Sixes]; got != want {
+			t.Errorf("was able to rewrite score on a sheet")
+		}
+	})
+}
+
 func TestGame_AddPlayer(t *testing.T) {
 	t.Run("should add player", func(t *testing.T) {
 		g := New()

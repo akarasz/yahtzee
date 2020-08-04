@@ -112,6 +112,15 @@ type Game struct {
 	roll int
 }
 
+// Players returns a copy of the players list
+func (g *Game) Players() []Player {
+	res := make([]Player, len(g.players))
+	for i, p := range g.players {
+		res[i] = *p
+	}
+	return res
+}
+
 // AddPlayer adds a new player with the given `name` and an empty score sheet to the game.
 func (g *Game) AddPlayer(p *Player) error {
 	if g.current > 0 || g.round > 0 {
