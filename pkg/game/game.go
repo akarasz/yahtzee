@@ -60,6 +60,9 @@ var (
 
 	// ErrCategoryAlreadyScored returned when the category in the player's score sheet is filled.
 	ErrCategoryAlreadyScored = errors.New("category already scored")
+
+	// ErrNothingToScore returned when there was no rolling before scoring.
+	ErrNothingToScore = errors.New("nothing to score")
 )
 
 // Dice represents a dice you use for the Game.
@@ -152,6 +155,14 @@ func (g *Game) Roll(p *Player) error {
 
 // Score saves the points for the player in the given category and handles the counters.
 func (g *Game) Score(p *Player, c Category) error {
+	if g.round >= totalRounds {
+		return ErrGameOver
+	}
+
+	if g.roll == 0 {
+		return ErrNothingToScore
+	}
+
 	if _, ok := p.scoreSheet[c]; ok {
 		return ErrCategoryAlreadyScored
 	}
