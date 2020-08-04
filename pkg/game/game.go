@@ -91,7 +91,8 @@ type Player struct {
 	scoreSheet map[Category]int
 }
 
-func newPlayer(name string) *Player {
+// NewPlayer creates a new player.
+func NewPlayer(name string) *Player {
 	return &Player{name, map[Category]int{}}
 }
 
@@ -112,12 +113,12 @@ type Game struct {
 }
 
 // AddPlayer adds a new player with the given `name` and an empty score sheet to the game.
-func (g *Game) AddPlayer(name string) error {
+func (g *Game) AddPlayer(p *Player) error {
 	if g.current > 0 || g.round > 0 {
 		return ErrAlreadyStarted
 	}
 
-	g.players = append(g.players, newPlayer(name))
+	g.players = append(g.players, p)
 
 	return nil
 }
