@@ -3,8 +3,6 @@ package game
 import (
 	"errors"
 	"math/rand"
-
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -115,8 +113,6 @@ type Game struct {
 
 // AddPlayer adds a new player with the given `name` and an empty score sheet to the game.
 func (g *Game) AddPlayer(name string) error {
-	log.Debugf("adding a player with name %q", name)
-
 	if g.current > 0 || g.round > 0 {
 		return ErrAlreadyStarted
 	}
