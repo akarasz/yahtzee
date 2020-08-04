@@ -2,6 +2,7 @@ package game
 
 import (
 	"errors"
+	"fmt"
 	"math/rand"
 )
 
@@ -76,6 +77,14 @@ func (d *Dice) roll() {
 // Value returns the number on the face of the dice.
 func (d *Dice) Value() int {
 	return d.value
+}
+
+func (d Dice) String() string {
+	if d.locked {
+		return fmt.Sprintf("(%d)", d.value)
+	}
+
+	return fmt.Sprintf(" %d ", d.value)
 }
 
 func newDice() *Dice {
