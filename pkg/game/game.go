@@ -91,6 +91,11 @@ type Player struct {
 	scoreSheet map[Category]int
 }
 
+// Name of the player
+func (p *Player) Name() string {
+	return p.name
+}
+
 // NewPlayer creates a new player.
 func NewPlayer(name string) *Player {
 	return &Player{name, map[Category]int{}}
@@ -117,6 +122,15 @@ func (g *Game) Players() []Player {
 	res := make([]Player, len(g.players))
 	for i, p := range g.players {
 		res[i] = *p
+	}
+	return res
+}
+
+// Dices returns a copy of the dices list
+func (g *Game) Dices() []Dice {
+	res := make([]Dice, len(g.dices))
+	for i, d := range g.dices {
+		res[i] = *d
 	}
 	return res
 }
