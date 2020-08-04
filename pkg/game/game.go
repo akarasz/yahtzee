@@ -354,6 +354,7 @@ func (g *Game) Score(p *Player, c Category) error {
 	return nil
 }
 
+// Toggle locks and unlocks a dice so it will not get rolled.
 func (g *Game) Toggle(p *Player, diceIndex int) error {
 	if p != g.players[g.current] {
 		return ErrNotPlayersTurn
