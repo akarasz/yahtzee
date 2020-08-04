@@ -62,6 +62,9 @@ var (
 
 	// ErrNothingToScore returned when there was no rolling before scoring.
 	ErrNothingToScore = errors.New("nothing to score")
+
+	// ErrInvalidDice returned when dice index is invalid.
+	ErrInvalidDice = errors.New("invalid dice")
 )
 
 // Dice represents a dice you use for the Game.
@@ -77,6 +80,11 @@ func (d *Dice) roll() {
 // Value returns the number on the face of the dice.
 func (d *Dice) Value() int {
 	return d.value
+}
+
+// Locked shows whether the dice gets rolled or not.
+func (d *Dice) Locked() bool {
+	return d.locked
 }
 
 func (d Dice) String() string {
@@ -184,6 +192,10 @@ func (g *Game) Roll(p *Player) error {
 
 // Score saves the points for the player in the given category and handles the counters.
 func (g *Game) Score(p *Player, c Category) error {
+	if p != g.players[g.current] {
+		return ErrNotPlayersTurn
+	}
+
 	if g.round >= totalRounds {
 		return ErrGameOver
 	}
@@ -338,6 +350,28 @@ func (g *Game) Score(p *Player, c Category) error {
 	if g.current == 0 {
 		g.round++
 	}
+
+	return nil
+}
+
+func (g *Game) Toggle(p *Player, diceIndex int) error {
+	if p != g.players[g.current] {
+		return ErrNotPlayersTurn
+	}
+
+	if diceIndex < 0 || 5 < diceIndex {
+		return ErrInvalidDice
+	}
+
+	if g.round >= totalRounds {
+		return ErrGameOver
+	}
+
+	if g.roll == 3 {
+		return ErrOutOfRolls
+	}
+
+	g.dices[diceIndex].locked = !g.dices[diceIndex].locked
 
 	return nil
 }
