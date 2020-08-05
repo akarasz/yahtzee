@@ -113,6 +113,15 @@ func (p *Player) Name() string {
 	return p.name
 }
 
+// ScoreSheet of the player
+func (p *Player) ScoreSheet() map[Category]int {
+	res := map[Category]int{}
+	for k, v := range p.scoreSheet {
+		res[k] = v
+	}
+	return res
+}
+
 // NewPlayer creates a new player.
 func NewPlayer(name string) *Player {
 	return &Player{name, map[Category]int{}}
@@ -360,7 +369,7 @@ func (g *Game) Toggle(p *Player, diceIndex int) error {
 		return ErrNotPlayersTurn
 	}
 
-	if diceIndex < 0 || 5 < diceIndex {
+	if diceIndex < 0 || 4 < diceIndex {
 		return ErrInvalidDice
 	}
 

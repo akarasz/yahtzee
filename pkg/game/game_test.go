@@ -485,7 +485,7 @@ func TestGame_Toggle(t *testing.T) {
 		}{
 			{-1, ErrInvalidDice},
 			{0, nil},
-			{6, ErrInvalidDice},
+			{5, ErrInvalidDice},
 		}
 
 		for _, scenario := range table {
