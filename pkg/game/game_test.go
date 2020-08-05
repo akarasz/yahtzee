@@ -8,7 +8,7 @@ func TestNew(t *testing.T) {
 	t.Run("should create with empty Players", func(t *testing.T) {
 		g := New()
 
-		if len(g.Players()) != 0 {
+		if len(g.Players) != 0 {
 			t.Errorf("NewGame() should produce empty Players list")
 		}
 	})
@@ -16,7 +16,7 @@ func TestNew(t *testing.T) {
 	t.Run("should add dices", func(t *testing.T) {
 		g := New()
 
-		if got, want := len(g.Dices()), numberOfDices; got != want {
+		if got, want := len(g.Dices), numberOfDices; got != want {
 			t.Errorf("number of dices is invalid, got %d, want %d.", got, want)
 		}
 	})
@@ -24,25 +24,10 @@ func TestNew(t *testing.T) {
 	t.Run("should set valid values for dices", func(t *testing.T) {
 		g := New()
 
-		for i, d := range g.Dices() {
-			if got := d.Value(); got < 1 || got > 6 {
+		for i, d := range g.Dices {
+			if got := d.Value; got < 1 || got > 6 {
 				t.Errorf("%dth dice has an invalid value, %d.", i, got)
 			}
-		}
-	})
-}
-
-func TestGame_Players(t *testing.T) {
-	t.Run("should return copied list of players", func(t *testing.T) {
-		g := New()
-		alice := NewPlayer("alice")
-		alice.scoreSheet[Sixes] = 12
-		g.AddPlayer(alice)
-		copied := g.Players()[0]
-		alice.scoreSheet[Sixes] = 36
-
-		if got, want := copied.scoreSheet[Sixes], alice.scoreSheet[Sixes]; got != want {
-			t.Errorf("was able to rewrite score on a sheet")
 		}
 	})
 }
@@ -54,10 +39,10 @@ func TestGame_AddPlayer(t *testing.T) {
 
 		g.AddPlayer(alice)
 
-		if len(g.Players()) != 1 {
+		if len(g.Players) != 1 {
 			t.Fatalf("player was not added")
 		}
-		if got, want := g.Players()[0], alice; got.Name() != want.Name() {
+		if got, want := g.Players[0], alice; got.Name != want.Name {
 			t.Errorf("got [%v], want [%v]", got, want)
 		}
 	})
@@ -76,8 +61,8 @@ func TestGame_AddPlayer(t *testing.T) {
 		for _, row := range table {
 			g := New()
 			alice := NewPlayer("alice")
-			g.current = row.current
-			g.round = row.round
+			g.Current = row.current
+			g.Round = row.round
 
 			got := g.AddPlayer(alice)
 
@@ -93,8 +78,8 @@ func TestGame_Roll(t *testing.T) {
 		g := New()
 		alice := NewPlayer("alice")
 		g.AddPlayer(alice)
-		for _, d := range g.Dices() {
-			d.value = -1
+		for _, d := range g.Dices {
+			d.Value = -1
 		}
 
 		got := g.Roll(alice)
@@ -102,8 +87,8 @@ func TestGame_Roll(t *testing.T) {
 		if got != nil {
 			t.Fatalf("returned error: [%v]", got)
 		}
-		for i, d := range g.Dices() {
-			if got := d.Value(); got < 1 || got > 6 {
+		for i, d := range g.Dices {
+			if got := d.Value; got < 1 || got > 6 {
 				t.Errorf("%dth dice has an invalid value, %d.", i, got)
 			}
 		}
@@ -113,15 +98,15 @@ func TestGame_Roll(t *testing.T) {
 		g := New()
 		alice := NewPlayer("alice")
 		g.AddPlayer(alice)
-		g.dices[2].locked = true
-		g.dices[2].value = -1
+		g.Dices[2].Locked = true
+		g.Dices[2].Value = -1
 
 		got := g.Roll(alice)
 
 		if got != nil {
 			t.Fatalf("returned error: [%v]", got)
 		}
-		if g.dices[2].value != -1 {
+		if g.Dices[2].Value != -1 {
 			t.Errorf("value of locked dice got changed")
 		}
 	})
@@ -136,7 +121,7 @@ func TestGame_Roll(t *testing.T) {
 		if got != nil {
 			t.Fatalf("returned error: [%v]", got)
 		}
-		if want := 1; g.roll != want {
+		if want := 1; g.RollCount != want {
 			t.Errorf("not got incremented")
 		}
 	})
@@ -146,7 +131,7 @@ func TestGame_Roll(t *testing.T) {
 		alice, bob := NewPlayer("alice"), NewPlayer("bob")
 		g.AddPlayer(alice)
 		g.AddPlayer(bob)
-		g.current = 1
+		g.Current = 1
 
 		got := g.Roll(alice)
 
@@ -159,7 +144,7 @@ func TestGame_Roll(t *testing.T) {
 		g := New()
 		alice := NewPlayer("alice")
 		g.AddPlayer(alice)
-		g.roll = 3
+		g.RollCount = 3
 
 		got := g.Roll(alice)
 
@@ -172,7 +157,7 @@ func TestGame_Roll(t *testing.T) {
 		g := New()
 		alice := NewPlayer("alice")
 		g.AddPlayer(alice)
-		g.round = 13
+		g.Round = 13
 
 		got := g.Roll(alice)
 
@@ -182,7 +167,7 @@ func TestGame_Roll(t *testing.T) {
 	})
 }
 
-func TestGame_Scroll(t *testing.T) {
+func TestGame_Score(t *testing.T) {
 	t.Run("should calculate points correctly", func(t *testing.T) {
 		table := []struct {
 			dices    []int
@@ -226,7 +211,7 @@ func TestGame_Scroll(t *testing.T) {
 			g.AddPlayer(alice)
 			g.Roll(alice)
 			for i, v := range row.dices {
-				g.dices[i].value = v
+				g.Dices[i].Value = v
 			}
 
 			got := g.Score(alice, row.category)
@@ -234,7 +219,7 @@ func TestGame_Scroll(t *testing.T) {
 			if got != nil {
 				t.Fatalf("returned error: [%v]", got)
 			}
-			if got, want := alice.scoreSheet[row.category], row.value; got != want {
+			if got, want := alice.ScoreSheet[row.category], row.value; got != want {
 				t.Errorf("%q score for [%v] should be %d but was %d.",
 					row.category,
 					row.dices,
@@ -265,25 +250,25 @@ func TestGame_Scroll(t *testing.T) {
 			g.AddPlayer(alice)
 			g.Roll(alice)
 			if row.values[0] > 0 {
-				alice.scoreSheet[Ones] = row.values[0]
+				alice.ScoreSheet[Ones] = row.values[0]
 			}
 			if row.values[1] > 0 {
-				alice.scoreSheet[Twos] = row.values[1]
+				alice.ScoreSheet[Twos] = row.values[1]
 			}
 			if row.values[2] > 0 {
-				alice.scoreSheet[Threes] = row.values[2]
+				alice.ScoreSheet[Threes] = row.values[2]
 			}
 			if row.values[3] > 0 {
-				alice.scoreSheet[Fours] = row.values[3]
+				alice.ScoreSheet[Fours] = row.values[3]
 			}
 			if row.values[4] > 0 {
-				alice.scoreSheet[Fives] = row.values[4]
+				alice.ScoreSheet[Fives] = row.values[4]
 			}
 			if row.values[5] > 0 {
-				alice.scoreSheet[Sixes] = row.values[5]
+				alice.ScoreSheet[Sixes] = row.values[5]
 			}
-			for j, d := range g.dices {
-				d.value = row.dices[j]
+			for j, d := range g.Dices {
+				d.Value = row.dices[j]
 			}
 
 			got := g.Score(alice, row.remaining)
@@ -291,7 +276,7 @@ func TestGame_Scroll(t *testing.T) {
 			if got != nil {
 				t.Fatalf("returned error: [%v]", got)
 			}
-			if got, want := alice.scoreSheet[Bonus] == 35, row.bonus; got != want {
+			if got, want := alice.ScoreSheet[Bonus] == 35, row.bonus; got != want {
 				t.Errorf("invalid result for scenario %d", i)
 			}
 		}
@@ -309,7 +294,7 @@ func TestGame_Scroll(t *testing.T) {
 		if got != nil {
 			t.Fatalf("returned error: [%v]", got)
 		}
-		if got, want := g.roll, 0; got != want {
+		if got, want := g.RollCount, 0; got != want {
 			t.Errorf("log counter is %d instead of %d", got, want)
 		}
 	})
@@ -326,7 +311,7 @@ func TestGame_Scroll(t *testing.T) {
 		if got != nil {
 			t.Fatalf("returned error: [%v]", got)
 		}
-		if got, want := g.current, 1; got != want {
+		if got, want := g.Current, 1; got != want {
 			t.Errorf("current player index is %d instead of %d", got, want)
 		}
 	})
@@ -344,7 +329,7 @@ func TestGame_Scroll(t *testing.T) {
 		if got != nil {
 			t.Fatalf("returned error: [%v]", got)
 		}
-		if got, want := g.current, 0; got != want {
+		if got, want := g.Current, 0; got != want {
 			t.Errorf("current player index is %d instead of %d", got, want)
 		}
 	})
@@ -359,7 +344,7 @@ func TestGame_Scroll(t *testing.T) {
 		if got != nil {
 			t.Fatalf("returned error: [%v]", got)
 		}
-		if got, want := g.round, 1; got != want {
+		if got, want := g.Round, 1; got != want {
 			t.Errorf("round counter is %d instead of %d", got, want)
 		}
 	})
@@ -395,7 +380,7 @@ func TestGame_Scroll(t *testing.T) {
 		alice := NewPlayer("alice")
 		g.AddPlayer(alice)
 		g.Roll(alice)
-		alice.scoreSheet[Twos] = 4
+		alice.ScoreSheet[Twos] = 4
 
 		got := g.Score(alice, Twos)
 
@@ -408,7 +393,7 @@ func TestGame_Scroll(t *testing.T) {
 		g := New()
 		alice := NewPlayer("alice")
 		g.AddPlayer(alice)
-		g.round = 13
+		g.Round = 13
 
 		got := g.Score(alice, Chance)
 
@@ -456,7 +441,7 @@ func TestGame_Toggle(t *testing.T) {
 		if got != nil {
 			t.Fatalf("got error [%v]", got)
 		}
-		if got, want := g.Dices()[2].Locked(), true; got != want {
+		if got, want := g.Dices[2].Locked, true; got != want {
 			t.Errorf("did not lock dice")
 		}
 	})
@@ -473,7 +458,7 @@ func TestGame_Toggle(t *testing.T) {
 		if got != nil {
 			t.Fatalf("got error [%v]", got)
 		}
-		if got, want := g.Dices()[2].Locked(), false; got != want {
+		if got, want := g.Dices[2].Locked, false; got != want {
 			t.Errorf("did not unlock dice")
 		}
 	})
@@ -536,7 +521,7 @@ func TestGame_Toggle(t *testing.T) {
 		alice := NewPlayer("alice")
 		g.AddPlayer(alice)
 		g.Roll(alice)
-		g.round = 13
+		g.Round = 13
 
 		got := g.Toggle(alice, 3)
 

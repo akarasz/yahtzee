@@ -2,7 +2,6 @@ package game
 
 import (
 	"errors"
-	"fmt"
 	"math/rand"
 )
 
@@ -69,57 +68,31 @@ var (
 
 // Dice represents a dice you use for the Game.
 type Dice struct {
-	value  int
-	locked bool
+	// Value is the number on the face of the dice
+	Value int
+
+	// Locked shows if the dice will roll or not
+	Locked bool
 }
 
 func (d *Dice) roll() {
-	d.value = rand.Intn(6) + 1
-}
-
-// Value returns the number on the face of the dice.
-func (d *Dice) Value() int {
-	return d.value
-}
-
-// Locked shows whether the dice gets rolled or not.
-func (d *Dice) Locked() bool {
-	return d.locked
-}
-
-func (d Dice) String() string {
-	if d.locked {
-		return fmt.Sprintf("(%d)", d.value)
-	}
-
-	return fmt.Sprintf(" %d ", d.value)
+	d.Value = rand.Intn(6) + 1
 }
 
 func newDice() *Dice {
 	d := &Dice{
-		value: 1,
+		Value: 1,
 	}
 	return d
 }
 
 // Player contains all data representing a player.
 type Player struct {
-	name       string
-	scoreSheet map[Category]int
-}
+	// Name of the player
+	Name string
 
-// Name of the player
-func (p *Player) Name() string {
-	return p.name
-}
-
-// ScoreSheet of the player
-func (p *Player) ScoreSheet() map[Category]int {
-	res := map[Category]int{}
-	for k, v := range p.scoreSheet {
-		res[k] = v
-	}
-	return res
+	// ScoreSheet keeps the scores of the player
+	ScoreSheet map[Category]int
 }
 
 // NewPlayer creates a new player.
@@ -129,136 +102,121 @@ func NewPlayer(name string) *Player {
 
 // Game contains all data representing a game.
 type Game struct {
-	players []*Player
+	// Players has the list of the players in an ordered manner
+	Players []*Player
 
-	dices []*Dice
+	// Dices has the dices the game played with
+	Dices []*Dice
 
-	// round shows how many rounds were passed already.
-	round int
+	// Round shows how many rounds were passed already.
+	Round int
 
-	// current shows the index of the current player in the Players array.
-	current int
+	// Current shows the index of the current player in the Players array.
+	Current int
 
-	// roll shows how many times the dices were rolled for the current user in this round.
-	roll int
-}
-
-// Players returns a copy of the players list
-func (g *Game) Players() []Player {
-	res := make([]Player, len(g.players))
-	for i, p := range g.players {
-		res[i] = *p
-	}
-	return res
-}
-
-// Dices returns a copy of the dices list
-func (g *Game) Dices() []Dice {
-	res := make([]Dice, len(g.dices))
-	for i, d := range g.dices {
-		res[i] = *d
-	}
-	return res
+	// RollCount shows how many times the dices were rolled for the current user in this round.
+	RollCount int
 }
 
 // AddPlayer adds a new player with the given `name` and an empty score sheet to the game.
 func (g *Game) AddPlayer(p *Player) error {
-	if g.current > 0 || g.round > 0 {
+	if g.Current > 0 || g.Round > 0 {
 		return ErrAlreadyStarted
 	}
 
-	g.players = append(g.players, p)
+	g.Players = append(g.Players, p)
 
 	return nil
 }
 
 // Roll rolls the dices and increment the roll counters.
 func (g *Game) Roll(p *Player) error {
-	if p != g.players[g.current] {
+	if p != g.Players[g.Current] {
 		return ErrNotPlayersTurn
 	}
 
-	if g.round >= totalRounds {
+	if g.Round >= totalRounds {
 		return ErrGameOver
 	}
 
-	if g.roll >= maxRoll {
+	if g.RollCount >= maxRoll {
 		return ErrOutOfRolls
 	}
 
-	for _, d := range g.dices {
-		if d.locked {
+	for _, d := range g.Dices {
+		if d.Locked {
 			continue
 		}
 
 		d.roll()
 	}
 
-	g.roll++
+	g.RollCount++
+	g.Players = append(g.Players, p)
 
 	return nil
 }
 
 // Score saves the points for the player in the given category and handles the counters.
 func (g *Game) Score(p *Player, c Category) error {
-	if p != g.players[g.current] {
+	if p != g.Players[g.Current] {
 		return ErrNotPlayersTurn
 	}
 
-	if g.round >= totalRounds {
+	if g.Round >= totalRounds {
 		return ErrGameOver
 	}
 
-	if g.roll == 0 {
+	if g.RollCount == 0 {
 		return ErrNothingToScore
 	}
 
-	if _, ok := p.scoreSheet[c]; ok {
+	if _, ok := p.ScoreSheet[c]; ok {
 		return ErrCategoryAlreadyScored
 	}
 
 	s := 0
 	switch c {
 	case Ones:
-		for _, d := range g.dices {
-			if d.value == 1 {
+		for _, d := range g.Dices {
+			if d.Value == 1 {
 				s++
 			}
 		}
 	case Twos:
-		for _, d := range g.dices {
-			if d.value == 2 {
+		for _, d := range g.Dices {
+			if d.Value == 2 {
 				s += 2
 			}
 		}
 	case Threes:
-		for _, d := range g.dices {
-			if d.value == 3 {
+		for _, d := range g.Dices {
+			if d.Value == 3 {
 				s += 3
 			}
 		}
 	case Fours:
-		for _, d := range g.dices {
-			if d.value == 4 {
+		for _, d := range g.Dices {
+			if d.Value == 4 {
 				s += 4
 			}
 		}
 	case Fives:
-		for _, d := range g.dices {
-			if d.value == 5 {
+		for _, d := range g.Dices {
+			if d.Value == 5 {
 				s += 5
 			}
 		}
 	case Sixes:
-		for _, d := range g.dices {
-			if d.value == 6 {
+		for _, d := range g.Dices {
+			if d.Value == 6 {
 				s += 6
 			}
 		}
 	case ThreeOfAKind:
 		occurrences := map[int]int{}
-		for _, d := range g.dices {
-			occurrences[d.value]++
+		for _, d := range g.Dices {
+			occurrences[d.Value]++
 		}
 
 		for k, v := range occurrences {
@@ -268,8 +226,8 @@ func (g *Game) Score(p *Player, c Category) error {
 		}
 	case FourOfAKind:
 		occurrences := map[int]int{}
-		for _, d := range g.dices {
-			occurrences[d.value]++
+		for _, d := range g.Dices {
+			occurrences[d.Value]++
 		}
 
 		for k, v := range occurrences {
@@ -278,9 +236,9 @@ func (g *Game) Score(p *Player, c Category) error {
 			}
 		}
 	case FullHouse:
-		one, oneCount, other := g.dices[0].value, 1, 0
-		for i := 1; i < len(g.dices); i++ {
-			v := g.dices[i].value
+		one, oneCount, other := g.Dices[0].Value, 1, 0
+		for i := 1; i < len(g.Dices); i++ {
+			v := g.Dices[i].Value
 
 			if one == v {
 				oneCount++
@@ -296,8 +254,8 @@ func (g *Game) Score(p *Player, c Category) error {
 		}
 	case SmallStraight:
 		hit := [6]bool{}
-		for _, d := range g.dices {
-			hit[d.value-1] = true
+		for _, d := range g.Dices {
+			hit[d.Value-1] = true
 		}
 
 		if (hit[0] && hit[1] && hit[2] && hit[3]) ||
@@ -307,8 +265,8 @@ func (g *Game) Score(p *Player, c Category) error {
 		}
 	case LargeStraight:
 		hit := [6]bool{}
-		for _, d := range g.dices {
-			hit[d.value-1] = true
+		for _, d := range g.Dices {
+			hit[d.Value-1] = true
 		}
 
 		if (hit[0] && hit[1] && hit[2] && hit[3] && hit[4]) ||
@@ -317,26 +275,26 @@ func (g *Game) Score(p *Player, c Category) error {
 		}
 	case Yahtzee:
 		same := true
-		for i := 0; i < len(g.dices)-1; i++ {
-			same = same && g.dices[i].value == g.dices[i+1].value
+		for i := 0; i < len(g.Dices)-1; i++ {
+			same = same && g.Dices[i].Value == g.Dices[i+1].Value
 		}
 
 		if same {
 			s = 50
 		}
 	case Chance:
-		for _, d := range g.dices {
-			s += d.value
+		for _, d := range g.Dices {
+			s += d.Value
 		}
 	default:
 		return ErrInvalidCategory
 	}
 
-	p.scoreSheet[c] = s
+	p.ScoreSheet[c] = s
 
-	if _, ok := p.scoreSheet[Bonus]; !ok {
+	if _, ok := p.ScoreSheet[Bonus]; !ok {
 		var total, types int
-		for k, v := range p.scoreSheet {
+		for k, v := range p.ScoreSheet {
 			if k == Ones || k == Twos || k == Threes || k == Fours || k == Fives || k == Sixes {
 				types++
 				total += v
@@ -345,19 +303,17 @@ func (g *Game) Score(p *Player, c Category) error {
 
 		if types == 6 {
 			if total >= 63 {
-				p.scoreSheet[Bonus] = 35
+				p.ScoreSheet[Bonus] = 35
 			} else {
-				p.scoreSheet[Bonus] = 0
+				p.ScoreSheet[Bonus] = 0
 			}
 		}
 	}
 
-	g.roll = 0
-
-	g.current = (g.current + 1) % len(g.players)
-
-	if g.current == 0 {
-		g.round++
+	g.RollCount = 0
+	g.Current = (g.Current + 1) % len(g.Players)
+	if g.Current == 0 {
+		g.Round++
 	}
 
 	return nil
@@ -365,7 +321,7 @@ func (g *Game) Score(p *Player, c Category) error {
 
 // Toggle locks and unlocks a dice so it will not get rolled.
 func (g *Game) Toggle(p *Player, diceIndex int) error {
-	if p != g.players[g.current] {
+	if p != g.Players[g.Current] {
 		return ErrNotPlayersTurn
 	}
 
@@ -373,15 +329,15 @@ func (g *Game) Toggle(p *Player, diceIndex int) error {
 		return ErrInvalidDice
 	}
 
-	if g.round >= totalRounds {
+	if g.Round >= totalRounds {
 		return ErrGameOver
 	}
 
-	if g.roll == 3 {
+	if g.RollCount == 3 {
 		return ErrOutOfRolls
 	}
 
-	g.dices[diceIndex].locked = !g.dices[diceIndex].locked
+	g.Dices[diceIndex].Locked = !g.Dices[diceIndex].Locked
 
 	return nil
 }
@@ -394,6 +350,6 @@ func New() *Game {
 	}
 
 	return &Game{
-		dices: dd,
+		Dices: dd,
 	}
 }
