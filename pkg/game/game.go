@@ -152,7 +152,6 @@ func (g *Game) Roll(p *Player) error {
 	}
 
 	g.RollCount++
-	g.Players = append(g.Players, p)
 
 	return nil
 }
