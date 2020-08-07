@@ -5,10 +5,21 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+
+	"github.com/akarasz/yahtzee/pkg/game"
+	"github.com/akarasz/yahtzee/pkg/store"
 )
 
 type RootHandler struct {
-	game *GameHandler
+	store *store.Store
+	game  *GameHandler
+}
+
+func New(store *store.Store) *RootHandler {
+	return &RootHandler{
+		store: store,
+		game:  &GameHandler{},
+	}
 }
 
 func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -19,9 +30,7 @@ func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "":
 		h.create(w, r)
 	default:
-		id := head
-		ctx := context.WithValue(r.Context(), gameID, id)
-		h.game.ServeHTTP(w, r.WithContext(ctx))
+		h.id(head).ServeHTTP(w, r)
 	}
 }
 
@@ -31,13 +40,29 @@ func (h *RootHandler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "create new game %q", generateID())
+	id := generateID()
+
+	err := h.store.Put(id, game.New())
+	if err != nil {
+		http.Error(w, "unable to create game", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Location", fmt.Sprintf("/%s", id))
+	w.WriteHeader(http.StatusCreated)
 }
 
-func New() *RootHandler {
-	return &RootHandler{
-		game: &GameHandler{},
-	}
+func (h *RootHandler) id(id string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := h.store.Get(id)
+		if err != nil {
+			http.Error(w, "game not found", http.StatusNotFound)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), gameID, id)
+		h.game.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 func generateID() string {
