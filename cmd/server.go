@@ -9,5 +9,8 @@ import (
 func main() {
 	h := handler.New()
 
-	http.ListenAndServe(":8000", h)
+	err := http.ListenAndServe(":8000", h)
+	if err != nil {
+		panic(err)
+	}
 }
