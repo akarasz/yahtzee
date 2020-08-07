@@ -1,34 +1,31 @@
-package store_test
+package store
 
 import (
 	"testing"
 
 	"github.com/akarasz/yahtzee/pkg/game"
-	"github.com/akarasz/yahtzee/pkg/store"
 )
 
 func TestStore_Put(t *testing.T) {
 	t.Run("should add to store", func(t *testing.T) {
-		spy := map[string]*game.Game{}
-		s := store.New(spy)
+		s := New()
 		want := game.New()
 
 		err := s.Put("id", want)
 		if err != nil {
 			t.Fatalf("returned error %q", err)
 		}
-		if got := spy["id"]; got != want {
+		if got := s.repo["id"]; got != want {
 			t.Errorf("wrong item in store. got %v, want %v", got, want)
 		}
 	})
 
 	t.Run("should fail when trying to add with same id", func(t *testing.T) {
-		spy := map[string]*game.Game{}
-		s := store.New(spy)
+		s := New()
 		s.Put("id", game.New())
 
 		got := s.Put("id", game.New())
-		if want := store.ErrAlreadyExists; got != want {
+		if want := ErrAlreadyExists; got != want {
 			t.Fatalf("wrong error. got %q, want %q", got, want)
 		}
 	})
@@ -36,10 +33,9 @@ func TestStore_Put(t *testing.T) {
 
 func TestStore_Get(t *testing.T) {
 	t.Run("should return from store", func(t *testing.T) {
-		spy := map[string]*game.Game{}
-		s := store.New(spy)
+		s := New()
 		want := game.New()
-		spy["id"] = want
+		s.repo["id"] = want
 
 		got, err := s.Get("id")
 		if err != nil {
@@ -51,11 +47,10 @@ func TestStore_Get(t *testing.T) {
 	})
 
 	t.Run("should fail when trying to add with same id", func(t *testing.T) {
-		spy := map[string]*game.Game{}
-		s := store.New(spy)
+		s := New()
 
 		_, got := s.Get("id")
-		if want := store.ErrNotExists; got != want {
+		if want := ErrNotExists; got != want {
 			t.Fatalf("wrong error. got %q, want %q", got, want)
 		}
 	})

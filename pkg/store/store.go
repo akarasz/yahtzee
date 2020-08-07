@@ -41,8 +41,8 @@ func (s *Store) Get(id string) (*game.Game, error) {
 }
 
 // New creates an empty store.
-func New(repo map[string]*game.Game) *Store {
+func New() *Store {
 	return &Store{
-		repo: repo,
+		repo: map[string]*game.Game{},
 	}
 }
