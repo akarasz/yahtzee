@@ -66,7 +66,11 @@ func (h *GameHandler) join(g *game.Game, user string) http.Handler {
 			return
 		}
 
-		g.AddPlayer(user)
+		err := g.AddPlayer(user)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
 		w.WriteHeader(http.StatusCreated)
 	})
