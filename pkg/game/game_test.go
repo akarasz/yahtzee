@@ -302,7 +302,7 @@ func TestGame_Score(t *testing.T) {
 	t.Run("should switch current to next player", func(t *testing.T) {
 		g := New()
 		g.AddPlayer("alice")
-		g.AddPlayer("alice")
+		g.AddPlayer("bob")
 		g.Roll("alice")
 
 		got := g.Score("alice", Chance)
