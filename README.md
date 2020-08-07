@@ -1,13 +1,13 @@
-## Yahtzee
+# Yahtzee
 
 This piece of software provides a basic backend service for playing yahtzee.
 
-### API
+## API
 
 **Every call** requires BASIC authentication. Users are not stored on the
 backend; the `username` part of the header will be used as the player's name.
 
-#### Create New Game
+### Create New Game
 
 ```
 POST /
@@ -20,7 +20,7 @@ eg.
 < Location: /{gameID}
 ```
 
-#### Join an Existing Game
+### Join an Existing Game
 
 ```
 POST /{gameID}/join
@@ -32,7 +32,7 @@ eg.
 < 201 Created
 ```
 
-#### Show a Game
+### Show a Game
 
 ```
 GET /{gameID}
@@ -79,7 +79,7 @@ eg.
 < }
 ```
 
-#### Roll the dices
+### Roll the dices
 
 ```
 POST /{gameID}/roll
@@ -114,7 +114,7 @@ eg.
 < ]
 ```
 
-#### Toggle Lock on a Dice
+### Toggle Lock on a Dice
 
 ```
 POST /{gameID}/lock/{diceIndex}
@@ -149,7 +149,7 @@ eg.
 < ]
 ```
 
-#### Score
+### Score
 
 ```
 POST /{gameID}/score < text/plain `category`
@@ -162,3 +162,13 @@ eg.
 > POST /gcxog/score < `yahtzee`
 < 200 OK
 ```
+
+## TODO
+
+* handler tests
+* better logging
+* heroku deployment
+* integrate logging with logdna
+* websocket for announcing real time state changes
+* store games in redis with an expiration
+* use some kind of oauth (github? google?) instead of basic auth
