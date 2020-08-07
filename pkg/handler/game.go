@@ -11,26 +11,26 @@ type GameHandler struct {
 	id string
 }
 
-func (h *GameHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	id := r.Context().Value(gameID).(string)
+func (h *GameHandler) handle(id string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var head string
+		head, r.URL.Path = shiftPath(r.URL.Path)
 
-	var head string
-	head, r.URL.Path = shiftPath(r.URL.Path)
-
-	switch head {
-	case "":
-		h.root(id).ServeHTTP(w, r)
-	case "join":
-		h.join(id).ServeHTTP(w, r)
-	case "lock":
-		h.lock(id).ServeHTTP(w, r)
-	case "roll":
-		h.roll(id).ServeHTTP(w, r)
-	case "score":
-		h.score(id).ServeHTTP(w, r)
-	default:
-		http.NotFound(w, r)
-	}
+		switch head {
+		case "":
+			h.root(id).ServeHTTP(w, r)
+		case "join":
+			h.join(id).ServeHTTP(w, r)
+		case "lock":
+			h.lock(id).ServeHTTP(w, r)
+		case "roll":
+			h.roll(id).ServeHTTP(w, r)
+		case "score":
+			h.score(id).ServeHTTP(w, r)
+		default:
+			http.NotFound(w, r)
+		}
+	})
 }
 
 func (h *GameHandler) root(id string) http.Handler {

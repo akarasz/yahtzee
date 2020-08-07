@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -60,8 +59,7 @@ func (h *RootHandler) id(id string) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), gameID, id)
-		h.game.ServeHTTP(w, r.WithContext(ctx))
+		h.game.handle(id).ServeHTTP(w, r)
 	})
 }
 

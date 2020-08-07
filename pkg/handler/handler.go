@@ -13,9 +13,3 @@ func shiftPath(p string) (head, tail string) {
 	}
 	return p[1:i], p[i:]
 }
-
-type contextKey string
-
-const (
-	gameID contextKey = "gameID"
-)
