@@ -95,11 +95,6 @@ type Player struct {
 	ScoreSheet map[Category]int
 }
 
-// NewPlayer creates a new player.
-func NewPlayer(name string) *Player {
-	return &Player{name, map[Category]int{}}
-}
-
 // Game contains all data representing a game.
 type Game struct {
 	// Players has the list of the players in an ordered manner
@@ -118,20 +113,24 @@ type Game struct {
 	RollCount int
 }
 
+func (g *Game) currentPlayer() *Player {
+	return g.Players[g.Current]
+}
+
 // AddPlayer adds a new player with the given `name` and an empty score sheet to the game.
-func (g *Game) AddPlayer(p *Player) error {
+func (g *Game) AddPlayer(name string) error {
 	if g.Current > 0 || g.Round > 0 {
 		return ErrAlreadyStarted
 	}
 
-	g.Players = append(g.Players, p)
+	g.Players = append(g.Players, &Player{name, map[Category]int{}})
 
 	return nil
 }
 
 // Roll rolls the dices and increment the roll counters.
-func (g *Game) Roll(p *Player) error {
-	if p != g.Players[g.Current] {
+func (g *Game) Roll(player string) error {
+	if player != g.currentPlayer().Name {
 		return ErrNotPlayersTurn
 	}
 
@@ -157,8 +156,8 @@ func (g *Game) Roll(p *Player) error {
 }
 
 // Score saves the points for the player in the given category and handles the counters.
-func (g *Game) Score(p *Player, c Category) error {
-	if p != g.Players[g.Current] {
+func (g *Game) Score(player string, c Category) error {
+	if player != g.currentPlayer().Name {
 		return ErrNotPlayersTurn
 	}
 
@@ -170,7 +169,7 @@ func (g *Game) Score(p *Player, c Category) error {
 		return ErrNoRollYet
 	}
 
-	if _, ok := p.ScoreSheet[c]; ok {
+	if _, ok := g.currentPlayer().ScoreSheet[c]; ok {
 		return ErrCategoryAlreadyScored
 	}
 
@@ -289,11 +288,11 @@ func (g *Game) Score(p *Player, c Category) error {
 		return ErrInvalidCategory
 	}
 
-	p.ScoreSheet[c] = s
+	g.currentPlayer().ScoreSheet[c] = s
 
-	if _, ok := p.ScoreSheet[Bonus]; !ok {
+	if _, ok := g.currentPlayer().ScoreSheet[Bonus]; !ok {
 		var total, types int
-		for k, v := range p.ScoreSheet {
+		for k, v := range g.currentPlayer().ScoreSheet {
 			if k == Ones || k == Twos || k == Threes || k == Fours || k == Fives || k == Sixes {
 				types++
 				total += v
@@ -302,9 +301,9 @@ func (g *Game) Score(p *Player, c Category) error {
 
 		if types == 6 {
 			if total >= 63 {
-				p.ScoreSheet[Bonus] = 35
+				g.currentPlayer().ScoreSheet[Bonus] = 35
 			} else {
-				p.ScoreSheet[Bonus] = 0
+				g.currentPlayer().ScoreSheet[Bonus] = 0
 			}
 		}
 	}
@@ -323,8 +322,8 @@ func (g *Game) Score(p *Player, c Category) error {
 }
 
 // Toggle locks and unlocks a dice so it will not get rolled.
-func (g *Game) Toggle(p *Player, diceIndex int) error {
-	if p != g.Players[g.Current] {
+func (g *Game) Toggle(player string, diceIndex int) error {
+	if player != g.currentPlayer().Name {
 		return ErrNotPlayersTurn
 	}
 

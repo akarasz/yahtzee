@@ -14,7 +14,7 @@ type GameHandler struct {
 	id string
 }
 
-func (h *GameHandler) handle(g *game.Game) http.Handler {
+func (h *GameHandler) handle(g *game.Game, user string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var head string
 		head, r.URL.Path = shiftPath(r.URL.Path)
@@ -23,7 +23,7 @@ func (h *GameHandler) handle(g *game.Game) http.Handler {
 		case "":
 			h.root(g).ServeHTTP(w, r)
 		case "join":
-			h.join(g).ServeHTTP(w, r)
+			h.join(g, user).ServeHTTP(w, r)
 		case "lock":
 			h.lock(g).ServeHTTP(w, r)
 		case "roll":
@@ -54,7 +54,7 @@ func (h *GameHandler) root(g *game.Game) http.Handler {
 	})
 }
 
-func (h *GameHandler) join(g *game.Game) http.Handler {
+func (h *GameHandler) join(g *game.Game, user string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -66,7 +66,9 @@ func (h *GameHandler) join(g *game.Game) http.Handler {
 			return
 		}
 
-		fmt.Fprint(w, "join game")
+		g.AddPlayer(user)
+
+		w.WriteHeader(http.StatusCreated)
 	})
 }
 

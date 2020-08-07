@@ -22,14 +22,20 @@ func New(store *store.Store) *RootHandler {
 }
 
 func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var head string
+	user, _, ok := r.BasicAuth()
+	if !ok {
+		http.Error(w, "use basic auth for setting your name", http.StatusUnauthorized)
+		return
+	}
 
-	head, r.URL.Path = shiftPath(r.URL.Path)
-	switch head {
+	var id string
+
+	id, r.URL.Path = shiftPath(r.URL.Path)
+	switch id {
 	case "":
 		h.create(w, r)
 	default:
-		h.id(head).ServeHTTP(w, r)
+		h.load(user, id).ServeHTTP(w, r)
 	}
 }
 
@@ -51,7 +57,7 @@ func (h *RootHandler) create(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (h *RootHandler) id(id string) http.Handler {
+func (h *RootHandler) load(user string, id string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		g, err := h.store.Get(id)
 		if err != nil {
@@ -59,7 +65,7 @@ func (h *RootHandler) id(id string) http.Handler {
 			return
 		}
 
-		h.game.handle(g).ServeHTTP(w, r)
+		h.game.handle(g, user).ServeHTTP(w, r)
 	})
 }
 
