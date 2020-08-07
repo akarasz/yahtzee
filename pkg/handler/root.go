@@ -53,13 +53,13 @@ func (h *RootHandler) create(w http.ResponseWriter, r *http.Request) {
 
 func (h *RootHandler) id(id string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := h.store.Get(id)
+		g, err := h.store.Get(id)
 		if err != nil {
 			http.Error(w, "game not found", http.StatusNotFound)
 			return
 		}
 
-		h.game.handle(id).ServeHTTP(w, r)
+		h.game.handle(g).ServeHTTP(w, r)
 	})
 }
 

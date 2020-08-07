@@ -1,39 +1,42 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+
+	"github.com/akarasz/yahtzee/pkg/game"
 )
 
 type GameHandler struct {
 	id string
 }
 
-func (h *GameHandler) handle(id string) http.Handler {
+func (h *GameHandler) handle(g *game.Game) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var head string
 		head, r.URL.Path = shiftPath(r.URL.Path)
 
 		switch head {
 		case "":
-			h.root(id).ServeHTTP(w, r)
+			h.root(g).ServeHTTP(w, r)
 		case "join":
-			h.join(id).ServeHTTP(w, r)
+			h.join(g).ServeHTTP(w, r)
 		case "lock":
-			h.lock(id).ServeHTTP(w, r)
+			h.lock(g).ServeHTTP(w, r)
 		case "roll":
-			h.roll(id).ServeHTTP(w, r)
+			h.roll(g).ServeHTTP(w, r)
 		case "score":
-			h.score(id).ServeHTTP(w, r)
+			h.score(g).ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
 	})
 }
 
-func (h *GameHandler) root(id string) http.Handler {
+func (h *GameHandler) root(g *game.Game) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -45,11 +48,13 @@ func (h *GameHandler) root(id string) http.Handler {
 			return
 		}
 
-		fmt.Fprintf(w, "getting game %q", id)
+		if err := json.NewEncoder(w).Encode(g); err != nil {
+			panic(err)
+		}
 	})
 }
 
-func (h *GameHandler) join(id string) http.Handler {
+func (h *GameHandler) join(g *game.Game) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -61,11 +66,11 @@ func (h *GameHandler) join(id string) http.Handler {
 			return
 		}
 
-		fmt.Fprintf(w, "join game %q", id)
+		fmt.Fprint(w, "join game")
 	})
 }
 
-func (h *GameHandler) lock(id string) http.Handler {
+func (h *GameHandler) lock(g *game.Game) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -91,11 +96,11 @@ func (h *GameHandler) lock(id string) http.Handler {
 			return
 		}
 
-		fmt.Fprintf(w, "lock dice %d in game %q", dice, id)
+		fmt.Fprintf(w, "lock dice %d", dice)
 	})
 }
 
-func (h *GameHandler) roll(id string) http.Handler {
+func (h *GameHandler) roll(g *game.Game) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -107,11 +112,11 @@ func (h *GameHandler) roll(id string) http.Handler {
 			return
 		}
 
-		fmt.Fprintf(w, "roll in game %q", id)
+		fmt.Fprint(w, "roll in game")
 	})
 }
 
-func (h *GameHandler) score(id string) http.Handler {
+func (h *GameHandler) score(g *game.Game) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -129,6 +134,6 @@ func (h *GameHandler) score(id string) http.Handler {
 			return
 		}
 		bodyString := string(body)
-		fmt.Fprintf(w, "score in game %q, category is %q", h.id, bodyString)
+		fmt.Fprintf(w, "score category %q", bodyString)
 	})
 }
