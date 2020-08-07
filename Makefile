@@ -1,4 +1,4 @@
-.DEFAULT_GOAL := test
+.DEFAULT_GOAL := run
 
 .PHONY := build
 build:
@@ -7,3 +7,7 @@ build:
 .PHONY := test
 test:
 	go test --count=1 ./...
+
+.PHONY := run
+run:
+	go run cmd/server.go

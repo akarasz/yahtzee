@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"path"
 	"strconv"
@@ -41,13 +42,26 @@ func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func generateID() string {
+	const (
+		idCharset = "abcdefghijklmnopqrstvwxyz0123456789"
+		length    = 5
+	)
+
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = idCharset[rand.Intn(len(idCharset))]
+	}
+	return string(b)
+}
+
 func (h *RootHandler) create(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "", http.StatusMethodNotAllowed)
 		return
 	}
 
-	fmt.Fprint(w, "create new game")
+	fmt.Fprintf(w, "create new game %q", generateID())
 }
 
 func New() *RootHandler {
