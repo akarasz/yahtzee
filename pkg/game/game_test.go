@@ -69,6 +69,16 @@ func TestGame_AddPlayer(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("should fail is player with name is already added", func(t *testing.T) {
+		g := New()
+		g.AddPlayer("alice")
+
+		got := g.AddPlayer("alice")
+		if want := ErrPlayerAlreadyAdded; got != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+	})
 }
 
 func TestGame_Roll(t *testing.T) {

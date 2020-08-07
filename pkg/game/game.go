@@ -64,6 +64,9 @@ var (
 
 	// ErrInvalidDice returned when dice index is invalid.
 	ErrInvalidDice = errors.New("invalid dice")
+
+	// ErrPlayerAlreadyAdded returned when the player is already added to the game.
+	ErrPlayerAlreadyAdded = errors.New("player already added")
 )
 
 // Dice represents a dice you use for the Game.
@@ -121,6 +124,12 @@ func (g *Game) currentPlayer() *Player {
 func (g *Game) AddPlayer(name string) error {
 	if g.Current > 0 || g.Round > 0 {
 		return ErrAlreadyStarted
+	}
+
+	for _, p := range g.Players {
+		if p.Name == name {
+			return ErrPlayerAlreadyAdded
+		}
 	}
 
 	g.Players = append(g.Players, &Player{name, map[Category]int{}})
