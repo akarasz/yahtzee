@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -25,11 +24,11 @@ func (h *GameHandler) handle(g *game.Game, user string) http.Handler {
 		case "join":
 			h.join(g, user).ServeHTTP(w, r)
 		case "lock":
-			h.lock(g).ServeHTTP(w, r)
+			h.lock(g, user).ServeHTTP(w, r)
 		case "roll":
-			h.roll(g).ServeHTTP(w, r)
+			h.roll(g, user).ServeHTTP(w, r)
 		case "score":
-			h.score(g).ServeHTTP(w, r)
+			h.score(g, user).ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -66,8 +65,7 @@ func (h *GameHandler) join(g *game.Game, user string) http.Handler {
 			return
 		}
 
-		err := g.AddPlayer(user)
-		if err != nil {
+		if err := g.AddPlayer(user); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -76,7 +74,7 @@ func (h *GameHandler) join(g *game.Game, user string) http.Handler {
 	})
 }
 
-func (h *GameHandler) lock(g *game.Game) http.Handler {
+func (h *GameHandler) lock(g *game.Game, player string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -102,11 +100,18 @@ func (h *GameHandler) lock(g *game.Game) http.Handler {
 			return
 		}
 
-		fmt.Fprintf(w, "lock dice %d", dice)
+		if err := g.Toggle(player, dice); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if err := json.NewEncoder(w).Encode(g.Dices); err != nil {
+			panic(err)
+		}
 	})
 }
 
-func (h *GameHandler) roll(g *game.Game) http.Handler {
+func (h *GameHandler) roll(g *game.Game, player string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -118,11 +123,18 @@ func (h *GameHandler) roll(g *game.Game) http.Handler {
 			return
 		}
 
-		fmt.Fprint(w, "roll in game")
+		if err := g.Roll(player); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if err := json.NewEncoder(w).Encode(g.Dices); err != nil {
+			panic(err)
+		}
 	})
 }
 
-func (h *GameHandler) score(g *game.Game) http.Handler {
+func (h *GameHandler) score(g *game.Game, player string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -140,6 +152,12 @@ func (h *GameHandler) score(g *game.Game) http.Handler {
 			return
 		}
 		bodyString := string(body)
-		fmt.Fprintf(w, "score category %q", bodyString)
+
+		if err := g.Score(player, game.Category(bodyString)); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
 	})
 }
