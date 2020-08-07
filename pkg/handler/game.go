@@ -9,6 +9,10 @@ import (
 	"github.com/akarasz/yahtzee/pkg/game"
 )
 
+type gameHandler interface {
+	handle(g *game.Game, user string) http.Handler
+}
+
 type GameHandler struct {
 	id string
 }
@@ -47,7 +51,7 @@ func (h *GameHandler) root(g *game.Game) http.Handler {
 			return
 		}
 
-		http.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(g); err != nil {
 			panic(err)
 		}
@@ -106,7 +110,7 @@ func (h *GameHandler) lock(g *game.Game, player string) http.Handler {
 			return
 		}
 
-		http.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(g.Dices); err != nil {
 			panic(err)
 		}
@@ -130,7 +134,7 @@ func (h *GameHandler) roll(g *game.Game, player string) http.Handler {
 			return
 		}
 
-		http.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(g.Dices); err != nil {
 			panic(err)
 		}

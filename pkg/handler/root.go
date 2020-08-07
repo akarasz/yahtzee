@@ -10,11 +10,11 @@ import (
 )
 
 type RootHandler struct {
-	store *store.Store
-	game  *GameHandler
+	store store.Store
+	game  gameHandler
 }
 
-func New(store *store.Store) *RootHandler {
+func New(store store.Store) *RootHandler {
 	return &RootHandler{
 		store: store,
 		game:  &GameHandler{},

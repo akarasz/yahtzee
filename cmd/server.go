@@ -12,7 +12,7 @@ import (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	s := store.New()
+	s := store.NewInMemory()
 	h := handler.New(s)
 
 	err := http.ListenAndServe(":8000", h)
