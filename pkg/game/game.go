@@ -59,8 +59,8 @@ var (
 	// ErrCategoryAlreadyScored returned when the category in the player's score sheet is filled.
 	ErrCategoryAlreadyScored = errors.New("category already scored")
 
-	// ErrNothingToScore returned when there was no rolling before scoring.
-	ErrNothingToScore = errors.New("nothing to score")
+	// ErrNoRollYet returned when there was no rolling yet.
+	ErrNoRollYet = errors.New("dices should be rolled first")
 
 	// ErrInvalidDice returned when dice index is invalid.
 	ErrInvalidDice = errors.New("invalid dice")
@@ -167,7 +167,7 @@ func (g *Game) Score(p *Player, c Category) error {
 	}
 
 	if g.RollCount == 0 {
-		return ErrNothingToScore
+		return ErrNoRollYet
 	}
 
 	if _, ok := p.ScoreSheet[c]; ok {
@@ -309,6 +309,10 @@ func (g *Game) Score(p *Player, c Category) error {
 		}
 	}
 
+	for _, d := range g.Dices {
+		d.Locked = false
+	}
+
 	g.RollCount = 0
 	g.Current = (g.Current + 1) % len(g.Players)
 	if g.Current == 0 {
@@ -332,7 +336,11 @@ func (g *Game) Toggle(p *Player, diceIndex int) error {
 		return ErrGameOver
 	}
 
-	if g.RollCount == 3 {
+	if g.RollCount == 0 {
+		return ErrNoRollYet
+	}
+
+	if g.RollCount >= 3 {
 		return ErrOutOfRolls
 	}
 

@@ -351,6 +351,25 @@ func TestGame_Score(t *testing.T) {
 		}
 	})
 
+	t.Run("should unlock all dices", func(t *testing.T) {
+		g := game.New()
+		alice := game.NewPlayer("alice")
+		g.AddPlayer(alice)
+		g.Roll(alice)
+		g.Toggle(alice, 2)
+		g.Toggle(alice, 3)
+		got := g.Score(alice, game.Chance)
+
+		if got != nil {
+			t.Fatalf("returned error: [%v]", got)
+		}
+		for i, d := range g.Dices {
+			if got, want := d.Locked, false; got != want {
+				t.Errorf("dice %d is still locked", i)
+			}
+		}
+	})
+
 	t.Run("should fail when got invalid category", func(t *testing.T) {
 		g := game.New()
 		alice := game.NewPlayer("alice")
@@ -411,7 +430,7 @@ func TestGame_Score(t *testing.T) {
 
 		got := g.Score(alice, game.Chance)
 
-		if want := game.ErrNothingToScore; got != want {
+		if want := game.ErrNoRollYet; got != want {
 			t.Errorf("got [%#v], want [%#v]", got, want)
 		}
 	})
@@ -500,6 +519,18 @@ func TestGame_Toggle(t *testing.T) {
 
 		if want := game.ErrNotPlayersTurn; got != want {
 			t.Errorf("wrong result, got %#v wanted %#v.", got, want)
+		}
+	})
+
+	t.Run("should fail when there was no roll", func(t *testing.T) {
+		g := game.New()
+		alice := game.NewPlayer("alice")
+		g.AddPlayer(alice)
+
+		got := g.Toggle(alice, 3)
+
+		if want := game.ErrNoRollYet; got != want {
+			t.Errorf("got [%#v], want [%#v]", got, want)
 		}
 	})
 
