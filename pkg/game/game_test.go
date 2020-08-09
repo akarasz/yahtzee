@@ -82,6 +82,22 @@ func TestGame_AddPlayer(t *testing.T) {
 }
 
 func TestGame_Roll(t *testing.T) {
+	t.Run("should return the rolled dices", func(t *testing.T) {
+		g := New()
+		g.AddPlayer("alice")
+
+		got, err := g.Roll("alice")
+
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i, d := range got {
+			if want := g.Dices[i]; d != want {
+				t.Errorf("at index %d got %v want %v", i, got, want)
+			}
+		}
+	})
+
 	t.Run("should set valid values for dices", func(t *testing.T) {
 		g := New()
 		g.AddPlayer("alice")
@@ -89,9 +105,9 @@ func TestGame_Roll(t *testing.T) {
 			d.Value = -1
 		}
 
-		got := g.Roll("alice")
+		got, err := g.Roll("alice")
 
-		if got != nil {
+		if err != nil {
 			t.Fatalf("returned error: [%v]", got)
 		}
 		for i, d := range g.Dices {
@@ -107,9 +123,9 @@ func TestGame_Roll(t *testing.T) {
 		g.Dices[2].Locked = true
 		g.Dices[2].Value = -1
 
-		got := g.Roll("alice")
+		got, err := g.Roll("alice")
 
-		if got != nil {
+		if err != nil {
 			t.Fatalf("returned error: [%v]", got)
 		}
 		if g.Dices[2].Value != -1 {
@@ -121,9 +137,9 @@ func TestGame_Roll(t *testing.T) {
 		g := New()
 		g.AddPlayer("alice")
 
-		got := g.Roll("alice")
+		got, err := g.Roll("alice")
 
-		if got != nil {
+		if err != nil {
 			t.Fatalf("returned error: [%v]", got)
 		}
 		if want := 1; g.RollCount != want {
@@ -137,7 +153,7 @@ func TestGame_Roll(t *testing.T) {
 		g.AddPlayer("bob")
 		g.Current = 1
 
-		got := g.Roll("alice")
+		_, got := g.Roll("alice")
 
 		if want := ErrNotPlayersTurn; got != want {
 			t.Errorf("wrong result, got %#v wanted %#v.", got, want)
@@ -149,7 +165,7 @@ func TestGame_Roll(t *testing.T) {
 		g.AddPlayer("alice")
 		g.RollCount = 3
 
-		got := g.Roll("alice")
+		_, got := g.Roll("alice")
 
 		if want := ErrOutOfRolls; got != want {
 			t.Errorf("wrong result, got %#v wanted %#v.", got, want)
@@ -161,7 +177,7 @@ func TestGame_Roll(t *testing.T) {
 		g.AddPlayer("alice")
 		g.Round = 13
 
-		got := g.Roll("alice")
+		_, got := g.Roll("alice")
 
 		if want := ErrGameOver; got != want {
 			t.Errorf("wrong result, got %#v wanted %#v.", got, want)
@@ -439,14 +455,31 @@ func TestGame_Score(t *testing.T) {
 }
 
 func TestGame_Toggle(t *testing.T) {
+	t.Run("should return the dices", func(t *testing.T) {
+		g := New()
+		g.AddPlayer("alice")
+		g.Roll("alice")
+
+		got, err := g.Toggle("alice", 2)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i, d := range got {
+			if want := g.Dices[i]; d != want {
+				t.Errorf("at index %d got %v want %v", i, got, want)
+			}
+		}
+	})
+
 	t.Run("should lock dice if it was unlocked", func(t *testing.T) {
 		g := New()
 		g.AddPlayer("alice")
 		g.Roll("alice")
 
-		got := g.Toggle("alice", 2)
+		got, err := g.Toggle("alice", 2)
 
-		if got != nil {
+		if err != nil {
 			t.Fatalf("got error [%v]", got)
 		}
 		if got, want := g.Dices[2].Locked, true; got != want {
@@ -460,9 +493,9 @@ func TestGame_Toggle(t *testing.T) {
 		g.Roll("alice")
 		g.Toggle("alice", 2)
 
-		got := g.Toggle("alice", 2)
+		got, err := g.Toggle("alice", 2)
 
-		if got != nil {
+		if err != nil {
 			t.Fatalf("got error [%v]", got)
 		}
 		if got, want := g.Dices[2].Locked, false; got != want {
@@ -485,7 +518,7 @@ func TestGame_Toggle(t *testing.T) {
 			g.AddPlayer("alice")
 			g.Roll("alice")
 
-			got := g.Toggle("alice", scenario.index)
+			_, got := g.Toggle("alice", scenario.index)
 
 			if want := scenario.want; got != want {
 				t.Errorf("for index [%d] got [%#v] but wanted [%#v]", scenario.index, got, want)
@@ -499,7 +532,7 @@ func TestGame_Toggle(t *testing.T) {
 		g.AddPlayer("bob")
 		g.Roll("alice")
 
-		got := g.Toggle("bob", 1)
+		_, got := g.Toggle("bob", 1)
 
 		if want := ErrNotPlayersTurn; got != want {
 			t.Errorf("wrong result, got %#v wanted %#v.", got, want)
@@ -510,7 +543,7 @@ func TestGame_Toggle(t *testing.T) {
 		g := New()
 		g.AddPlayer("alice")
 
-		got := g.Toggle("alice", 3)
+		_, got := g.Toggle("alice", 3)
 
 		if want := ErrNoRollYet; got != want {
 			t.Errorf("got [%#v], want [%#v]", got, want)
@@ -524,7 +557,7 @@ func TestGame_Toggle(t *testing.T) {
 		g.Roll("alice")
 		g.Roll("alice")
 
-		got := g.Toggle("alice", 4)
+		_, got := g.Toggle("alice", 4)
 
 		if want := ErrOutOfRolls; got != want {
 			t.Errorf("wrong result, got %#v wanted %#v.", got, want)
@@ -537,7 +570,7 @@ func TestGame_Toggle(t *testing.T) {
 		g.Roll("alice")
 		g.Round = 13
 
-		got := g.Toggle("alice", 3)
+		_, got := g.Toggle("alice", 3)
 
 		if want := ErrGameOver; got != want {
 			t.Errorf("wrong result, got %#v wanted %#v.", got, want)

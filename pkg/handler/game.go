@@ -105,13 +105,14 @@ func (h *GameHandler) lock(g *game.Game, player string) http.Handler {
 			return
 		}
 
-		if err := g.Toggle(player, dice); err != nil {
+		res, err := g.Toggle(player, dice)
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(g.Dices); err != nil {
+		if err := json.NewEncoder(w).Encode(res); err != nil {
 			panic(err)
 		}
 	})
@@ -129,13 +130,14 @@ func (h *GameHandler) roll(g *game.Game, player string) http.Handler {
 			return
 		}
 
-		if err := g.Roll(player); err != nil {
+		res, err := g.Roll(player)
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(g.Dices); err != nil {
+		if err := json.NewEncoder(w).Encode(res); err != nil {
 			panic(err)
 		}
 	})

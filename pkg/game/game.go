@@ -69,6 +69,13 @@ var (
 	ErrPlayerAlreadyAdded = errors.New("player already added")
 )
 
+type Actions interface {
+	AddPlayer(name string) error
+	Roll(player string) ([]*Dice, error)
+	Toggle(player string, diceIndex int) ([]*Dice, error)
+	Score(player string, c Category) error
+}
+
 // Dice represents a dice you use for the Game.
 type Dice struct {
 	// Value is the number on the face of the dice
@@ -138,17 +145,17 @@ func (g *Game) AddPlayer(name string) error {
 }
 
 // Roll rolls the dices and increment the roll counters.
-func (g *Game) Roll(player string) error {
+func (g *Game) Roll(player string) ([]*Dice, error) {
 	if player != g.currentPlayer().Name {
-		return ErrNotPlayersTurn
+		return nil, ErrNotPlayersTurn
 	}
 
 	if g.Round >= totalRounds {
-		return ErrGameOver
+		return nil, ErrGameOver
 	}
 
 	if g.RollCount >= maxRoll {
-		return ErrOutOfRolls
+		return nil, ErrOutOfRolls
 	}
 
 	for _, d := range g.Dices {
@@ -161,7 +168,7 @@ func (g *Game) Roll(player string) error {
 
 	g.RollCount++
 
-	return nil
+	return g.Dices, nil
 }
 
 // Score saves the points for the player in the given category and handles the counters.
@@ -331,30 +338,30 @@ func (g *Game) Score(player string, c Category) error {
 }
 
 // Toggle locks and unlocks a dice so it will not get rolled.
-func (g *Game) Toggle(player string, diceIndex int) error {
+func (g *Game) Toggle(player string, diceIndex int) ([]*Dice, error) {
 	if player != g.currentPlayer().Name {
-		return ErrNotPlayersTurn
+		return nil, ErrNotPlayersTurn
 	}
 
 	if diceIndex < 0 || 4 < diceIndex {
-		return ErrInvalidDice
+		return nil, ErrInvalidDice
 	}
 
 	if g.Round >= totalRounds {
-		return ErrGameOver
+		return nil, ErrGameOver
 	}
 
 	if g.RollCount == 0 {
-		return ErrNoRollYet
+		return nil, ErrNoRollYet
 	}
 
 	if g.RollCount >= 3 {
-		return ErrOutOfRolls
+		return nil, ErrOutOfRolls
 	}
 
 	g.Dices[diceIndex].Locked = !g.Dices[diceIndex].Locked
 
-	return nil
+	return g.Dices, nil
 }
 
 // New initializes an empty Game.
