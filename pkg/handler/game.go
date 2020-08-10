@@ -10,14 +10,14 @@ import (
 )
 
 type gameHandler interface {
-	handle(g *game.Game, user string) http.Handler
+	handle(g game.Controller, user string) http.Handler
 }
 
 type GameHandler struct {
 	id string
 }
 
-func (h *GameHandler) handle(g *game.Game, user string) http.Handler {
+func (h *GameHandler) handle(g game.Controller, user string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var head string
 		head, r.URL.Path = shiftPath(r.URL.Path)
@@ -39,7 +39,7 @@ func (h *GameHandler) handle(g *game.Game, user string) http.Handler {
 	})
 }
 
-func (h *GameHandler) root(g *game.Game) http.Handler {
+func (h *GameHandler) root(g game.Controller) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -52,13 +52,13 @@ func (h *GameHandler) root(g *game.Game) http.Handler {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(g); err != nil {
+		if err := json.NewEncoder(w).Encode(g.Snapshot()); err != nil {
 			panic(err)
 		}
 	})
 }
 
-func (h *GameHandler) join(g *game.Game, user string) http.Handler {
+func (h *GameHandler) join(g game.Controller, user string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -79,7 +79,7 @@ func (h *GameHandler) join(g *game.Game, user string) http.Handler {
 	})
 }
 
-func (h *GameHandler) lock(g *game.Game, player string) http.Handler {
+func (h *GameHandler) lock(g game.Controller, player string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -118,7 +118,7 @@ func (h *GameHandler) lock(g *game.Game, player string) http.Handler {
 	})
 }
 
-func (h *GameHandler) roll(g *game.Game, player string) http.Handler {
+func (h *GameHandler) roll(g game.Controller, player string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -143,7 +143,7 @@ func (h *GameHandler) roll(g *game.Game, player string) http.Handler {
 	})
 }
 
-func (h *GameHandler) score(g *game.Game, player string) http.Handler {
+func (h *GameHandler) score(g game.Controller, player string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
