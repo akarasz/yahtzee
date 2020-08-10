@@ -69,11 +69,12 @@ var (
 	ErrPlayerAlreadyAdded = errors.New("player already added")
 )
 
-type Actions interface {
+type Controller interface {
 	AddPlayer(name string) error
 	Roll(player string) ([]*Dice, error)
 	Toggle(player string, diceIndex int) ([]*Dice, error)
 	Score(player string, c Category) error
+	Snapshot() *Game
 }
 
 // Dice represents a dice you use for the Game.
@@ -335,6 +336,11 @@ func (g *Game) Score(player string, c Category) error {
 	}
 
 	return nil
+}
+
+// Snapshot returns the game oject.
+func (g *Game) Snapshot() *Game {
+	return g
 }
 
 // Toggle locks and unlocks a dice so it will not get rolled.
