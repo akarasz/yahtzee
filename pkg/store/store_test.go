@@ -3,13 +3,13 @@ package store
 import (
 	"testing"
 
-	"github.com/akarasz/yahtzee/pkg/game"
+	"github.com/akarasz/yahtzee/pkg/models"
 )
 
 func TestInMemory_Put(t *testing.T) {
 	t.Run("should add to store", func(t *testing.T) {
 		s := NewInMemory()
-		want := game.New()
+		want := models.NewGame()
 
 		err := s.Put("id", want)
 		if err != nil {
@@ -22,9 +22,9 @@ func TestInMemory_Put(t *testing.T) {
 
 	t.Run("should fail when trying to add with same id", func(t *testing.T) {
 		s := NewInMemory()
-		s.Put("id", game.New())
+		s.Put("id", models.NewGame())
 
-		got := s.Put("id", game.New())
+		got := s.Put("id", models.NewGame())
 		if want := ErrAlreadyExists; got != want {
 			t.Fatalf("wrong error. got %q, want %q", got, want)
 		}
@@ -34,7 +34,7 @@ func TestInMemory_Put(t *testing.T) {
 func TestInMemory_Get(t *testing.T) {
 	t.Run("should return from store", func(t *testing.T) {
 		s := NewInMemory()
-		want := game.New()
+		want := models.NewGame()
 		s.repo["id"] = want
 
 		got, err := s.Get("id")

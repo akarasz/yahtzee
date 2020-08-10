@@ -7,39 +7,39 @@ import (
 	"strconv"
 
 	"github.com/akarasz/yahtzee/pkg/game"
+	"github.com/akarasz/yahtzee/pkg/models"
 )
 
 type gameHandler interface {
-	handle(g game.Controller, user string) http.Handler
+	handle(player string, game *models.Game) http.Handler
 }
 
-type GameHandler struct {
-	id string
-}
+type GameHandler struct{}
 
-func (h *GameHandler) handle(g game.Controller, user string) http.Handler {
+func (h *GameHandler) handle(player string, g *models.Game) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var head string
 		head, r.URL.Path = shiftPath(r.URL.Path)
 
+		c := game.New(player, g)
 		switch head {
 		case "":
-			h.root(g).ServeHTTP(w, r)
+			h.root(c).ServeHTTP(w, r)
 		case "join":
-			h.join(g, user).ServeHTTP(w, r)
+			h.join(c).ServeHTTP(w, r)
 		case "lock":
-			h.lock(g, user).ServeHTTP(w, r)
+			h.lock(c).ServeHTTP(w, r)
 		case "roll":
-			h.roll(g, user).ServeHTTP(w, r)
+			h.roll(c).ServeHTTP(w, r)
 		case "score":
-			h.score(g, user).ServeHTTP(w, r)
+			h.score(c).ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
 	})
 }
 
-func (h *GameHandler) root(g game.Controller) http.Handler {
+func (h *GameHandler) root(c game.Controller) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -52,13 +52,13 @@ func (h *GameHandler) root(g game.Controller) http.Handler {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(g.Snapshot()); err != nil {
+		if err := json.NewEncoder(w).Encode(c.Snapshot()); err != nil {
 			panic(err)
 		}
 	})
 }
 
-func (h *GameHandler) join(g game.Controller, user string) http.Handler {
+func (h *GameHandler) join(c game.Controller) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -70,7 +70,7 @@ func (h *GameHandler) join(g game.Controller, user string) http.Handler {
 			return
 		}
 
-		if err := g.AddPlayer(user); err != nil {
+		if err := c.AddPlayer(); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -79,7 +79,7 @@ func (h *GameHandler) join(g game.Controller, user string) http.Handler {
 	})
 }
 
-func (h *GameHandler) lock(g game.Controller, player string) http.Handler {
+func (h *GameHandler) lock(c game.Controller) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -105,7 +105,7 @@ func (h *GameHandler) lock(g game.Controller, player string) http.Handler {
 			return
 		}
 
-		res, err := g.Toggle(player, dice)
+		res, err := c.Toggle(dice)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -118,7 +118,7 @@ func (h *GameHandler) lock(g game.Controller, player string) http.Handler {
 	})
 }
 
-func (h *GameHandler) roll(g game.Controller, player string) http.Handler {
+func (h *GameHandler) roll(c game.Controller) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -130,7 +130,7 @@ func (h *GameHandler) roll(g game.Controller, player string) http.Handler {
 			return
 		}
 
-		res, err := g.Roll(player)
+		res, err := c.Roll()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -143,7 +143,7 @@ func (h *GameHandler) roll(g game.Controller, player string) http.Handler {
 	})
 }
 
-func (h *GameHandler) score(g game.Controller, player string) http.Handler {
+func (h *GameHandler) score(c game.Controller) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -162,7 +162,7 @@ func (h *GameHandler) score(g game.Controller, player string) http.Handler {
 		}
 		bodyString := string(body)
 
-		if err := g.Score(player, game.Category(bodyString)); err != nil {
+		if err := c.Score(models.Category(bodyString)); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}

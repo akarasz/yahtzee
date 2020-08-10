@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/akarasz/yahtzee/pkg/game"
+	"github.com/akarasz/yahtzee/pkg/models"
 	"github.com/akarasz/yahtzee/pkg/store"
 )
 
@@ -76,7 +76,7 @@ func TestRootHandler_newGame(t *testing.T) {
 
 func TestRootHandler_existingGame(t *testing.T) {
 	t.Run("should call game handler with game from store and user from auth", func(t *testing.T) {
-		g := &game.Game{}
+		g := &models.Game{}
 		s := &storeStub{
 			getGame: g,
 		}
@@ -150,28 +150,28 @@ type storeStub struct {
 	putError     error
 	putCallCount int
 
-	getGame      *game.Game
+	getGame      *models.Game
 	getError     error
 	getCallCount int
 }
 
-func (s *storeStub) Put(id string, g *game.Game) error {
+func (s *storeStub) Put(id string, g *models.Game) error {
 	s.putCallCount++
 	return s.putError
 }
 
-func (s *storeStub) Get(id string) (*game.Game, error) {
+func (s *storeStub) Get(id string) (*models.Game, error) {
 	s.getCallCount++
 	return s.getGame, s.getError
 }
 
 type gameHandlerStub struct {
 	handleCallCount     int
-	handleCallParamG    []*game.Game
+	handleCallParamG    []*models.Game
 	handleCallParamUser []string
 }
 
-func (h *gameHandlerStub) handle(g *game.Game, user string) http.Handler {
+func (h *gameHandlerStub) handle(user string, g *models.Game) http.Handler {
 	h.handleCallCount++
 	h.handleCallParamG = append(h.handleCallParamG, g)
 	h.handleCallParamUser = append(h.handleCallParamUser, user)

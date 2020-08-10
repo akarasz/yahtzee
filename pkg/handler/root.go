@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"net/http"
 
-	"github.com/akarasz/yahtzee/pkg/game"
+	"github.com/akarasz/yahtzee/pkg/models"
 	"github.com/akarasz/yahtzee/pkg/store"
 )
 
@@ -47,7 +47,7 @@ func (h *RootHandler) create(w http.ResponseWriter, r *http.Request) {
 
 	id := generateID()
 
-	err := h.store.Put(id, game.New())
+	err := h.store.Put(id, models.NewGame())
 	if err != nil {
 		http.Error(w, "unable to create game", http.StatusInternalServerError)
 		return
@@ -65,7 +65,7 @@ func (h *RootHandler) load(user string, id string) http.Handler {
 			return
 		}
 
-		h.game.handle(g, user).ServeHTTP(w, r)
+		h.game.handle(user, g).ServeHTTP(w, r)
 	})
 }
 

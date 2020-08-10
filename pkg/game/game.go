@@ -3,39 +3,16 @@ package game
 import (
 	"errors"
 	"math/rand"
+
+	"github.com/akarasz/yahtzee/pkg/models"
 )
 
 const (
-	// numberOfDices shows how many dices are used for a game.
-	numberOfDices int = 5
-
 	// maxRoll shows how many rolls a player have in one of their turn.
 	maxRoll int = 3
 
 	// totalRounds is the number of turns for the game.
 	totalRounds int = 13
-)
-
-// Category represents the formations players try to roll.
-type Category string
-
-// Available categories
-const (
-	Ones   Category = "ones"
-	Twos            = "twos"
-	Threes          = "threes"
-	Fours           = "fours"
-	Fives           = "fives"
-	Sixes           = "sixes"
-	Bonus           = "bonus"
-
-	ThreeOfAKind  = "three-of-a-kind"
-	FourOfAKind   = "four-of-a-kind"
-	FullHouse     = "full-house"
-	SmallStraight = "small-straight"
-	LargeStraight = "large-straight"
-	Yahtzee       = "yahtzee"
-	Chance        = "chance"
 )
 
 var (
@@ -70,167 +47,129 @@ var (
 )
 
 type Controller interface {
-	AddPlayer(name string) error
-	Roll(player string) ([]*Dice, error)
-	Toggle(player string, diceIndex int) ([]*Dice, error)
-	Score(player string, c Category) error
-	Snapshot() *Game
+	AddPlayer() error
+	Roll() ([]*models.Dice, error)
+	Toggle(diceIndex int) ([]*models.Dice, error)
+	Score(c models.Category) error
+	Snapshot() *models.Game
 }
 
-// Dice represents a dice you use for the Game.
-type Dice struct {
-	// Value is the number on the face of the dice
-	Value int
-
-	// Locked shows if the dice will roll or not
-	Locked bool
+type Concrete struct {
+	Player string
+	Game   *models.Game
 }
 
-func (d *Dice) roll() {
-	d.Value = rand.Intn(6) + 1
+func New(player string, g *models.Game) Controller {
+	return &Concrete{player, g}
 }
 
-func newDice() *Dice {
-	d := &Dice{
-		Value: 1,
-	}
-	return d
-}
-
-// Player contains all data representing a player.
-type Player struct {
-	// Name of the player
-	Name string
-
-	// ScoreSheet keeps the scores of the player
-	ScoreSheet map[Category]int
-}
-
-// Game contains all data representing a game.
-type Game struct {
-	// Players has the list of the players in an ordered manner
-	Players []*Player
-
-	// Dices has the dices the game played with
-	Dices []*Dice
-
-	// Round shows how many rounds were passed already.
-	Round int
-
-	// Current shows the index of the current player in the Players array.
-	Current int
-
-	// RollCount shows how many times the dices were rolled for the current user in this round.
-	RollCount int
-}
-
-func (g *Game) currentPlayer() *Player {
-	return g.Players[g.Current]
+func (c *Concrete) currentPlayer() *models.Player {
+	return c.Game.Players[c.Game.CurrentPlayer]
 }
 
 // AddPlayer adds a new player with the given `name` and an empty score sheet to the game.
-func (g *Game) AddPlayer(name string) error {
-	if g.Current > 0 || g.Round > 0 {
+func (c *Concrete) AddPlayer() error {
+	if c.Game.CurrentPlayer > 0 || c.Game.Round > 0 {
 		return ErrAlreadyStarted
 	}
 
-	for _, p := range g.Players {
-		if p.Name == name {
+	for _, p := range c.Game.Players {
+		if p.Name == c.Player {
 			return ErrPlayerAlreadyAdded
 		}
 	}
 
-	g.Players = append(g.Players, &Player{name, map[Category]int{}})
+	c.Game.Players = append(c.Game.Players, &models.Player{c.Player, map[models.Category]int{}})
 
 	return nil
 }
 
 // Roll rolls the dices and increment the roll counters.
-func (g *Game) Roll(player string) ([]*Dice, error) {
-	if player != g.currentPlayer().Name {
+func (c *Concrete) Roll() ([]*models.Dice, error) {
+	if c.Player != c.currentPlayer().Name {
 		return nil, ErrNotPlayersTurn
 	}
 
-	if g.Round >= totalRounds {
+	if c.Game.Round >= totalRounds {
 		return nil, ErrGameOver
 	}
 
-	if g.RollCount >= maxRoll {
+	if c.Game.RollCount >= maxRoll {
 		return nil, ErrOutOfRolls
 	}
 
-	for _, d := range g.Dices {
+	for _, d := range c.Game.Dices {
 		if d.Locked {
 			continue
 		}
 
-		d.roll()
+		d.Value = rand.Intn(6) + 1
 	}
 
-	g.RollCount++
+	c.Game.RollCount++
 
-	return g.Dices, nil
+	return c.Game.Dices, nil
 }
 
 // Score saves the points for the player in the given category and handles the counters.
-func (g *Game) Score(player string, c Category) error {
-	if player != g.currentPlayer().Name {
+func (c *Concrete) Score(category models.Category) error {
+	if c.Player != c.currentPlayer().Name {
 		return ErrNotPlayersTurn
 	}
 
-	if g.Round >= totalRounds {
+	if c.Game.Round >= totalRounds {
 		return ErrGameOver
 	}
 
-	if g.RollCount == 0 {
+	if c.Game.RollCount == 0 {
 		return ErrNoRollYet
 	}
 
-	if _, ok := g.currentPlayer().ScoreSheet[c]; ok {
+	if _, ok := c.currentPlayer().ScoreSheet[category]; ok {
 		return ErrCategoryAlreadyScored
 	}
 
 	s := 0
-	switch c {
-	case Ones:
-		for _, d := range g.Dices {
+	switch category {
+	case models.Ones:
+		for _, d := range c.Game.Dices {
 			if d.Value == 1 {
 				s++
 			}
 		}
-	case Twos:
-		for _, d := range g.Dices {
+	case models.Twos:
+		for _, d := range c.Game.Dices {
 			if d.Value == 2 {
 				s += 2
 			}
 		}
-	case Threes:
-		for _, d := range g.Dices {
+	case models.Threes:
+		for _, d := range c.Game.Dices {
 			if d.Value == 3 {
 				s += 3
 			}
 		}
-	case Fours:
-		for _, d := range g.Dices {
+	case models.Fours:
+		for _, d := range c.Game.Dices {
 			if d.Value == 4 {
 				s += 4
 			}
 		}
-	case Fives:
-		for _, d := range g.Dices {
+	case models.Fives:
+		for _, d := range c.Game.Dices {
 			if d.Value == 5 {
 				s += 5
 			}
 		}
-	case Sixes:
-		for _, d := range g.Dices {
+	case models.Sixes:
+		for _, d := range c.Game.Dices {
 			if d.Value == 6 {
 				s += 6
 			}
 		}
-	case ThreeOfAKind:
+	case models.ThreeOfAKind:
 		occurrences := map[int]int{}
-		for _, d := range g.Dices {
+		for _, d := range c.Game.Dices {
 			occurrences[d.Value]++
 		}
 
@@ -239,9 +178,9 @@ func (g *Game) Score(player string, c Category) error {
 				s = 3 * k
 			}
 		}
-	case FourOfAKind:
+	case models.FourOfAKind:
 		occurrences := map[int]int{}
-		for _, d := range g.Dices {
+		for _, d := range c.Game.Dices {
 			occurrences[d.Value]++
 		}
 
@@ -250,10 +189,10 @@ func (g *Game) Score(player string, c Category) error {
 				s = 4 * k
 			}
 		}
-	case FullHouse:
-		one, oneCount, other := g.Dices[0].Value, 1, 0
-		for i := 1; i < len(g.Dices); i++ {
-			v := g.Dices[i].Value
+	case models.FullHouse:
+		one, oneCount, other := c.Game.Dices[0].Value, 1, 0
+		for i := 1; i < len(c.Game.Dices); i++ {
+			v := c.Game.Dices[i].Value
 
 			if one == v {
 				oneCount++
@@ -267,9 +206,9 @@ func (g *Game) Score(player string, c Category) error {
 		if oneCount == 2 || oneCount == 3 {
 			s = 25
 		}
-	case SmallStraight:
+	case models.SmallStraight:
 		hit := [6]bool{}
-		for _, d := range g.Dices {
+		for _, d := range c.Game.Dices {
 			hit[d.Value-1] = true
 		}
 
@@ -278,9 +217,9 @@ func (g *Game) Score(player string, c Category) error {
 			(hit[2] && hit[3] && hit[4] && hit[5]) {
 			s = 30
 		}
-	case LargeStraight:
+	case models.LargeStraight:
 		hit := [6]bool{}
-		for _, d := range g.Dices {
+		for _, d := range c.Game.Dices {
 			hit[d.Value-1] = true
 		}
 
@@ -288,29 +227,30 @@ func (g *Game) Score(player string, c Category) error {
 			(hit[1] && hit[2] && hit[3] && hit[4] && hit[5]) {
 			s = 40
 		}
-	case Yahtzee:
+	case models.Yahtzee:
 		same := true
-		for i := 0; i < len(g.Dices)-1; i++ {
-			same = same && g.Dices[i].Value == g.Dices[i+1].Value
+		for i := 0; i < len(c.Game.Dices)-1; i++ {
+			same = same && c.Game.Dices[i].Value == c.Game.Dices[i+1].Value
 		}
 
 		if same {
 			s = 50
 		}
-	case Chance:
-		for _, d := range g.Dices {
+	case models.Chance:
+		for _, d := range c.Game.Dices {
 			s += d.Value
 		}
 	default:
 		return ErrInvalidCategory
 	}
 
-	g.currentPlayer().ScoreSheet[c] = s
+	c.currentPlayer().ScoreSheet[category] = s
 
-	if _, ok := g.currentPlayer().ScoreSheet[Bonus]; !ok {
+	if _, ok := c.currentPlayer().ScoreSheet[models.Bonus]; !ok {
 		var total, types int
-		for k, v := range g.currentPlayer().ScoreSheet {
-			if k == Ones || k == Twos || k == Threes || k == Fours || k == Fives || k == Sixes {
+		for k, v := range c.currentPlayer().ScoreSheet {
+			if k == models.Ones || k == models.Twos || k == models.Threes ||
+				k == models.Fours || k == models.Fives || k == models.Sixes {
 				types++
 				total += v
 			}
@@ -318,34 +258,34 @@ func (g *Game) Score(player string, c Category) error {
 
 		if types == 6 {
 			if total >= 63 {
-				g.currentPlayer().ScoreSheet[Bonus] = 35
+				c.currentPlayer().ScoreSheet[models.Bonus] = 35
 			} else {
-				g.currentPlayer().ScoreSheet[Bonus] = 0
+				c.currentPlayer().ScoreSheet[models.Bonus] = 0
 			}
 		}
 	}
 
-	for _, d := range g.Dices {
+	for _, d := range c.Game.Dices {
 		d.Locked = false
 	}
 
-	g.RollCount = 0
-	g.Current = (g.Current + 1) % len(g.Players)
-	if g.Current == 0 {
-		g.Round++
+	c.Game.RollCount = 0
+	c.Game.CurrentPlayer = (c.Game.CurrentPlayer + 1) % len(c.Game.Players)
+	if c.Game.CurrentPlayer == 0 {
+		c.Game.Round++
 	}
 
 	return nil
 }
 
 // Snapshot returns the game oject.
-func (g *Game) Snapshot() *Game {
-	return g
+func (c *Concrete) Snapshot() *models.Game {
+	return c.Game
 }
 
 // Toggle locks and unlocks a dice so it will not get rolled.
-func (g *Game) Toggle(player string, diceIndex int) ([]*Dice, error) {
-	if player != g.currentPlayer().Name {
+func (c *Concrete) Toggle(diceIndex int) ([]*models.Dice, error) {
+	if c.Player != c.currentPlayer().Name {
 		return nil, ErrNotPlayersTurn
 	}
 
@@ -353,31 +293,19 @@ func (g *Game) Toggle(player string, diceIndex int) ([]*Dice, error) {
 		return nil, ErrInvalidDice
 	}
 
-	if g.Round >= totalRounds {
+	if c.Game.Round >= totalRounds {
 		return nil, ErrGameOver
 	}
 
-	if g.RollCount == 0 {
+	if c.Game.RollCount == 0 {
 		return nil, ErrNoRollYet
 	}
 
-	if g.RollCount >= 3 {
+	if c.Game.RollCount >= 3 {
 		return nil, ErrOutOfRolls
 	}
 
-	g.Dices[diceIndex].Locked = !g.Dices[diceIndex].Locked
+	c.Game.Dices[diceIndex].Locked = !c.Game.Dices[diceIndex].Locked
 
-	return g.Dices, nil
-}
-
-// New initializes an empty Game.
-func New() *Game {
-	dd := make([]*Dice, numberOfDices)
-	for i := 0; i < numberOfDices; i++ {
-		dd[i] = newDice()
-	}
-
-	return &Game{
-		Dices: dd,
-	}
+	return c.Game.Dices, nil
 }

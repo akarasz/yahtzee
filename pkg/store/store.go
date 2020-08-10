@@ -3,7 +3,7 @@ package store
 import (
 	"errors"
 
-	"github.com/akarasz/yahtzee/pkg/game"
+	"github.com/akarasz/yahtzee/pkg/models"
 )
 
 var (
@@ -16,17 +16,17 @@ var (
 
 // Store contains game elements by their IDs.
 type Store interface {
-	Get(id string) (*game.Game, error)
-	Put(id string, g *game.Game) error
+	Get(id string) (*models.Game, error)
+	Put(id string, g *models.Game) error
 }
 
 // InMemory is the in-memory implementation of Store.
 type InMemory struct {
-	repo map[string]*game.Game
+	repo map[string]*models.Game
 }
 
 // Put adds the game to the store.
-func (s *InMemory) Put(id string, g *game.Game) error {
+func (s *InMemory) Put(id string, g *models.Game) error {
 	if _, ok := s.repo[id]; ok {
 		return ErrAlreadyExists
 	}
@@ -37,7 +37,7 @@ func (s *InMemory) Put(id string, g *game.Game) error {
 }
 
 // Get returns a game from the store.
-func (s *InMemory) Get(id string) (*game.Game, error) {
+func (s *InMemory) Get(id string) (*models.Game, error) {
 	g, ok := s.repo[id]
 	if !ok {
 		return nil, ErrNotExists
@@ -49,6 +49,6 @@ func (s *InMemory) Get(id string) (*game.Game, error) {
 // NewInMemory creates an empty in-memory store.
 func NewInMemory() *InMemory {
 	return &InMemory{
-		repo: map[string]*game.Game{},
+		repo: map[string]*models.Game{},
 	}
 }
