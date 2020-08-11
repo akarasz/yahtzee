@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/akarasz/yahtzee/pkg/game"
 	"github.com/akarasz/yahtzee/pkg/handler"
 	"github.com/akarasz/yahtzee/pkg/store"
 )
@@ -12,8 +13,11 @@ import (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	s := store.NewInMemory()
-	h := handler.New(s)
+	h := handler.New(
+		store.NewInMemory(),
+		&handler.GameHandler{
+			game.New(),
+		})
 
 	err := http.ListenAndServe(":8000", h)
 	if err != nil {

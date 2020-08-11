@@ -14,32 +14,33 @@ type gameHandler interface {
 	handle(player string, game *models.Game) http.Handler
 }
 
-type GameHandler struct{}
+type GameHandler struct {
+	Controller game.Controller
+}
 
 func (h *GameHandler) handle(player string, g *models.Game) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var head string
 		head, r.URL.Path = shiftPath(r.URL.Path)
 
-		c := game.New(player, g)
 		switch head {
 		case "":
-			h.root(c).ServeHTTP(w, r)
+			h.root(g).ServeHTTP(w, r)
 		case "join":
-			h.join(c).ServeHTTP(w, r)
+			h.join(player, g).ServeHTTP(w, r)
 		case "lock":
-			h.lock(c).ServeHTTP(w, r)
+			h.lock(player, g).ServeHTTP(w, r)
 		case "roll":
-			h.roll(c).ServeHTTP(w, r)
+			h.roll(player, g).ServeHTTP(w, r)
 		case "score":
-			h.score(c).ServeHTTP(w, r)
+			h.score(player, g).ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
 	})
 }
 
-func (h *GameHandler) root(c game.Controller) http.Handler {
+func (h *GameHandler) root(g *models.Game) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -52,13 +53,13 @@ func (h *GameHandler) root(c game.Controller) http.Handler {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(c.Snapshot()); err != nil {
+		if err := json.NewEncoder(w).Encode(g); err != nil {
 			panic(err)
 		}
 	})
 }
 
-func (h *GameHandler) join(c game.Controller) http.Handler {
+func (h *GameHandler) join(name string, g *models.Game) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -70,7 +71,7 @@ func (h *GameHandler) join(c game.Controller) http.Handler {
 			return
 		}
 
-		if err := c.AddPlayer(); err != nil {
+		if err := h.Controller.AddPlayer(g, name); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -79,7 +80,7 @@ func (h *GameHandler) join(c game.Controller) http.Handler {
 	})
 }
 
-func (h *GameHandler) lock(c game.Controller) http.Handler {
+func (h *GameHandler) lock(player string, g *models.Game) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -105,7 +106,7 @@ func (h *GameHandler) lock(c game.Controller) http.Handler {
 			return
 		}
 
-		res, err := c.Toggle(dice)
+		res, err := h.Controller.Toggle(g, player, dice)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -118,7 +119,7 @@ func (h *GameHandler) lock(c game.Controller) http.Handler {
 	})
 }
 
-func (h *GameHandler) roll(c game.Controller) http.Handler {
+func (h *GameHandler) roll(player string, g *models.Game) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -130,7 +131,7 @@ func (h *GameHandler) roll(c game.Controller) http.Handler {
 			return
 		}
 
-		res, err := c.Roll()
+		res, err := h.Controller.Roll(g, player)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -143,7 +144,7 @@ func (h *GameHandler) roll(c game.Controller) http.Handler {
 	})
 }
 
-func (h *GameHandler) score(c game.Controller) http.Handler {
+func (h *GameHandler) score(player string, g *models.Game) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -162,7 +163,7 @@ func (h *GameHandler) score(c game.Controller) http.Handler {
 		}
 		bodyString := string(body)
 
-		if err := c.Score(models.Category(bodyString)); err != nil {
+		if err := h.Controller.Score(g, player, models.Category(bodyString)); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}

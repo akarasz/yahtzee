@@ -14,10 +14,10 @@ type RootHandler struct {
 	game  gameHandler
 }
 
-func New(store store.Store) *RootHandler {
+func New(store store.Store, gameHandler *GameHandler) *RootHandler {
 	return &RootHandler{
 		store: store,
-		game:  &GameHandler{},
+		game:  gameHandler,
 	}
 }
 
