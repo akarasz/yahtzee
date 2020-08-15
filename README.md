@@ -165,7 +165,6 @@ eg.
 
 ## TODO
 
-* handler tests
 * better logging
 * heroku deployment
 * integrate logging with logdna

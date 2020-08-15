@@ -45,6 +45,14 @@ type Player struct {
 	ScoreSheet map[Category]int
 }
 
+// NewPlayer returns a new named player with an empty score sheet.
+func NewPlayer(name string) *Player {
+	return &Player{
+		Name:       name,
+		ScoreSheet: map[Category]int{},
+	}
+}
+
 // Game contains all data representing a game.
 type Game struct {
 	// Players has the list of the players in an ordered manner
@@ -63,7 +71,7 @@ type Game struct {
 	RollCount int
 }
 
-// New initializes an empty Game.
+// NewGame initializes an empty Game.
 func NewGame() *Game {
 	dd := make([]*Dice, NumberOfDices)
 	for i := 0; i < NumberOfDices; i++ {
