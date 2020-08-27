@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -24,13 +25,14 @@ func New(store store.Store, gameHandler *GameHandler) *RootHandler {
 }
 
 func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// TODO make this a contextLogger and pass it down with the request
 	user, _, _ := r.BasicAuth()
-	log.WithFields(log.Fields{
+	logger := log.WithFields(log.Fields{
 		"method": r.Method,
 		"path":   r.URL.Path,
-		"user":   user,
-	}).Info("incoming request")
+	})
+	ctx := context.WithValue(r.Context(), "logger", logger)
+
+	logger.Info("incoming request")
 
 	user, _, ok := r.BasicAuth()
 	if !ok {
@@ -43,9 +45,9 @@ func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	id, r.URL.Path = shiftPath(r.URL.Path)
 	switch id {
 	case "":
-		h.create(w, r)
+		h.create(w, r.WithContext(ctx))
 	default:
-		h.load(user, id).ServeHTTP(w, r)
+		h.load(user, id).ServeHTTP(w, r.WithContext(ctx))
 	}
 }
 
@@ -63,6 +65,9 @@ func (h *RootHandler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logger := r.Context().Value("logger").(*log.Entry).WithField("gameID", id)
+	logger.Info("game created")
+
 	w.Header().Set("Location", fmt.Sprintf("/%s", id))
 	w.WriteHeader(http.StatusCreated)
 }
@@ -75,7 +80,13 @@ func (h *RootHandler) load(user string, id string) http.Handler {
 			return
 		}
 
-		h.game.handle(user, g).ServeHTTP(w, r)
+		logger := r.Context().Value("logger").(*log.Entry).WithFields(log.Fields{
+			"gameID": id,
+			"user":   user,
+		})
+		ctx := context.WithValue(r.Context(), "logger", logger)
+
+		h.game.handle(user, g).ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

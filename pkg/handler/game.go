@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/akarasz/yahtzee/pkg/game"
 	"github.com/akarasz/yahtzee/pkg/models"
 )
@@ -76,6 +78,9 @@ func (h *GameHandler) join(name string, g *models.Game) http.Handler {
 			return
 		}
 
+		log := r.Context().Value("logger").(*logrus.Entry)
+		log.Info("joining game")
+
 		w.WriteHeader(http.StatusCreated)
 	})
 }
@@ -112,6 +117,9 @@ func (h *GameHandler) lock(player string, g *models.Game) http.Handler {
 			return
 		}
 
+		log := r.Context().Value("logger").(*logrus.Entry)
+		log.Infof("locking dice %d", dice)
+
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(res); err != nil {
 			panic(err)
@@ -136,6 +144,9 @@ func (h *GameHandler) roll(player string, g *models.Game) http.Handler {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+
+		log := r.Context().Value("logger").(*logrus.Entry)
+		log.Infof("rolls dices")
 
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(res); err != nil {
@@ -167,6 +178,9 @@ func (h *GameHandler) score(player string, g *models.Game) http.Handler {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+
+		log := r.Context().Value("logger").(*logrus.Entry)
+		log.Infof("scores %q", bodyString)
 
 		w.WriteHeader(http.StatusOK)
 	})
