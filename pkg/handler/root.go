@@ -5,6 +5,8 @@ import (
 	"math/rand"
 	"net/http"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/akarasz/yahtzee/pkg/models"
 	"github.com/akarasz/yahtzee/pkg/store"
 )
@@ -22,6 +24,14 @@ func New(store store.Store, gameHandler *GameHandler) *RootHandler {
 }
 
 func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// TODO make this a contextLogger and pass it down with the request
+	user, _, _ := r.BasicAuth()
+	log.WithFields(log.Fields{
+		"method": r.Method,
+		"path":   r.URL.Path,
+		"user":   user,
+	}).Info("incoming request")
+
 	user, _, ok := r.BasicAuth()
 	if !ok {
 		http.Error(w, "use basic auth for setting your name", http.StatusUnauthorized)
