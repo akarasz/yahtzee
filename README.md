@@ -166,6 +166,9 @@ eg.
 ## TODO
 
 * better logging
+** log when returning errors in handlers
+** use context best practices
+** move logger fetching from context out to `handler/handler.go`
 * heroku deployment
 * integrate logging with logdna
 * websocket for announcing real time state changes
