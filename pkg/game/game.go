@@ -91,7 +91,7 @@ func (c *implementation) AddPlayer(g *models.Game, name string) error {
 
 // Roll rolls the dices and increment the roll counters.
 func (c *implementation) Roll(g *models.Game, player string) ([]*models.Dice, error) {
-	if player != c.currentPlayer(g).Name {
+	if len(g.Players) == 0 || player != c.currentPlayer(g).Name {
 		return nil, ErrNotPlayersTurn
 	}
 
@@ -118,7 +118,7 @@ func (c *implementation) Roll(g *models.Game, player string) ([]*models.Dice, er
 
 // Score saves the points for the player in the given category and handles the counters.
 func (c *implementation) Score(g *models.Game, player string, category models.Category) error {
-	if player != c.currentPlayer(g).Name {
+	if len(g.Players) == 0 || player != c.currentPlayer(g).Name {
 		return ErrNotPlayersTurn
 	}
 
@@ -285,7 +285,7 @@ func (c *implementation) Score(g *models.Game, player string, category models.Ca
 
 // Toggle locks and unlocks a dice so it will not get rolled.
 func (c *implementation) Toggle(g *models.Game, player string, diceIndex int) ([]*models.Dice, error) {
-	if player != c.currentPlayer(g).Name {
+	if len(g.Players) == 0 || player != c.currentPlayer(g).Name {
 		return nil, ErrNotPlayersTurn
 	}
 

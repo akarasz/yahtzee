@@ -129,6 +129,17 @@ func TestGame_Roll(t *testing.T) {
 		}
 	})
 
+	t.Run("should return error when no player in game", func(t *testing.T) {
+		g := models.NewGame()
+		c := New()
+
+		_, got := c.Roll(g, "alice")
+
+		if want := ErrNotPlayersTurn; got != want {
+			t.Errorf("wrong result, got %#v wanted %#v.", got, want)
+		}
+	})
+
 	t.Run("should return error when not player's turn", func(t *testing.T) {
 		g := models.NewGame()
 		g.Players = append(g.Players, &models.Player{"alice", nil})
@@ -456,6 +467,17 @@ func TestGame_Score(t *testing.T) {
 			t.Errorf("wrong result, got %#v wanted %#v.", got, want)
 		}
 	})
+
+	t.Run("should return error when no player is in the game", func(t *testing.T) {
+		g := models.NewGame()
+		c := New()
+
+		got := c.Score(g, "bob", models.Chance)
+
+		if want := ErrNotPlayersTurn; got != want {
+			t.Errorf("wrong result, got %#v wanted %#v.", got, want)
+		}
+	})
 }
 
 func TestGame_Toggle(t *testing.T) {
@@ -539,6 +561,17 @@ func TestGame_Toggle(t *testing.T) {
 		g.Players = append(g.Players, &models.Player{"alice", map[models.Category]int{}})
 		g.Players = append(g.Players, &models.Player{"bob", map[models.Category]int{}})
 		g.RollCount = 1
+		c := New()
+
+		_, got := c.Toggle(g, "bob", 1)
+
+		if want := ErrNotPlayersTurn; got != want {
+			t.Errorf("wrong result, got %#v wanted %#v.", got, want)
+		}
+	})
+
+	t.Run("should return error when no player was added to the game", func(t *testing.T) {
+		g := models.NewGame()
 		c := New()
 
 		_, got := c.Toggle(g, "bob", 1)
