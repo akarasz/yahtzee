@@ -63,6 +63,8 @@ func (h *GameHandler) root(g *models.Game) http.Handler {
 
 func (h *GameHandler) join(name string, g *models.Game) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log := r.Context().Value("logger").(*logrus.Entry)
+
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
 			return
@@ -74,11 +76,11 @@ func (h *GameHandler) join(name string, g *models.Game) http.Handler {
 		}
 
 		if err := h.Controller.AddPlayer(g, name); err != nil {
+			log.Errorf("error joining game: %q", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		log := r.Context().Value("logger").(*logrus.Entry)
 		log.Info("joining game")
 
 		w.WriteHeader(http.StatusCreated)
@@ -87,6 +89,8 @@ func (h *GameHandler) join(name string, g *models.Game) http.Handler {
 
 func (h *GameHandler) lock(player string, g *models.Game) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log := r.Context().Value("logger").(*logrus.Entry)
+
 		if r.URL.Path == "/" {
 			http.Error(w, "", http.StatusNotFound)
 			return
@@ -113,11 +117,11 @@ func (h *GameHandler) lock(player string, g *models.Game) http.Handler {
 
 		res, err := h.Controller.Toggle(g, player, dice)
 		if err != nil {
+			log.Errorf("error locking dice %d: %q", dice, err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		log := r.Context().Value("logger").(*logrus.Entry)
 		log.Infof("locking dice %d", dice)
 
 		w.Header().Set("Content-Type", "application/json")
@@ -129,6 +133,8 @@ func (h *GameHandler) lock(player string, g *models.Game) http.Handler {
 
 func (h *GameHandler) roll(player string, g *models.Game) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log := r.Context().Value("logger").(*logrus.Entry)
+
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
 			return
@@ -141,12 +147,12 @@ func (h *GameHandler) roll(player string, g *models.Game) http.Handler {
 
 		res, err := h.Controller.Roll(g, player)
 		if err != nil {
+			log.Errorf("error rolling dices: %q", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		log := r.Context().Value("logger").(*logrus.Entry)
-		log.Infof("rolls dices")
+		log.Infof("rolling dices")
 
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(res); err != nil {
@@ -157,6 +163,8 @@ func (h *GameHandler) roll(player string, g *models.Game) http.Handler {
 
 func (h *GameHandler) score(player string, g *models.Game) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log := r.Context().Value("logger").(*logrus.Entry)
+
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
 			return
@@ -175,12 +183,12 @@ func (h *GameHandler) score(player string, g *models.Game) http.Handler {
 		bodyString := string(body)
 
 		if err := h.Controller.Score(g, player, models.Category(bodyString)); err != nil {
+			log.Errorf("error scoring %q: %q", bodyString, err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		log := r.Context().Value("logger").(*logrus.Entry)
-		log.Infof("scores %q", bodyString)
+		log.Infof("scoring %q", bodyString)
 
 		w.WriteHeader(http.StatusOK)
 	})
