@@ -167,7 +167,6 @@ eg.
 
 * better logging
   * use context best practices
-  * have a middleware adding logger to context
   * add requestID to MDC
 * heroku deployment
 * integrate logging with logdna

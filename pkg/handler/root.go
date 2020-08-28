@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/akarasz/yahtzee/pkg/models"
 	"github.com/akarasz/yahtzee/pkg/store"
@@ -25,14 +25,18 @@ func New(store store.Store, gameHandler *GameHandler) *RootHandler {
 }
 
 func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	user, _, _ := r.BasicAuth()
-	logger := log.WithFields(log.Fields{
+	log := logrus.WithFields(logrus.Fields{
 		"method": r.Method,
 		"path":   r.URL.Path,
 	})
-	ctx := context.WithValue(r.Context(), "logger", logger)
+	ctx := context.WithValue(r.Context(), "logger", log)
+	h.serve(w, r.WithContext(ctx))
+}
 
-	logger.Info("incoming request")
+func (h *RootHandler) serve(w http.ResponseWriter, r *http.Request) {
+	log := logFrom(r.Context())
+
+	log.Info("incoming request")
 
 	user, _, ok := r.BasicAuth()
 	if !ok {
@@ -45,13 +49,15 @@ func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	id, r.URL.Path = shiftPath(r.URL.Path)
 	switch id {
 	case "":
-		h.create(w, r.WithContext(ctx))
+		h.create(w, r)
 	default:
-		h.load(user, id).ServeHTTP(w, r.WithContext(ctx))
+		h.load(user, id).ServeHTTP(w, r)
 	}
 }
 
 func (h *RootHandler) create(w http.ResponseWriter, r *http.Request) {
+	log := logFrom(r.Context())
+
 	if r.Method != "POST" {
 		http.Error(w, "", http.StatusMethodNotAllowed)
 		return
@@ -65,8 +71,7 @@ func (h *RootHandler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger := logFrom(r.Context())
-	logger.WithField("gameID", id).Info("game created")
+	log.WithField("gameID", id).Info("game created")
 
 	w.Header().Set("Location", fmt.Sprintf("/%s", id))
 	w.WriteHeader(http.StatusCreated)
@@ -81,7 +86,7 @@ func (h *RootHandler) load(user string, id string) http.Handler {
 		}
 
 		h.game.handle(user, g).ServeHTTP(w, r.WithContext(
-			logWithFields(r.Context(), log.Fields{
+			logWithFields(r.Context(), logrus.Fields{
 				"gameID": id,
 				"user":   user,
 			})))
