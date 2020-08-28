@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/akarasz/yahtzee/pkg/models"
@@ -26,8 +27,9 @@ func New(store store.Store, gameHandler *GameHandler) *RootHandler {
 
 func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log := logrus.WithFields(logrus.Fields{
-		"method": r.Method,
-		"path":   r.URL.Path,
+		"method":    r.Method,
+		"path":      r.URL.Path,
+		"requestID": uuid.Must(uuid.NewRandom()),
 	})
 	ctx := context.WithValue(r.Context(), "logger", log)
 	h.serve(w, r.WithContext(ctx))
