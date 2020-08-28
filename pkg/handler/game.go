@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/akarasz/yahtzee/pkg/game"
 	"github.com/akarasz/yahtzee/pkg/models"
 )
@@ -63,7 +61,7 @@ func (h *GameHandler) root(g *models.Game) http.Handler {
 
 func (h *GameHandler) join(name string, g *models.Game) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log := r.Context().Value("logger").(*logrus.Entry)
+		log := logFrom(r.Context())
 
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -89,7 +87,7 @@ func (h *GameHandler) join(name string, g *models.Game) http.Handler {
 
 func (h *GameHandler) lock(player string, g *models.Game) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log := r.Context().Value("logger").(*logrus.Entry)
+		log := logFrom(r.Context())
 
 		if r.URL.Path == "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -133,7 +131,7 @@ func (h *GameHandler) lock(player string, g *models.Game) http.Handler {
 
 func (h *GameHandler) roll(player string, g *models.Game) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log := r.Context().Value("logger").(*logrus.Entry)
+		log := logFrom(r.Context())
 
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)
@@ -163,7 +161,7 @@ func (h *GameHandler) roll(player string, g *models.Game) http.Handler {
 
 func (h *GameHandler) score(player string, g *models.Game) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log := r.Context().Value("logger").(*logrus.Entry)
+		log := logFrom(r.Context())
 
 		if r.URL.Path != "/" {
 			http.Error(w, "", http.StatusNotFound)

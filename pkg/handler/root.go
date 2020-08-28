@@ -65,8 +65,8 @@ func (h *RootHandler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger := r.Context().Value("logger").(*log.Entry).WithField("gameID", id)
-	logger.Info("game created")
+	logger := logFrom(r.Context())
+	logger.WithField("gameID", id).Info("game created")
 
 	w.Header().Set("Location", fmt.Sprintf("/%s", id))
 	w.WriteHeader(http.StatusCreated)
@@ -80,13 +80,11 @@ func (h *RootHandler) load(user string, id string) http.Handler {
 			return
 		}
 
-		logger := r.Context().Value("logger").(*log.Entry).WithFields(log.Fields{
-			"gameID": id,
-			"user":   user,
-		})
-		ctx := context.WithValue(r.Context(), "logger", logger)
-
-		h.game.handle(user, g).ServeHTTP(w, r.WithContext(ctx))
+		h.game.handle(user, g).ServeHTTP(w, r.WithContext(
+			logWithFields(r.Context(), log.Fields{
+				"gameID": id,
+				"user":   user,
+			})))
 	})
 }
 
