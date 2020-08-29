@@ -14,8 +14,12 @@ import (
 )
 
 func main() {
-	// log.SetFormatter(&log.JSONFormatter{})
-	// log.SetOutput(os.Stdout)
+	log.SetFormatter(&log.TextFormatter{
+		DisableTimestamp: true,
+		FieldMap: log.FieldMap{
+			log.FieldKeyLevel: "at",
+		},
+	})
 
 	rand.Seed(time.Now().UnixNano())
 
