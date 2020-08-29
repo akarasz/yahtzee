@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"net/http"
 	"os"
@@ -18,6 +19,9 @@ func main() {
 		DisableTimestamp: true,
 		ForceQuote:       true,
 	})
+
+	fmt.Println("[info] message key=value level=info message=message")
+	fmt.Println("[error] message key=value level=info message=message")
 
 	rand.Seed(time.Now().UnixNano())
 
