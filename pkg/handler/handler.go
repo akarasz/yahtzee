@@ -2,9 +2,11 @@ package handler
 
 import (
 	"context"
+	"net/http"
 	"path"
 	"strings"
 
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -36,4 +38,16 @@ func logFrom(ctx context.Context) *log.Entry {
 func logWithFields(ctx context.Context, fields log.Fields) context.Context {
 	newLog := logFrom(ctx).WithFields(fields)
 	return context.WithValue(ctx, logger, newLog)
+}
+
+func contextLogger(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		newLog := log.WithFields(log.Fields{
+			"method":    r.Method,
+			"path":      r.URL.Path,
+			"requestID": uuid.Must(uuid.NewRandom()),
+		})
+
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), logger, newLog)))
+	})
 }
