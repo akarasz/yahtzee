@@ -165,8 +165,6 @@ eg.
 
 ## TODO
 
-* integrate logging with external logging service
-  * integrate app logs with heroku logs
 * websocket for announcing real time state changes
 * store should return concrete object and not pointer (pointer only works for
   in-memory, not for redis)
