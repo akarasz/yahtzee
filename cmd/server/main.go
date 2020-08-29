@@ -16,9 +16,7 @@ import (
 func main() {
 	log.SetFormatter(&log.TextFormatter{
 		DisableTimestamp: true,
-		FieldMap: log.FieldMap{
-			log.FieldKeyLevel: "at",
-		},
+		ForceQuote:       true,
 	})
 
 	rand.Seed(time.Now().UnixNano())
