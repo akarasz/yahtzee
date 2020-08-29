@@ -166,7 +166,6 @@ eg.
 ## TODO
 
 * better logging
-  * use context best practices
 * heroku deployment
 * integrate logging with logdna
 * websocket for announcing real time state changes

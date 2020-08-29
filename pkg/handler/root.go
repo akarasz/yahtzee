@@ -31,7 +31,7 @@ func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		"path":      r.URL.Path,
 		"requestID": uuid.Must(uuid.NewRandom()),
 	})
-	ctx := context.WithValue(r.Context(), "logger", log)
+	ctx := context.WithValue(r.Context(), logger, log)
 	h.serve(w, r.WithContext(ctx))
 }
 
