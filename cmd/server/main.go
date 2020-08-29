@@ -14,8 +14,8 @@ import (
 )
 
 func main() {
-	log.SetFormatter(&log.JSONFormatter{})
-	log.SetOutput(os.Stdout)
+	// log.SetFormatter(&log.JSONFormatter{})
+	// log.SetOutput(os.Stdout)
 
 	rand.Seed(time.Now().UnixNano())
 
