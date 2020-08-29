@@ -165,7 +165,6 @@ eg.
 
 ## TODO
 
-* better logging
 * heroku deployment
 * integrate logging with logdna
 * websocket for announcing real time state changes
