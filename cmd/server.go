@@ -13,8 +13,6 @@ import (
 	"github.com/akarasz/yahtzee/pkg/store"
 )
 
-const listenAddress = ":8000"
-
 func main() {
 	log.SetFormatter(&log.JSONFormatter{})
 	log.SetOutput(os.Stdout)
@@ -26,6 +24,12 @@ func main() {
 		&handler.GameHandler{
 			Controller: game.New(),
 		})
+
+	port := "8000"
+	if envPort := os.Getenv("PORT"); envPort != "" {
+		port = envPort
+	}
+	listenAddress := ":" + port
 
 	log.Infoln("starting server on", listenAddress)
 	err := http.ListenAndServe(listenAddress, h)
