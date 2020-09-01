@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net/http"
+	"strconv"
 
 	"github.com/sirupsen/logrus"
 
@@ -45,6 +47,8 @@ func (h *RootHandler) serve(w http.ResponseWriter, r *http.Request) {
 	switch id {
 	case "":
 		h.create(w, r)
+	case "score":
+		h.score(w, r)
 	default:
 		h.load(user, id).ServeHTTP(w, r)
 	}
@@ -72,6 +76,51 @@ func (h *RootHandler) create(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+func (h *RootHandler) score(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if numberOfDices := len(r.URL.Query()["dice"]); numberOfDices != 5 {
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
+
+	dices := make([]int, 5)
+	for i, d := range r.URL.Query()["dice"] {
+		v, err := strconv.Atoi(d)
+		if err != nil {
+			http.Error(w, "", http.StatusBadRequest)
+			return
+		}
+
+		dices[i] = v
+	}
+
+	dummy := map[models.Category]int{
+		models.Ones:          0,
+		models.Twos:          0,
+		models.Threes:        0,
+		models.Fours:         0,
+		models.Fives:         0,
+		models.Sixes:         0,
+		models.Bonus:         0,
+		models.ThreeOfAKind:  0,
+		models.FourOfAKind:   0,
+		models.FullHouse:     0,
+		models.SmallStraight: 0,
+		models.LargeStraight: 0,
+		models.Yahtzee:       0,
+		models.Chance:        0,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(dummy); err != nil {
+		panic(err)
+	}
+}
+
 func (h *RootHandler) load(user string, id string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		g, err := h.store.Get(id)
@@ -91,7 +140,7 @@ func (h *RootHandler) load(user string, id string) http.Handler {
 func generateID() string {
 	const (
 		idCharset = "abcdefghijklmnopqrstvwxyz0123456789"
-		length    = 5
+		length    = 4
 	)
 
 	b := make([]byte, length)

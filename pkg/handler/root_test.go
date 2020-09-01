@@ -146,6 +146,32 @@ func TestRootHandler_existingGame(t *testing.T) {
 	})
 }
 
+func TestRootHandler_score(t *testing.T) {
+	t.Run("should fail with wrong number of dices", func(t *testing.T) {
+		h := RootHandler{
+			store: &storeStub{},
+			game:  &GameHandler{},
+		}
+		rr := httptest.NewRecorder()
+		req, err := http.NewRequest("GET", "/score", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.SetBasicAuth("alice", "")
+		q := req.URL.Query()
+		q.Add("dice", "2")
+		q.Add("dice", "2")
+		q.Add("dice", "2")
+		req.URL.RawQuery = q.Encode()
+
+		h.ServeHTTP(rr, req)
+
+		if got, want := rr.Code, http.StatusBadRequest; got != want {
+			t.Errorf("wrong status code: got %v want %v", got, want)
+		}
+	})
+}
+
 type storeStub struct {
 	putError     error
 	putCallCount int
