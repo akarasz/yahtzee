@@ -182,67 +182,6 @@ func TestGame_Roll(t *testing.T) {
 }
 
 func TestGame_Score(t *testing.T) {
-	t.Run("should calculate points correctly", func(t *testing.T) {
-		table := []struct {
-			dices    []int
-			category models.Category
-			value    int
-		}{
-			{[]int{1, 2, 3, 1, 1}, models.Ones, 3},
-			{[]int{2, 3, 4, 2, 3}, models.Twos, 4},
-			{[]int{6, 4, 2, 2, 3}, models.Threes, 3},
-			{[]int{1, 6, 3, 3, 5}, models.Fours, 0},
-			{[]int{4, 4, 1, 2, 4}, models.Fours, 12},
-			{[]int{6, 6, 3, 5, 2}, models.Fives, 5},
-			{[]int{5, 3, 6, 6, 6}, models.Sixes, 18},
-			{[]int{2, 4, 3, 6, 4}, models.ThreeOfAKind, 0},
-			{[]int{3, 1, 3, 1, 3}, models.ThreeOfAKind, 9},
-			{[]int{5, 2, 5, 5, 5}, models.ThreeOfAKind, 15},
-			{[]int{2, 6, 3, 2, 2}, models.FourOfAKind, 0},
-			{[]int{1, 6, 6, 6, 6}, models.FourOfAKind, 24},
-			{[]int{4, 4, 4, 4, 4}, models.FourOfAKind, 16},
-			{[]int{5, 5, 2, 5, 5}, models.FullHouse, 0},
-			{[]int{2, 5, 3, 6, 5}, models.FullHouse, 0},
-			{[]int{5, 5, 2, 5, 2}, models.FullHouse, 25},
-			{[]int{3, 1, 3, 1, 3}, models.FullHouse, 25},
-			{[]int{6, 2, 5, 1, 3}, models.SmallStraight, 0},
-			{[]int{6, 2, 4, 1, 3}, models.SmallStraight, 30},
-			{[]int{4, 2, 3, 5, 3}, models.SmallStraight, 30},
-			{[]int{1, 6, 3, 5, 4}, models.SmallStraight, 30},
-			{[]int{3, 5, 2, 3, 4}, models.LargeStraight, 0},
-			{[]int{3, 5, 2, 1, 4}, models.LargeStraight, 40},
-			{[]int{5, 2, 6, 3, 4}, models.LargeStraight, 40},
-			{[]int{3, 3, 3, 3, 3}, models.Yahtzee, 50},
-			{[]int{1, 1, 1, 1, 1}, models.Yahtzee, 50},
-			{[]int{6, 2, 4, 1, 3}, models.Chance, 16},
-			{[]int{1, 6, 3, 3, 5}, models.Chance, 18},
-			{[]int{2, 3, 4, 2, 3}, models.Chance, 14},
-		}
-
-		for _, row := range table {
-			g := models.NewGame()
-			g.Players = append(g.Players, &models.Player{"alice", map[models.Category]int{}})
-			g.RollCount = 1
-			for i, v := range row.dices {
-				g.Dices[i].Value = v
-			}
-			c := New()
-
-			got := c.Score(g, "alice", row.category)
-
-			if got != nil {
-				t.Fatalf("returned error: [%v]", got)
-			}
-			if got, want := g.Players[0].ScoreSheet[row.category], row.value; got != want {
-				t.Errorf("%q score for [%v] should be %d but was %d.",
-					row.category,
-					row.dices,
-					want,
-					got)
-			}
-		}
-	})
-
 	t.Run("should set bonus if upper section reaches limit", func(t *testing.T) {
 		table := []struct {
 			values    []int
@@ -619,4 +558,60 @@ func TestGame_Toggle(t *testing.T) {
 			t.Errorf("wrong result, got %#v wanted %#v.", got, want)
 		}
 	})
+}
+
+func TestScore(t *testing.T) {
+	t.Run("should calculate points correctly", func(t *testing.T) {
+		table := []struct {
+			dices    []int
+			category models.Category
+			value    int
+		}{
+			{[]int{1, 2, 3, 1, 1}, models.Ones, 3},
+			{[]int{2, 3, 4, 2, 3}, models.Twos, 4},
+			{[]int{6, 4, 2, 2, 3}, models.Threes, 3},
+			{[]int{1, 6, 3, 3, 5}, models.Fours, 0},
+			{[]int{4, 4, 1, 2, 4}, models.Fours, 12},
+			{[]int{6, 6, 3, 5, 2}, models.Fives, 5},
+			{[]int{5, 3, 6, 6, 6}, models.Sixes, 18},
+			{[]int{2, 4, 3, 6, 4}, models.ThreeOfAKind, 0},
+			{[]int{3, 1, 3, 1, 3}, models.ThreeOfAKind, 9},
+			{[]int{5, 2, 5, 5, 5}, models.ThreeOfAKind, 15},
+			{[]int{2, 6, 3, 2, 2}, models.FourOfAKind, 0},
+			{[]int{1, 6, 6, 6, 6}, models.FourOfAKind, 24},
+			{[]int{4, 4, 4, 4, 4}, models.FourOfAKind, 16},
+			{[]int{5, 5, 2, 5, 5}, models.FullHouse, 0},
+			{[]int{2, 5, 3, 6, 5}, models.FullHouse, 0},
+			{[]int{5, 5, 2, 5, 2}, models.FullHouse, 25},
+			{[]int{3, 1, 3, 1, 3}, models.FullHouse, 25},
+			{[]int{6, 2, 5, 1, 3}, models.SmallStraight, 0},
+			{[]int{6, 2, 4, 1, 3}, models.SmallStraight, 30},
+			{[]int{4, 2, 3, 5, 3}, models.SmallStraight, 30},
+			{[]int{1, 6, 3, 5, 4}, models.SmallStraight, 30},
+			{[]int{3, 5, 2, 3, 4}, models.LargeStraight, 0},
+			{[]int{3, 5, 2, 1, 4}, models.LargeStraight, 40},
+			{[]int{5, 2, 6, 3, 4}, models.LargeStraight, 40},
+			{[]int{3, 3, 3, 3, 3}, models.Yahtzee, 50},
+			{[]int{1, 1, 1, 1, 1}, models.Yahtzee, 50},
+			{[]int{6, 2, 4, 1, 3}, models.Chance, 16},
+			{[]int{1, 6, 3, 3, 5}, models.Chance, 18},
+			{[]int{2, 3, 4, 2, 3}, models.Chance, 14},
+		}
+
+		for _, row := range table {
+			got, err := Score(row.category, row.dices)
+
+			if err != nil {
+				t.Fatalf("returned error: [%v]", got)
+			}
+			if want := row.value; got != want {
+				t.Errorf("%q score for [%v] should be %d but was %d.",
+					row.category,
+					row.dices,
+					want,
+					got)
+			}
+		}
+	})
+
 }

@@ -134,122 +134,17 @@ func (c *implementation) Score(g *models.Game, player string, category models.Ca
 		return ErrCategoryAlreadyScored
 	}
 
-	s := 0
-	switch category {
-	case models.Ones:
-		for _, d := range g.Dices {
-			if d.Value == 1 {
-				s++
-			}
-		}
-	case models.Twos:
-		for _, d := range g.Dices {
-			if d.Value == 2 {
-				s += 2
-			}
-		}
-	case models.Threes:
-		for _, d := range g.Dices {
-			if d.Value == 3 {
-				s += 3
-			}
-		}
-	case models.Fours:
-		for _, d := range g.Dices {
-			if d.Value == 4 {
-				s += 4
-			}
-		}
-	case models.Fives:
-		for _, d := range g.Dices {
-			if d.Value == 5 {
-				s += 5
-			}
-		}
-	case models.Sixes:
-		for _, d := range g.Dices {
-			if d.Value == 6 {
-				s += 6
-			}
-		}
-	case models.ThreeOfAKind:
-		occurrences := map[int]int{}
-		for _, d := range g.Dices {
-			occurrences[d.Value]++
-		}
-
-		for k, v := range occurrences {
-			if v >= 3 {
-				s = 3 * k
-			}
-		}
-	case models.FourOfAKind:
-		occurrences := map[int]int{}
-		for _, d := range g.Dices {
-			occurrences[d.Value]++
-		}
-
-		for k, v := range occurrences {
-			if v >= 4 {
-				s = 4 * k
-			}
-		}
-	case models.FullHouse:
-		one, oneCount, other := g.Dices[0].Value, 1, 0
-		for i := 1; i < len(g.Dices); i++ {
-			v := g.Dices[i].Value
-
-			if one == v {
-				oneCount++
-			} else if other == 0 || other == v {
-				other = v
-			} else {
-				oneCount = 4
-			}
-		}
-
-		if oneCount == 2 || oneCount == 3 {
-			s = 25
-		}
-	case models.SmallStraight:
-		hit := [6]bool{}
-		for _, d := range g.Dices {
-			hit[d.Value-1] = true
-		}
-
-		if (hit[0] && hit[1] && hit[2] && hit[3]) ||
-			(hit[1] && hit[2] && hit[3] && hit[4]) ||
-			(hit[2] && hit[3] && hit[4] && hit[5]) {
-			s = 30
-		}
-	case models.LargeStraight:
-		hit := [6]bool{}
-		for _, d := range g.Dices {
-			hit[d.Value-1] = true
-		}
-
-		if (hit[0] && hit[1] && hit[2] && hit[3] && hit[4]) ||
-			(hit[1] && hit[2] && hit[3] && hit[4] && hit[5]) {
-			s = 40
-		}
-	case models.Yahtzee:
-		same := true
-		for i := 0; i < len(g.Dices)-1; i++ {
-			same = same && g.Dices[i].Value == g.Dices[i+1].Value
-		}
-
-		if same {
-			s = 50
-		}
-	case models.Chance:
-		for _, d := range g.Dices {
-			s += d.Value
-		}
-	default:
-		return ErrInvalidCategory
+	dices := make([]int, 5)
+	for i, d := range g.Dices {
+		dices[i] = d.Value
 	}
 
-	c.currentPlayer(g).ScoreSheet[category] = s
+	score, err := Score(category, dices)
+	if err != nil {
+		return err
+	}
+
+	c.currentPlayer(g).ScoreSheet[category] = score
 
 	if _, ok := c.currentPlayer(g).ScoreSheet[models.Bonus]; !ok {
 		var total, types int
@@ -308,4 +203,124 @@ func (c *implementation) Toggle(g *models.Game, player string, diceIndex int) ([
 	g.Dices[diceIndex].Locked = !g.Dices[diceIndex].Locked
 
 	return g.Dices, nil
+}
+
+// Score calculates the category value for the given dices.
+func Score(category models.Category, dices []int) (int, error) {
+	s := 0
+	switch category {
+	case models.Ones:
+		for _, d := range dices {
+			if d == 1 {
+				s++
+			}
+		}
+	case models.Twos:
+		for _, d := range dices {
+			if d == 2 {
+				s += 2
+			}
+		}
+	case models.Threes:
+		for _, d := range dices {
+			if d == 3 {
+				s += 3
+			}
+		}
+	case models.Fours:
+		for _, d := range dices {
+			if d == 4 {
+				s += 4
+			}
+		}
+	case models.Fives:
+		for _, d := range dices {
+			if d == 5 {
+				s += 5
+			}
+		}
+	case models.Sixes:
+		for _, d := range dices {
+			if d == 6 {
+				s += 6
+			}
+		}
+	case models.ThreeOfAKind:
+		occurrences := map[int]int{}
+		for _, d := range dices {
+			occurrences[d]++
+		}
+
+		for k, v := range occurrences {
+			if v >= 3 {
+				s = 3 * k
+			}
+		}
+	case models.FourOfAKind:
+		occurrences := map[int]int{}
+		for _, d := range dices {
+			occurrences[d]++
+		}
+
+		for k, v := range occurrences {
+			if v >= 4 {
+				s = 4 * k
+			}
+		}
+	case models.FullHouse:
+		one, oneCount, other := dices[0], 1, 0
+		for i := 1; i < len(dices); i++ {
+			v := dices[i]
+
+			if one == v {
+				oneCount++
+			} else if other == 0 || other == v {
+				other = v
+			} else {
+				oneCount = 4
+			}
+		}
+
+		if oneCount == 2 || oneCount == 3 {
+			s = 25
+		}
+	case models.SmallStraight:
+		hit := [6]bool{}
+		for _, d := range dices {
+			hit[d-1] = true
+		}
+
+		if (hit[0] && hit[1] && hit[2] && hit[3]) ||
+			(hit[1] && hit[2] && hit[3] && hit[4]) ||
+			(hit[2] && hit[3] && hit[4] && hit[5]) {
+			s = 30
+		}
+	case models.LargeStraight:
+		hit := [6]bool{}
+		for _, d := range dices {
+			hit[d-1] = true
+		}
+
+		if (hit[0] && hit[1] && hit[2] && hit[3] && hit[4]) ||
+			(hit[1] && hit[2] && hit[3] && hit[4] && hit[5]) {
+			s = 40
+		}
+	case models.Yahtzee:
+		same := true
+		for i := 0; i < len(dices)-1; i++ {
+			same = same && dices[i] == dices[i+1]
+		}
+
+		if same {
+			s = 50
+		}
+	case models.Chance:
+		for _, d := range dices {
+			s += d
+		}
+	default:
+		return 0, ErrInvalidCategory
+	}
+
+	return s, nil
 }
