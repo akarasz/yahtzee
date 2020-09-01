@@ -147,27 +147,40 @@ func TestRootHandler_existingGame(t *testing.T) {
 }
 
 func TestRootHandler_score(t *testing.T) {
-	t.Run("should fail with wrong number of dices", func(t *testing.T) {
+	t.Run("should fail for invalid input", func(t *testing.T) {
+		table := []struct {
+			dices []string
+		}{
+			{[]string{"2", "3", "1", "1"}},
+			{[]string{"1", "5", "2", "3", "1", "5"}},
+			{[]string{"1", "2", "8", "1", "5"}},
+			{[]string{"1", "-33", "4", "1", "5"}},
+			{[]string{"1", "2", "4", "wat", "5"}},
+			{[]string{"1", "2", "", "3", "5"}},
+		}
 		h := RootHandler{
 			store: &storeStub{},
 			game:  &GameHandler{},
 		}
-		rr := httptest.NewRecorder()
-		req, err := http.NewRequest("GET", "/score", nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		req.SetBasicAuth("alice", "")
-		q := req.URL.Query()
-		q.Add("dice", "2")
-		q.Add("dice", "2")
-		q.Add("dice", "2")
-		req.URL.RawQuery = q.Encode()
 
-		h.ServeHTTP(rr, req)
+		for _, scenario := range table {
+			rr := httptest.NewRecorder()
+			req, err := http.NewRequest("GET", "/score", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			req.SetBasicAuth("alice", "")
+			q := req.URL.Query()
+			for _, d := range scenario.dices {
+				q.Add("dice", d)
+			}
+			req.URL.RawQuery = q.Encode()
 
-		if got, want := rr.Code, http.StatusBadRequest; got != want {
-			t.Errorf("wrong status code: got %v want %v", got, want)
+			h.ServeHTTP(rr, req)
+
+			if got, want := rr.Code, http.StatusBadRequest; got != want {
+				t.Errorf("wrong status code: got %v want %v", got, want)
+			}
 		}
 	})
 }

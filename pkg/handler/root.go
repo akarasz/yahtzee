@@ -9,6 +9,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/akarasz/yahtzee/pkg/game"
 	"github.com/akarasz/yahtzee/pkg/models"
 	"github.com/akarasz/yahtzee/pkg/store"
 )
@@ -90,7 +91,7 @@ func (h *RootHandler) score(w http.ResponseWriter, r *http.Request) {
 	dices := make([]int, 5)
 	for i, d := range r.URL.Query()["dice"] {
 		v, err := strconv.Atoi(d)
-		if err != nil {
+		if err != nil || v < 1 || 6 < v {
 			http.Error(w, "", http.StatusBadRequest)
 			return
 		}
@@ -98,25 +99,34 @@ func (h *RootHandler) score(w http.ResponseWriter, r *http.Request) {
 		dices[i] = v
 	}
 
-	dummy := map[models.Category]int{
-		models.Ones:          0,
-		models.Twos:          0,
-		models.Threes:        0,
-		models.Fours:         0,
-		models.Fives:         0,
-		models.Sixes:         0,
-		models.Bonus:         0,
-		models.ThreeOfAKind:  0,
-		models.FourOfAKind:   0,
-		models.FullHouse:     0,
-		models.SmallStraight: 0,
-		models.LargeStraight: 0,
-		models.Yahtzee:       0,
-		models.Chance:        0,
+	categories := []models.Category{
+		models.Ones,
+		models.Twos,
+		models.Threes,
+		models.Fours,
+		models.Fives,
+		models.Sixes,
+		models.ThreeOfAKind,
+		models.FourOfAKind,
+		models.FullHouse,
+		models.SmallStraight,
+		models.LargeStraight,
+		models.Yahtzee,
+		models.Chance,
+	}
+
+	result := map[models.Category]int{}
+	for _, c := range categories {
+		score, err := game.Score(c, dices)
+		if err != nil {
+			http.Error(w, "", http.StatusInternalServerError)
+			return
+		}
+		result[c] = score
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(dummy); err != nil {
+	if err := json.NewEncoder(w).Encode(result); err != nil {
 		panic(err)
 	}
 }
