@@ -20,9 +20,6 @@ func main() {
 		ForceQuote:       true,
 	})
 
-	fmt.Println("[info] message key=value level=info message=message")
-	fmt.Println("[error] message key=value level=info message=message")
-
 	rand.Seed(time.Now().UnixNano())
 
 	h := handler.New(
