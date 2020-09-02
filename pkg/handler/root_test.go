@@ -33,24 +33,6 @@ func TestRootHandler_newGame(t *testing.T) {
 		}
 	})
 
-	t.Run("should fail without basic auth header", func(t *testing.T) {
-		h := RootHandler{
-			store: &storeStub{},
-			game:  &GameHandler{},
-		}
-		rr := httptest.NewRecorder()
-		req, err := http.NewRequest("POST", "/", nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		h.ServeHTTP(rr, req)
-
-		if got, want := rr.Code, http.StatusUnauthorized; got != want {
-			t.Errorf("wrong status code: got %v want %v", got, want)
-		}
-	})
-
 	t.Run("should fail when a game already in store with same id", func(t *testing.T) {
 		s := &storeStub{
 			putError: store.ErrAlreadyExists,
@@ -102,24 +84,6 @@ func TestRootHandler_existingGame(t *testing.T) {
 		}
 		if got, want := gh.handleCallParamUser[0], "alice"; got != want {
 			t.Errorf("wrong user was passed to handler. got %v want %v", got, want)
-		}
-	})
-
-	t.Run("should fail without basic auth header", func(t *testing.T) {
-		h := RootHandler{
-			store: &storeStub{},
-			game:  &GameHandler{},
-		}
-		rr := httptest.NewRecorder()
-		req, err := http.NewRequest("POST", "/gameID", nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		h.ServeHTTP(rr, req)
-
-		if got, want := rr.Code, http.StatusUnauthorized; got != want {
-			t.Errorf("wrong status code: got %v want %v", got, want)
 		}
 	})
 
