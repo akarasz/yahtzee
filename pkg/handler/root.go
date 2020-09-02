@@ -28,7 +28,7 @@ func New(store store.Store, gameHandler *GameHandler) *RootHandler {
 
 func (h *RootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	finalHandler := http.HandlerFunc(h.serve)
-	contextLogger(finalHandler).ServeHTTP(w, r)
+	allowCors(contextLogger(finalHandler)).ServeHTTP(w, r)
 }
 
 func (h *RootHandler) serve(w http.ResponseWriter, r *http.Request) {
