@@ -48,7 +48,7 @@ func (h *GameHandler) root(g *models.Game) http.Handler {
 		}
 
 		if r.Method == "OPTIONS" {
-			w.Header().Set("Allow", "GET, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 			return
 		}
 
