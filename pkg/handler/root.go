@@ -36,6 +36,12 @@ func (h *RootHandler) serve(w http.ResponseWriter, r *http.Request) {
 
 	log.Info("incoming request")
 
+	user, _, ok := r.BasicAuth()
+	if !ok {
+		http.Error(w, "use basic auth for setting your name", http.StatusUnauthorized)
+		return
+	}
+
 	var id string
 
 	id, r.URL.Path = shiftPath(r.URL.Path)
@@ -45,7 +51,7 @@ func (h *RootHandler) serve(w http.ResponseWriter, r *http.Request) {
 	case "score":
 		h.score(w, r)
 	default:
-		h.load(id).ServeHTTP(w, r)
+		h.load(user, id).ServeHTTP(w, r)
 	}
 }
 
@@ -125,10 +131,8 @@ func (h *RootHandler) score(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *RootHandler) load(id string) http.Handler {
+func (h *RootHandler) load(user string, id string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, _, _ := r.BasicAuth()
-
 		g, err := h.store.Get(id)
 		if err != nil {
 			http.Error(w, "game not found", http.StatusNotFound)
