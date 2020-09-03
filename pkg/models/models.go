@@ -81,6 +81,7 @@ func NewGame() *Game {
 	}
 
 	return &Game{
-		Dices: dd,
+		Players: []*Player{},
+		Dices:   dd,
 	}
 }
