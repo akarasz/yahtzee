@@ -129,6 +129,11 @@ func (h *GameHandler) lock(player string, g *models.Game) http.Handler {
 	})
 }
 
+type rollResponse struct {
+	Dices     []*models.Dice
+	RollCount int
+}
+
 func (h *GameHandler) roll(player string, g *models.Game) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log := logFrom(r.Context())
@@ -143,7 +148,7 @@ func (h *GameHandler) roll(player string, g *models.Game) http.Handler {
 			return
 		}
 
-		res, err := h.Controller.Roll(g, player)
+		rolledDices, err := h.Controller.Roll(g, player)
 		if err != nil {
 			log.Errorf("error rolling dices: %q", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -153,7 +158,11 @@ func (h *GameHandler) roll(player string, g *models.Game) http.Handler {
 		log.Infof("rolling dices")
 
 		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(res); err != nil {
+		resp := &rollResponse{
+			Dices:     rolledDices,
+			RollCount: g.RollCount,
+		}
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
 			panic(err)
 		}
 	})

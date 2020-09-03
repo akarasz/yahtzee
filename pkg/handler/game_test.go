@@ -120,6 +120,7 @@ func TestGameHandler_lock(t *testing.T) {
 		}
 		g := models.NewGame()
 		g.Players = append(g.Players, models.NewPlayer("alice"))
+		g.RollCount = 2
 		rr := httptest.NewRecorder()
 		req, err := http.NewRequest("POST", "/lock/2", nil)
 		if err != nil {
@@ -222,6 +223,7 @@ func TestGameHandler_roll(t *testing.T) {
 		}
 		g := models.NewGame()
 		g.Players = append(g.Players, models.NewPlayer("alice"))
+		g.RollCount = 1
 		rr := httptest.NewRecorder()
 		req, err := http.NewRequest("POST", "/roll", nil)
 		if err != nil {
@@ -233,7 +235,10 @@ func TestGameHandler_roll(t *testing.T) {
 		if got, want := rr.Code, http.StatusOK; got != want {
 			t.Errorf("wrong status code: got %v want %v", got, want)
 		}
-		wantJSON, _ := json.Marshal(want)
+		wantJSON, _ := json.Marshal(map[string]interface{}{
+			"Dices":     want,
+			"RollCount": 1,
+		})
 		if got, want := strings.TrimSpace(rr.Body.String()), string(wantJSON); got != want {
 			t.Errorf("wrong body: got %q want %q", got, want)
 		}
