@@ -57,6 +57,11 @@ func allowCors(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Headers", "Authorization")
 
+		if r.Method == "OPTIONS" {
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS")
+			return
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }

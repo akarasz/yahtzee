@@ -47,11 +47,6 @@ func (h *GameHandler) root(g *models.Game) http.Handler {
 			return
 		}
 
-		if r.Method == "OPTIONS" {
-			w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-			return
-		}
-
 		if r.Method != "GET" {
 			http.Error(w, "", http.StatusMethodNotAllowed)
 			return
