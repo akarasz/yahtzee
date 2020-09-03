@@ -55,7 +55,9 @@ func contextLogger(next http.Handler) http.Handler {
 func allowCors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Authorization")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Location")
+		w.Header().Set("Access-Control-Request-Headers", "Location")
+		w.Header().Set("Access-Control-Expose-Headers", "Location")
 
 		if r.Method == "OPTIONS" {
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS")
