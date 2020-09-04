@@ -82,6 +82,10 @@ func (h *GameHandler) join(name string, g *models.Game) http.Handler {
 		log.Info("joining game")
 
 		w.WriteHeader(http.StatusCreated)
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(g.Players); err != nil {
+			panic(err)
+		}
 	})
 }
 

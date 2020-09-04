@@ -8,6 +8,10 @@ build:
 test:
 	go test --count=1 ./...
 
+.PHONY := docker
+docker:
+	docker build -t akarasz/yahtzee:latest .
+
 .PHONY := run
 run:
-	go run cmd/server/main.go
+	docker run -p 8000:8000 akarasz/yahtzee:latest

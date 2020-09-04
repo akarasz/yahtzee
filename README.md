@@ -30,6 +30,12 @@ eg.
 ```
 > POST /gcxog/join
 < 201 Created
+< [
+<   {
+<     "Name": "Alice",
+<     "ScoreSheet": {}
+<   }
+< ]
 ```
 
 ### Show a Game
