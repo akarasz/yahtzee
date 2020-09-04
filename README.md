@@ -42,6 +42,7 @@ eg.
 ```
 {
 > GET /gcxog
+< {
 <   "Players":[
 <     {
 <       "Name":"andris",
@@ -90,28 +91,31 @@ eg.
 > POST /gcxog/roll
 < 200 OK
 <
-< [
-<   {
-<     "Value": 1,
-<     "Locked": true
-<   },
-<   {
-<     "Value": 2,
-<     "Locked": false
-<   },
-<   {
-<     "Value": 3,
-<     "Locked": false
-<   },
-<   {
-<     "Value": 5,
-<     "Locked": false
-<   },
-<   {
-<     "Value": 1,
-<     "Locked": true
-<   }
-< ]
+< {
+<   "rollCount": 1,
+<   "dices": [
+<     {
+<       "Value": 1,
+<       "Locked": true
+<     },
+<     {
+<       "Value": 2,
+<       "Locked": false
+<     },
+<     {
+<       "Value": 3,
+<       "Locked": false
+<     },
+<     {
+<       "Value": 5,
+<       "Locked": false
+<     },
+<     {
+<       "Value": 1,
+<       "Locked": true
+<     }
+<   ]
+< }
 ```
 
 ### Toggle Lock on a Dice
@@ -161,6 +165,70 @@ eg.
 ```
 > POST /gcxog/score < `yahtzee`
 < 200 OK
+< {
+<   "Players":[
+<     {
+<       "Name":"andris",
+<       "ScoreSheet":{
+<         "ones":3,
+<         "small-straight":30,
+<         "yahtzee":50
+<       }
+<     }
+<   ],
+<   "Dices":[
+<     {
+<       "Value":6,
+<       "Locked":false
+<     },
+<     {
+<       "Value":1,
+<       "Locked":false
+<     },
+<     {
+<       "Value":3,
+<       "Locked":false
+<     },
+<     {
+<       "Value":5,
+<       "Locked":false
+<     },
+<     {
+<       "Value":4,
+<       "Locked":false
+<     }
+<   ],
+<   "Round":3,
+<   "Current":0,
+<   "RollCount":0
+< }
+```
+
+### Score suggestions
+
+```
+GET /score?dice={dice0}&dice={dice1}&dice={dice2}&dice={dice3}&dice={dice4}
+```
+
+eg.
+```
+> POST /score?dice=2&dice=3&dice=1&dice=3&dice=2
+< 200 OK
+< {
+<   "ones": 1,
+<   "twos": 4,
+<   "threes": 6,
+<   "fours": 0,
+<   "fives": 0,
+<   "sixes": 0,
+<   "three-of-a-kind": 0,
+<   "four-of-a-kind": 0,
+<   "full-house": 0,
+<   "small-straight": 0,
+<   "large-straight": 0,
+<   "yahtzee": 0,
+<   "chance": 11,
+< }
 ```
 
 ## TODO
