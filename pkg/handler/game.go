@@ -197,6 +197,9 @@ func (h *GameHandler) score(player string, g *models.Game) http.Handler {
 
 		log.Infof("scoring %q", bodyString)
 
-		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(g); err != nil {
+			panic(err)
+		}
 	})
 }
