@@ -38,17 +38,17 @@ const (
 
 // Player contains all data representing a player.
 type Player struct {
-	// Name of the player
-	Name string
+	// User who plays
+	User User
 
 	// ScoreSheet keeps the scores of the player
 	ScoreSheet map[Category]int
 }
 
 // NewPlayer returns a new named player with an empty score sheet.
-func NewPlayer(name string) *Player {
+func NewPlayer(u User) *Player {
 	return &Player{
-		Name:       name,
+		User:       u,
 		ScoreSheet: map[Category]int{},
 	}
 }
@@ -85,3 +85,5 @@ func NewGame() *Game {
 		Dices:   dd,
 	}
 }
+
+type User string
