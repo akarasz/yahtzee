@@ -1,0 +1,95 @@
+@startuml
+package models {
+  Class models.Game {
+    dices []Dice
+    players []Player
+
+    round int
+    roll int
+    player int
+  }
+
+  Class Dice {
+    face int
+    locked bool
+  }
+
+  Class Player {
+    name string
+    scores map[category]int
+  }
+
+  Dice <-- models.Game
+  Player <-- models.Game
+}
+
+package store {
+  Interface Store {
+    + load(id string) : Game
+    + save(id string, g Game)
+  }
+
+  Class InMemory
+
+  Store <|.. InMemory
+}
+
+package service {
+  Interface service.Game {
+    + addPlayer() : Game
+    + roll() : Game
+    + lock(d Dice) : Game
+    + score(c Category) : Game
+  }
+
+  Interface Provider {
+    + create(g Game, p Player) : service.Game
+  }
+
+  Class service.Default
+
+  Provider <|.. service.Default
+  service.Game <|.. service.Default
+}
+
+Provider <-- controller.Default
+service.Game <-- controller.Default
+Store <-- controller.Default
+
+package controller {
+  Interface controller.Game {
+    + addPlayer(g Game, p Player)
+    + roll(g Game, p Player)
+    + lock(g Game, p Player, d Dice)
+    + score(g Game, p Player, c Category)
+  }
+
+  Interface controller.Root {
+    + create()
+    + get(id string)
+  }
+
+  Class controller.Default
+
+  controller.Game <|.. controller.Default
+  controller.Root <|.. controller.Default
+}
+
+controller.Root <-- handler.Root
+controller.Game <-- handler.Game
+
+package handler {
+  Class handler.Root {
+    + create()
+    + get()
+  }
+
+  Class handler.Game {
+    g Game
+    + addPlayer()
+    + roll()
+    + lock()
+    + score()
+  }
+}
+@enduml
