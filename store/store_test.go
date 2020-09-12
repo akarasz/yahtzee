@@ -9,7 +9,7 @@ import (
 
 func TestInMemory_Put(t *testing.T) {
 	t.Run("should add to store", func(t *testing.T) {
-		s := NewInMemory()
+		s := New()
 		want := *models.NewGame()
 
 		err := s.Save("id", want)
@@ -22,7 +22,7 @@ func TestInMemory_Put(t *testing.T) {
 	})
 
 	t.Run("should fail when trying to add with same id", func(t *testing.T) {
-		s := NewInMemory()
+		s := New()
 		s.Save("id", *models.NewGame())
 
 		got := s.Save("id", *models.NewGame())
@@ -34,7 +34,7 @@ func TestInMemory_Put(t *testing.T) {
 
 func TestInMemory_Get(t *testing.T) {
 	t.Run("should return from store", func(t *testing.T) {
-		s := NewInMemory()
+		s := New()
 		want := *models.NewGame()
 		s.repo["id"] = want
 
@@ -48,7 +48,7 @@ func TestInMemory_Get(t *testing.T) {
 	})
 
 	t.Run("should fail when trying to add with same id", func(t *testing.T) {
-		s := NewInMemory()
+		s := New()
 
 		_, got := s.Load("id")
 		if want := ErrNotExists; got != want {

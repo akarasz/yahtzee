@@ -1,5 +1,7 @@
 package service
 
+//go:generate mockgen -destination=mocks/mock_service.go -package=mocks -build_flags=-mod=mod . Game,Provider
+
 import (
 	"errors"
 	"math/rand"
@@ -64,13 +66,17 @@ type Game interface {
 // Provider returns a new Game service.
 type Provider interface {
 	// Create returns a Game service object
-	Create(g models.Game, u models.User) (*Game, error)
+	Create(g models.Game, u models.User) Game
 }
 
 // Default is the implementation of yahtzee.
 type Default struct {
 	game models.Game
 	user models.User
+}
+
+func NewProvider() *Default {
+	return &Default{}
 }
 
 func (s *Default) Create(g models.Game, u models.User) Game {

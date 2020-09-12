@@ -1,5 +1,7 @@
 package store
 
+//go:generate mockgen -destination=mocks/mock_store.go -package=mocks -build_flags=-mod=mod . Store
+
 import (
 	"errors"
 
@@ -48,7 +50,7 @@ func (s *InMemory) Load(id string) (models.Game, error) {
 }
 
 // NewInMemory creates an empty in-memory store.
-func NewInMemory() *InMemory {
+func New() *InMemory {
 	return &InMemory{
 		repo: map[string]models.Game{},
 	}

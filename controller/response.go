@@ -4,42 +4,42 @@ import (
 	"github.com/akarasz/yahtzee/models"
 )
 
-type addPlayerResponse struct {
+type AddPlayerResponse struct {
 	Players []*models.Player
 }
 
-func newAddPlayerResponse(g *models.Game) *addPlayerResponse {
-	return &addPlayerResponse{
+func NewAddPlayerResponse(g *models.Game) *AddPlayerResponse {
+	return &AddPlayerResponse{
 		Players: g.Players,
 	}
 }
 
-type rollResponse struct {
+type RollResponse struct {
 	Dices     []*models.Dice
 	RollCount int
 }
 
-func newRollResponse(g *models.Game) *rollResponse {
-	return &rollResponse{
+func NewRollResponse(g *models.Game) *RollResponse {
+	return &RollResponse{
 		Dices:     g.Dices,
 		RollCount: g.RollCount,
 	}
 }
 
-type lockResponse struct {
+type LockResponse struct {
 	Dices []*models.Dice
 }
 
-func newLockResponse(g *models.Game) *lockResponse {
-	return &lockResponse{
+func NewLockResponse(g *models.Game) *LockResponse {
+	return &LockResponse{
 		Dices: g.Dices,
 	}
 }
 
-type scoreResponse struct {
+type ScoreResponse struct {
 	models.Game
 }
 
-func newScoreResponse(g *models.Game) *scoreResponse {
-	return &scoreResponse{*g}
+func NewScoreResponse(g *models.Game) *ScoreResponse {
+	return &ScoreResponse{*g}
 }

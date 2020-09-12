@@ -46,34 +46,34 @@ var (
 	ErrPlayerAlreadyAdded = errors.New("player already added")
 )
 
-type Controller interface {
+type Game interface {
 	AddPlayer(g *models.Game, name string) error
 	Roll(g *models.Game, player string) ([]*models.Dice, error)
 	Toggle(g *models.Game, player string, diceIndex int) ([]*models.Dice, error)
 	Score(g *models.Game, player string, c models.Category) error
 }
 
-type implementation struct {
+type Normal struct {
 }
 
 // New returns the default controller implementation.
-func New() Controller {
-	return &implementation{}
+func New() Game {
+	return &Normal{}
 }
 
-func (c *implementation) addPlayer(g *models.Game, name string) {
+func (c *Normal) addPlayer(g *models.Game, name string) {
 	g.Players = append(g.Players, &models.Player{
 		Name:       name,
 		ScoreSheet: map[models.Category]int{}},
 	)
 }
 
-func (c *implementation) currentPlayer(g *models.Game) *models.Player {
+func (c *Normal) currentPlayer(g *models.Game) *models.Player {
 	return g.Players[g.CurrentPlayer]
 }
 
 // AddPlayer adds a new player with the given `name` and an empty score sheet to the game.
-func (c *implementation) AddPlayer(g *models.Game, name string) error {
+func (c *Normal) AddPlayer(g *models.Game, name string) error {
 	if g.CurrentPlayer > 0 || g.Round > 0 {
 		return ErrAlreadyStarted
 	}
@@ -90,7 +90,7 @@ func (c *implementation) AddPlayer(g *models.Game, name string) error {
 }
 
 // Roll rolls the dices and increment the roll counters.
-func (c *implementation) Roll(g *models.Game, player string) ([]*models.Dice, error) {
+func (c *Normal) Roll(g *models.Game, player string) ([]*models.Dice, error) {
 	if len(g.Players) == 0 || player != c.currentPlayer(g).Name {
 		return nil, ErrNotPlayersTurn
 	}
@@ -117,7 +117,7 @@ func (c *implementation) Roll(g *models.Game, player string) ([]*models.Dice, er
 }
 
 // Score saves the points for the player in the given category and handles the counters.
-func (c *implementation) Score(g *models.Game, player string, category models.Category) error {
+func (c *Normal) Score(g *models.Game, player string, category models.Category) error {
 	if len(g.Players) == 0 || player != c.currentPlayer(g).Name {
 		return ErrNotPlayersTurn
 	}
@@ -179,7 +179,7 @@ func (c *implementation) Score(g *models.Game, player string, category models.Ca
 }
 
 // Toggle locks and unlocks a dice so it will not get rolled.
-func (c *implementation) Toggle(g *models.Game, player string, diceIndex int) ([]*models.Dice, error) {
+func (c *Normal) Toggle(g *models.Game, player string, diceIndex int) ([]*models.Dice, error) {
 	if len(g.Players) == 0 || player != c.currentPlayer(g).Name {
 		return nil, ErrNotPlayersTurn
 	}

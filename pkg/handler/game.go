@@ -15,7 +15,7 @@ type gameHandler interface {
 }
 
 type GameHandler struct {
-	Controller game.Controller
+	Controller game.Game
 }
 
 func (h *GameHandler) handle(player string, g *models.Game) http.Handler {

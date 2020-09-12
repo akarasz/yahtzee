@@ -1,5 +1,7 @@
 package controller
 
+//go:generate mockgen -destination=mocks/mock_controller.go -package=mocks -build_flags=-mod=mod . Root,Game
+
 import (
 	"math/rand"
 	"strconv"
@@ -16,15 +18,22 @@ type Root interface {
 }
 
 type Game interface {
-	AddPlayer(u *models.User, gameID string) (*addPlayerResponse, error)
-	Roll(u *models.User, gameID string) (*rollResponse, error)
-	Lock(u *models.User, gameID string, dice int) (*lockResponse, error)
-	Score(u *models.User, gameID string, c models.Category) (*scoreResponse, error)
+	AddPlayer(u *models.User, gameID string) (*AddPlayerResponse, error)
+	Roll(u *models.User, gameID string) (*RollResponse, error)
+	Lock(u *models.User, gameID string, dice string) (*LockResponse, error)
+	Score(u *models.User, gameID string, c models.Category) (*ScoreResponse, error)
 }
 
 type Default struct {
 	store           store.Store
 	serviceProvider service.Provider
+}
+
+func New(s store.Store, p service.Provider) *Default {
+	return &Default{
+		store:           s,
+		serviceProvider: p,
+	}
 }
 
 func (c *Default) Create() (string, error) {
@@ -80,7 +89,7 @@ func (c *Default) Scores(dices []string) (map[models.Category]int, error) {
 	return result, nil
 }
 
-func (c *Default) AddPlayer(u *models.User, gameID string) (*addPlayerResponse, error) {
+func (c *Default) AddPlayer(u *models.User, gameID string) (*AddPlayerResponse, error) {
 	g, err := c.store.Load(gameID)
 	if err != nil {
 		return nil, err
@@ -96,10 +105,10 @@ func (c *Default) AddPlayer(u *models.User, gameID string) (*addPlayerResponse, 
 		return nil, err
 	}
 
-	return newAddPlayerResponse(&g), nil
+	return NewAddPlayerResponse(&g), nil
 }
 
-func (c *Default) Roll(u *models.User, gameID string) (*rollResponse, error) {
+func (c *Default) Roll(u *models.User, gameID string) (*RollResponse, error) {
 	g, err := c.store.Load(gameID)
 	if err != nil {
 		return nil, err
@@ -115,17 +124,22 @@ func (c *Default) Roll(u *models.User, gameID string) (*rollResponse, error) {
 		return nil, err
 	}
 
-	return newRollResponse(&g), nil
+	return NewRollResponse(&g), nil
 }
 
-func (c *Default) Lock(u *models.User, gameID string, dice int) (*lockResponse, error) {
+func (c *Default) Lock(u *models.User, gameID string, dice string) (*LockResponse, error) {
+	diceIndex, err := strconv.Atoi(dice)
+	if err != nil || diceIndex < 0 || diceIndex > 4 {
+		return nil, service.ErrInvalidDice
+	}
+
 	g, err := c.store.Load(gameID)
 	if err != nil {
 		return nil, err
 	}
 
 	s := c.serviceProvider.Create(g, *u)
-	res, err := s.Lock(dice)
+	res, err := s.Lock(diceIndex)
 	if err != nil {
 		return nil, err
 	}
@@ -134,10 +148,10 @@ func (c *Default) Lock(u *models.User, gameID string, dice int) (*lockResponse, 
 		return nil, err
 	}
 
-	return newLockResponse(&g), nil
+	return NewLockResponse(&g), nil
 }
 
-func (c *Default) Score(u *models.User, gameID string, category models.Category) (*scoreResponse, error) {
+func (c *Default) Score(u *models.User, gameID string, category models.Category) (*ScoreResponse, error) {
 	g, err := c.store.Load(gameID)
 	if err != nil {
 		return nil, err
@@ -153,7 +167,7 @@ func (c *Default) Score(u *models.User, gameID string, category models.Category)
 		return nil, err
 	}
 
-	return newScoreResponse(&g), nil
+	return NewScoreResponse(&g), nil
 }
 
 func generateID() string {
