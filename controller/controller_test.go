@@ -109,4 +109,129 @@ func TestGet(t *testing.T) {
 }
 
 func TestAddPlayer(t *testing.T) {
+	t.Run("should apply add player on loaded game and save again", func(t *testing.T) {
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+
+		mockStore := store_mocks.NewMockStore(mockCtrl)
+		mockServiceProvider := service_mocks.NewMockProvider(mockCtrl)
+		mockService := service_mocks.NewMockGame(mockCtrl)
+
+		u := models.NewUser("alice")
+		before := models.Game{
+			Players: []*models.Player{},
+			Dices:   []*models.Dice{},
+		}
+		after := models.Game{
+			Players: []*models.Player{},
+			Dices:   []*models.Dice{},
+		}
+
+		c := New(mockStore, mockServiceProvider)
+
+		gomock.InOrder(
+			mockStore.EXPECT().Load("gameID").Return(before, nil),
+			mockServiceProvider.EXPECT().Create(gomock.Eq(before), *u).Return(mockService),
+			mockService.EXPECT().AddPlayer().Return(after, nil),
+			mockStore.EXPECT().Save("gameID", gomock.Eq(after)),
+		)
+
+		c.AddPlayer(u, "gameID")
+	})
+}
+
+func TestRoll(t *testing.T) {
+	t.Run("should apply roll on loaded game and save again", func(t *testing.T) {
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+
+		mockStore := store_mocks.NewMockStore(mockCtrl)
+		mockServiceProvider := service_mocks.NewMockProvider(mockCtrl)
+		mockService := service_mocks.NewMockGame(mockCtrl)
+
+		u := models.NewUser("alice")
+		before := models.Game{
+			Players: []*models.Player{},
+			Dices:   []*models.Dice{},
+		}
+		after := models.Game{
+			Players: []*models.Player{},
+			Dices:   []*models.Dice{},
+		}
+
+		c := New(mockStore, mockServiceProvider)
+
+		gomock.InOrder(
+			mockStore.EXPECT().Load("gameID").Return(before, nil),
+			mockServiceProvider.EXPECT().Create(gomock.Eq(before), *u).Return(mockService),
+			mockService.EXPECT().Roll().Return(after, nil),
+			mockStore.EXPECT().Save("gameID", gomock.Eq(after)),
+		)
+
+		c.Roll(u, "gameID")
+	})
+}
+
+func TestLock(t *testing.T) {
+	t.Run("should apply lock on loaded game and save again", func(t *testing.T) {
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+
+		mockStore := store_mocks.NewMockStore(mockCtrl)
+		mockServiceProvider := service_mocks.NewMockProvider(mockCtrl)
+		mockService := service_mocks.NewMockGame(mockCtrl)
+
+		u := models.NewUser("alice")
+		before := models.Game{
+			Players: []*models.Player{},
+			Dices:   []*models.Dice{},
+		}
+		after := models.Game{
+			Players: []*models.Player{},
+			Dices:   []*models.Dice{},
+		}
+
+		c := New(mockStore, mockServiceProvider)
+
+		gomock.InOrder(
+			mockStore.EXPECT().Load("gameID").Return(before, nil),
+			mockServiceProvider.EXPECT().Create(gomock.Eq(before), *u).Return(mockService),
+			mockService.EXPECT().Lock(4).Return(after, nil),
+			mockStore.EXPECT().Save("gameID", gomock.Eq(after)),
+		)
+
+		c.Lock(u, "gameID", "4")
+	})
+}
+
+func TestScore(t *testing.T) {
+	t.Run("should apply score on loaded game and save again", func(t *testing.T) {
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+
+		mockStore := store_mocks.NewMockStore(mockCtrl)
+		mockServiceProvider := service_mocks.NewMockProvider(mockCtrl)
+		mockService := service_mocks.NewMockGame(mockCtrl)
+
+		u := models.NewUser("alice")
+		before := models.Game{
+			Players: []*models.Player{},
+			Dices:   []*models.Dice{},
+		}
+		after := models.Game{
+			Players: []*models.Player{},
+			Dices:   []*models.Dice{},
+		}
+
+		c := New(mockStore, mockServiceProvider)
+
+		gomock.InOrder(
+			mockStore.EXPECT().Load("gameID").Return(before, nil),
+			mockServiceProvider.EXPECT().Create(gomock.Eq(before), *u).Return(mockService),
+			mockService.EXPECT().Score(models.Category("test")).Return(after, nil),
+			mockStore.EXPECT().Save("gameID", gomock.Eq(after)),
+		)
+
+		c.Score(u, "gameID", models.Category("test"))
+	})
 }

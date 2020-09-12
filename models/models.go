@@ -87,3 +87,9 @@ func NewGame() *Game {
 }
 
 type User string
+
+func NewUser(name string) *User {
+	var u User
+	u = User(name)
+	return &u
+}
