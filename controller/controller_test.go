@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -77,6 +78,33 @@ func TestCreate(t *testing.T) {
 
 func TestGet(t *testing.T) {
 	t.Run("should return the loaded game from store", func(t *testing.T) {
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+
+		mockStore := store_mocks.NewMockStore(mockCtrl)
+		mockServiceProvider := service_mocks.NewMockProvider(mockCtrl)
+
+		want := &models.Game{
+			Players:   []*models.Player{},
+			Dices:     []*models.Dice{},
+			RollCount: 2,
+			Round:     8,
+		}
+
+		c := New(mockStore, mockServiceProvider)
+
+		mockStore.EXPECT().
+			Load(gomock.Eq("gameID")).
+			Return(*want, nil).
+			AnyTimes()
+
+		got, err := c.Get("gameID")
+		if err != nil {
+			t.Fatalf("unexpected error: %T: %v", err, err)
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("not returning the same from the store; got %v want %v", got, want)
+		}
 	})
 }
 
