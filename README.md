@@ -32,7 +32,7 @@ eg.
 < 201 Created
 < [
 <   {
-<     "Name": "Alice",
+<     "User": "Alice",
 <     "ScoreSheet": {}
 <   }
 < ]
@@ -51,7 +51,7 @@ eg.
 < {
 <   "Players":[
 <     {
-<       "Name":"andris",
+<       "User":"andris",
 <       "ScoreSheet":{
 <         "ones":3,
 <         "small-straight":30
@@ -174,7 +174,7 @@ eg.
 < {
 <   "Players":[
 <     {
-<       "Name":"andris",
+<       "User":"andris",
 <       "ScoreSheet":{
 <         "ones":3,
 <         "small-straight":30,
