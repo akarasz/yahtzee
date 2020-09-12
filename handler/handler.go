@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 
@@ -65,6 +66,19 @@ func (h *Default) GetHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(g); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *Default) ScoresHandler(w http.ResponseWriter, r *http.Request) {
+	res, err := h.rootController.Scores(strings.Split(mux.Vars(r)["dices"], ","))
+	if controllerHasError(err, w) {
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(res); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

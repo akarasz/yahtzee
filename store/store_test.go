@@ -20,16 +20,6 @@ func TestInMemory_Put(t *testing.T) {
 			t.Errorf("wrong item in store. got %v, want %v", got, want)
 		}
 	})
-
-	t.Run("should fail when trying to add with same id", func(t *testing.T) {
-		s := New()
-		s.Save("id", *models.NewGame())
-
-		got := s.Save("id", *models.NewGame())
-		if want := ErrAlreadyExists; got != want {
-			t.Fatalf("wrong error. got %q, want %q", got, want)
-		}
-	})
 }
 
 func TestInMemory_Get(t *testing.T) {

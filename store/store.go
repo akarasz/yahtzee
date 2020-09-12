@@ -9,9 +9,6 @@ import (
 )
 
 var (
-	// ErrAlreadyExists is returned when an entry is already in the store with the given ID.
-	ErrAlreadyExists = errors.New("already exists")
-
 	// ErrNotExists is returned when an ID not found in the store.
 	ErrNotExists = errors.New("not exists")
 )
@@ -31,10 +28,6 @@ type InMemory struct {
 }
 
 func (s *InMemory) Save(id string, g models.Game) error {
-	if _, ok := s.repo[id]; ok {
-		return ErrAlreadyExists
-	}
-
 	s.repo[id] = g
 
 	return nil

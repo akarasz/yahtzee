@@ -1,7 +1,10 @@
 package main
 
 import (
+	"math/rand"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -13,6 +16,8 @@ import (
 )
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
+
 	sp := service.NewProvider()
 	s := store.New()
 	c := controller.New(s, sp)
@@ -21,6 +26,9 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", h.CreateHandler).
 		Methods("POST")
+	r.HandleFunc("/score", h.ScoresHandler).
+		Methods("GET").
+		Queries("dices", "{dices:[1-6],[1-6],[1-6],[1-6],[1-6]}")
 	r.HandleFunc("/{gameID}", h.GetHandler).
 		Methods("GET")
 	r.HandleFunc("/{gameID}/join", h.AddPlayerHandler).
@@ -32,5 +40,11 @@ func main() {
 	r.HandleFunc("/{gameID}/score", h.ScoreHandler).
 		Methods("POST")
 
-	log.Fatal(http.ListenAndServe(":8000", r))
+	port := "8000"
+	if envPort := os.Getenv("PORT"); envPort != "" {
+		port = envPort
+	}
+
+	listenAddress := ":" + port
+	log.Fatal(http.ListenAndServe(listenAddress, r))
 }

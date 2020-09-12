@@ -213,12 +213,12 @@ eg.
 ### Score suggestions
 
 ```
-GET /score?dice={dice0}&dice={dice1}&dice={dice2}&dice={dice3}&dice={dice4}
+GET /score?dices=[1-6],[1-6],[1-6],[1-6],[1-6]
 ```
 
 eg.
 ```
-> POST /score?dice=2&dice=3&dice=1&dice=3&dice=2
+> POST /score?dices=2,3,1,3,2
 < 200 OK
 < {
 <   "ones": 1,
@@ -240,7 +240,5 @@ eg.
 ## TODO
 
 * websocket for announcing real time state changes
-* store should return concrete object and not pointer (pointer only works for
-  in-memory, not for redis)
 * store games in redis with an expiration
 * use some kind of oauth (github? google?) instead of basic auth
