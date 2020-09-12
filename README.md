@@ -30,12 +30,12 @@ eg.
 ```
 > POST /gcxog/join
 < 201 Created
-< [
+< {"Players": [
 <   {
 <     "User": "Alice",
 <     "ScoreSheet": {}
 <   }
-< ]
+< ]}
 ```
 
 ### Show a Game
@@ -98,8 +98,8 @@ eg.
 < 200 OK
 <
 < {
-<   "rollCount": 1,
-<   "dices": [
+<   "RollCount": 1,
+<   "Dices": [
 <     {
 <       "Value": 1,
 <       "Locked": true
@@ -135,7 +135,7 @@ eg.
 > POST /gcxog/lock/3
 < 200 OK
 <
-< [
+< {"Dices": [
 <   {
 <     "Value": 1,
 <     "Locked": true
@@ -156,7 +156,7 @@ eg.
 <     "Value": 1,
 <     "Locked": true
 <   }
-< ]
+< ]}
 ```
 
 ### Score

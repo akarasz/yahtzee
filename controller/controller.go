@@ -105,7 +105,7 @@ func (c *Default) AddPlayer(u *models.User, gameID string) (*AddPlayerResponse, 
 		return nil, err
 	}
 
-	return NewAddPlayerResponse(&g), nil
+	return NewAddPlayerResponse(&res), nil
 }
 
 func (c *Default) Roll(u *models.User, gameID string) (*RollResponse, error) {
@@ -124,7 +124,7 @@ func (c *Default) Roll(u *models.User, gameID string) (*RollResponse, error) {
 		return nil, err
 	}
 
-	return NewRollResponse(&g), nil
+	return NewRollResponse(&res), nil
 }
 
 func (c *Default) Lock(u *models.User, gameID string, dice string) (*LockResponse, error) {
@@ -148,7 +148,7 @@ func (c *Default) Lock(u *models.User, gameID string, dice string) (*LockRespons
 		return nil, err
 	}
 
-	return NewLockResponse(&g), nil
+	return NewLockResponse(&res), nil
 }
 
 func (c *Default) Score(u *models.User, gameID string, category models.Category) (*ScoreResponse, error) {
@@ -167,7 +167,7 @@ func (c *Default) Score(u *models.User, gameID string, category models.Category)
 		return nil, err
 	}
 
-	return NewScoreResponse(&g), nil
+	return NewScoreResponse(&res), nil
 }
 
 func generateID() string {
