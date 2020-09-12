@@ -27,7 +27,9 @@ func main() {
 		Methods("POST")
 	r.HandleFunc("/{gameID}/roll", h.RollHandler).
 		Methods("POST")
-	r.HandleFunc("/{gameID}/roll/{dice}", h.LockHandler).
+	r.HandleFunc("/{gameID}/lock/{dice}", h.LockHandler).
+		Methods("POST")
+	r.HandleFunc("/{gameID}/score", h.ScoreHandler).
 		Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":8000", r))

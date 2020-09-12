@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -141,6 +142,39 @@ func (h *Default) LockHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, err := h.gameController.Lock(user, gameID, dice)
+
+	if controllerHasError(err, w) {
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *Default) ScoreHandler(w http.ResponseWriter, r *http.Request) {
+	user, err := extractUser(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	gameID, err := extractGameID(r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+	bodyString := string(body)
+
+	res, err := h.gameController.Score(user, gameID, models.Category(bodyString))
 
 	if controllerHasError(err, w) {
 		return
