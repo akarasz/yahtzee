@@ -41,20 +41,20 @@ func main() {
 	r := mux.NewRouter()
 	r.Use(corsMiddleware)
 	r.HandleFunc("/", h.CreateHandler).
-		Methods("POST")
+		Methods("POST", "OPTIONS")
 	r.HandleFunc("/score", h.ScoresHandler).
-		Methods("GET").
+		Methods("GET", "OPTIONS").
 		Queries("dices", "{dices:[1-6],[1-6],[1-6],[1-6],[1-6]}")
 	r.HandleFunc("/{gameID}", h.GetHandler).
-		Methods("GET")
+		Methods("GET", "OPTIONS")
 	r.HandleFunc("/{gameID}/join", h.AddPlayerHandler).
-		Methods("POST")
+		Methods("POST", "OPTIONS")
 	r.HandleFunc("/{gameID}/roll", h.RollHandler).
-		Methods("POST")
+		Methods("POST", "OPTIONS")
 	r.HandleFunc("/{gameID}/lock/{dice}", h.LockHandler).
-		Methods("POST")
+		Methods("POST", "OPTIONS")
 	r.HandleFunc("/{gameID}/score", h.ScoreHandler).
-		Methods("POST")
+		Methods("POST", "OPTIONS")
 
 	port := "8000"
 	if envPort := os.Getenv("PORT"); envPort != "" {
