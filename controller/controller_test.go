@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 
+	"github.com/akarasz/yahtzee/events"
 	events_mocks "github.com/akarasz/yahtzee/events/mocks"
 	"github.com/akarasz/yahtzee/models"
 	service_mocks "github.com/akarasz/yahtzee/service/mocks"
@@ -139,6 +140,7 @@ func TestAddPlayer(t *testing.T) {
 			mockServiceProvider.EXPECT().Create(gomock.Eq(before), *u).Return(mockService),
 			mockService.EXPECT().AddPlayer().Return(after, nil),
 			mockStore.EXPECT().Save("gameID", gomock.Eq(after)),
+			mockEvents.EXPECT().Emit("gameID", events.AddPlayer, gomock.Any()),
 		)
 
 		c.AddPlayer(u, "gameID")
@@ -172,6 +174,7 @@ func TestRoll(t *testing.T) {
 			mockServiceProvider.EXPECT().Create(gomock.Eq(before), *u).Return(mockService),
 			mockService.EXPECT().Roll().Return(after, nil),
 			mockStore.EXPECT().Save("gameID", gomock.Eq(after)),
+			mockEvents.EXPECT().Emit("gameID", events.Roll, gomock.Any()),
 		)
 
 		c.Roll(u, "gameID")
@@ -205,6 +208,7 @@ func TestLock(t *testing.T) {
 			mockServiceProvider.EXPECT().Create(gomock.Eq(before), *u).Return(mockService),
 			mockService.EXPECT().Lock(4).Return(after, nil),
 			mockStore.EXPECT().Save("gameID", gomock.Eq(after)),
+			mockEvents.EXPECT().Emit("gameID", events.Lock, gomock.Any()),
 		)
 
 		c.Lock(u, "gameID", "4")
@@ -238,6 +242,7 @@ func TestScore(t *testing.T) {
 			mockServiceProvider.EXPECT().Create(gomock.Eq(before), *u).Return(mockService),
 			mockService.EXPECT().Score(models.Category("test")).Return(after, nil),
 			mockStore.EXPECT().Save("gameID", gomock.Eq(after)),
+			mockEvents.EXPECT().Emit("gameID", events.Score, gomock.Any()),
 		)
 
 		c.Score(u, "gameID", models.Category("test"))
