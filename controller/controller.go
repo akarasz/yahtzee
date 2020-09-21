@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"strconv"
 
+	"github.com/akarasz/yahtzee/events"
 	"github.com/akarasz/yahtzee/models"
 	"github.com/akarasz/yahtzee/service"
 	"github.com/akarasz/yahtzee/store"
@@ -27,12 +28,14 @@ type Game interface {
 type Default struct {
 	store           store.Store
 	serviceProvider service.Provider
+	events          events.Emitter
 }
 
-func New(s store.Store, p service.Provider) *Default {
+func New(s store.Store, p service.Provider, e events.Emitter) *Default {
 	return &Default{
 		store:           s,
 		serviceProvider: p,
+		events:          e,
 	}
 }
 

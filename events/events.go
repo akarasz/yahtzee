@@ -1,5 +1,7 @@
 package events
 
+//go:generate mockgen -destination=mocks/mock_events.go -package=mocks -build_flags=-mod=mod . Emitter
+
 // Type tells which kind of events happened
 type Type int
 

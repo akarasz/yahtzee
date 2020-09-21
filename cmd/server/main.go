@@ -35,7 +35,7 @@ func main() {
 
 	sp := service.NewProvider()
 	s := store.New()
-	c := controller.New(s, sp)
+	c := controller.New(s, sp, nil)
 	h := handler.New(c, c)
 
 	r := mux.NewRouter()
