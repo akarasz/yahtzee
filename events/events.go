@@ -9,14 +9,14 @@ import (
 )
 
 // Type tells which kind of events happened
-type Type int
+type Type string
 
 // Available types
 const (
-	AddPlayer Type = iota
-	Roll
-	Lock
-	Score
+	AddPlayer Type = "add-player"
+	Roll      Type = "roll"
+	Lock      Type = "lock"
+	Score     Type = "score"
 )
 
 // Emitter used by the event producer side to fire events
