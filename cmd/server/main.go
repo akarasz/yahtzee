@@ -10,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/akarasz/yahtzee/controller"
+	"github.com/akarasz/yahtzee/events"
 	"github.com/akarasz/yahtzee/handler"
 	"github.com/akarasz/yahtzee/service"
 	"github.com/akarasz/yahtzee/store"
@@ -35,7 +36,7 @@ func main() {
 
 	sp := service.NewProvider()
 	s := store.New()
-	c := controller.New(s, sp, nil)
+	c := controller.New(s, sp, &events.LoggingEmitter{})
 	h := handler.New(c, c)
 
 	r := mux.NewRouter()
