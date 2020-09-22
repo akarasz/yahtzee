@@ -56,7 +56,7 @@ func main() {
 		Methods("POST", "OPTIONS")
 	r.HandleFunc("/{gameID}/score", h.ScoreHandler).
 		Methods("POST", "OPTIONS")
-	r.HandleFunc("/{gameID}/ws", handler.EventsWSHandler)
+	r.Handle("/{gameID}/ws", handler.EventsWSHandler())
 
 	port := "8000"
 	if envPort := os.Getenv("PORT"); envPort != "" {
