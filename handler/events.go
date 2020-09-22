@@ -6,13 +6,20 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/akarasz/yahtzee/store"
 )
 
 var upgrader = websocket.Upgrader{}
 
-func EventsWSHandler() http.Handler {
+func EventsWSHandler(s store.Store) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gameID := mux.Vars(r)["gameID"]
+		if _, err := s.Load(gameID); err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
 		c, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			log.WithField("gameID", gameID).Printf("upgrade:", err)
