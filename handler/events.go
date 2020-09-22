@@ -9,7 +9,7 @@ import (
 
 var upgrader = websocket.Upgrader{}
 
-func EventsWHandler(w http.ResponseWriter, r *http.Request) {
+func EventsWSHandler(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Print("upgrade:", err)
