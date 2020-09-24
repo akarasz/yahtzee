@@ -2,6 +2,10 @@ package events
 
 //go:generate mockgen -destination=mocks/mock_events.go -package=mocks -build_flags=-mod=mod . Emitter,Subscriber
 
+import (
+	"sync"
+)
+
 // Type tells which kind of events happened
 type Type string
 
@@ -26,14 +30,60 @@ type Emitter interface {
 	Emit(gameID string, t Type, body interface{})
 }
 
-type Dummy struct {
-	C chan interface{}
+func New() *Broker {
+	return &Broker{
+		clients: map[string]*game{},
+	}
 }
 
-func (e *Dummy) Subscribe(gameID string) (chan interface{}, error) {
-	return e.C, nil
+type game struct {
+	sync.Mutex
+	subscribers []chan interface{}
 }
 
-func (e *Dummy) Emit(gameID string, t Type, body interface{}) {
-	e.C <- body
+func newGame() *game {
+	return &game{
+		subscribers: []chan interface{}{},
+	}
+}
+
+type Broker struct {
+	sync.Mutex
+	clients map[string]*game
+}
+
+func (b *Broker) Subscribe(gameID string) (chan interface{}, error) {
+	c := make(chan interface{})
+
+	var g *game
+
+	g, ok := b.clients[gameID]
+	if !ok {
+		b.Lock()
+		defer b.Unlock()
+
+		g = newGame()
+		b.clients[gameID] = g
+	}
+
+	g.Lock()
+	defer g.Unlock()
+
+	g.subscribers = append(g.subscribers, c)
+
+	return c, nil
+}
+
+func (b *Broker) Emit(gameID string, t Type, body interface{}) {
+	g, ok := b.clients[gameID]
+	if !ok {
+		return
+	}
+
+	g.Lock()
+	defer g.Unlock()
+
+	for _, s := range g.subscribers {
+		s <- body
+	}
 }

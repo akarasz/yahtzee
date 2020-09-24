@@ -34,9 +34,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	e := &events.Dummy{
-		C: make(chan interface{}),
-	}
+	e := events.New()
 	sp := service.NewProvider()
 	s := store.New()
 	c := controller.New(s, sp, e)
