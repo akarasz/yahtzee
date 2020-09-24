@@ -34,9 +34,10 @@ func corsMiddleware(next http.Handler) http.Handler {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
+	e := &events.DummyEvents{}
 	sp := service.NewProvider()
 	s := store.New()
-	c := controller.New(s, sp, &events.LoggingEmitter{})
+	c := controller.New(s, sp, e)
 	h := handler.New(c, c)
 
 	r := mux.NewRouter()
@@ -56,7 +57,7 @@ func main() {
 		Methods("POST", "OPTIONS")
 	r.HandleFunc("/{gameID}/score", h.ScoreHandler).
 		Methods("POST", "OPTIONS")
-	r.Handle("/{gameID}/ws", handler.EventsWSHandler(s))
+	r.Handle("/{gameID}/ws", handler.EventsWSHandler(e, s))
 
 	port := "8000"
 	if envPort := os.Getenv("PORT"); envPort != "" {

@@ -6,20 +6,19 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
-	log "github.com/sirupsen/logrus"
 
+	"github.com/akarasz/yahtzee/events"
 	"github.com/akarasz/yahtzee/store"
 )
 
 const (
-	writeWait  = 10 * time.Second
 	pongWait   = 30 * time.Second
 	pingPeriod = (pongWait * 8) / 10
 )
 
 var upgrader = websocket.Upgrader{}
 
-func writer(ws *websocket.Conn) {
+func writer(ws *websocket.Conn, events <-chan string) {
 	pingTicker := time.NewTicker(pingPeriod)
 	defer func() {
 		pingTicker.Stop()
@@ -29,7 +28,6 @@ func writer(ws *websocket.Conn) {
 	for {
 		select {
 		case <-pingTicker.C:
-			ws.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := ws.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
 				return
 			}
@@ -52,23 +50,29 @@ func reader(ws *websocket.Conn) {
 	}
 }
 
-func EventsWSHandler(s store.Store) http.Handler {
+func EventsWSHandler(sub events.Subscriber, s store.Store) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gameID := mux.Vars(r)["gameID"]
 		if _, err := s.Load(gameID); err != nil {
-			w.WriteHeader(http.StatusNotFound)
+			http.Error(w, "Game not found", http.StatusNotFound)
+			return
+		}
+
+		eventChannel, err := sub.Subscribe(gameID)
+		if err != nil {
+			http.Error(w, "Unable to subscribe", http.StatusInternalServerError)
 			return
 		}
 
 		ws, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			if _, ok := err.(websocket.HandshakeError); !ok {
-				log.Println(err)
+				http.Error(w, "Unknown error", http.StatusInternalServerError)
 			}
 			return
 		}
 
-		go writer(ws)
+		go writer(ws, eventChannel)
 		reader(ws)
 	})
 }

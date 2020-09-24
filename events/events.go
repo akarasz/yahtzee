@@ -19,6 +19,12 @@ const (
 	Score     Type = "score"
 )
 
+// Subscriber for subscribe events
+type Subscriber interface {
+	// Subscribe to get events from `gameID` to be send to `channel`
+	Subscribe(gameID string) (chan string, error)
+}
+
 // Emitter used by the event producer side to fire events
 type Emitter interface {
 	// Emit notifies the consumers of `gameID` that a `t` event happened
@@ -26,9 +32,14 @@ type Emitter interface {
 	Emit(gameID string, t Type, body interface{})
 }
 
-type LoggingEmitter struct{}
+type DummyEvents struct{}
 
-func (e *LoggingEmitter) Emit(gameID string, t Type, body interface{}) {
+func (e *DummyEvents) Subscribe(gameID string) (chan string, error) {
+	log.Info("subscribing to", gameID)
+	return make(chan string), nil
+}
+
+func (e *DummyEvents) Emit(gameID string, t Type, body interface{}) {
 	jsonBody, _ := json.Marshal(body)
 	log.WithFields(log.Fields{
 		"gameID": gameID,
