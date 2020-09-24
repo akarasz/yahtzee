@@ -18,7 +18,7 @@ const (
 
 var upgrader = websocket.Upgrader{}
 
-func writer(ws *websocket.Conn, events <-chan string) {
+func writer(ws *websocket.Conn, events <-chan interface{}) {
 	pingTicker := time.NewTicker(pingPeriod)
 	defer func() {
 		pingTicker.Stop()
@@ -27,6 +27,10 @@ func writer(ws *websocket.Conn, events <-chan string) {
 
 	for {
 		select {
+		case e := <-events:
+			if err := ws.WriteJSON(e); err != nil {
+				return
+			}
 		case <-pingTicker.C:
 			if err := ws.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
 				return

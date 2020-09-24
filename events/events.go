@@ -1,12 +1,6 @@
 package events
 
-//go:generate mockgen -destination=mocks/mock_events.go -package=mocks -build_flags=-mod=mod . Emitter
-
-import (
-	"encoding/json"
-
-	log "github.com/sirupsen/logrus"
-)
+//go:generate mockgen -destination=mocks/mock_events.go -package=mocks -build_flags=-mod=mod . Emitter,Subscriber
 
 // Type tells which kind of events happened
 type Type string
@@ -22,7 +16,7 @@ const (
 // Subscriber for subscribe events
 type Subscriber interface {
 	// Subscribe to get events from `gameID` to be send to `channel`
-	Subscribe(gameID string) (chan string, error)
+	Subscribe(gameID string) (chan interface{}, error)
 }
 
 // Emitter used by the event producer side to fire events
@@ -32,17 +26,14 @@ type Emitter interface {
 	Emit(gameID string, t Type, body interface{})
 }
 
-type DummyEvents struct{}
-
-func (e *DummyEvents) Subscribe(gameID string) (chan string, error) {
-	log.Info("subscribing to", gameID)
-	return make(chan string), nil
+type Dummy struct {
+	C chan interface{}
 }
 
-func (e *DummyEvents) Emit(gameID string, t Type, body interface{}) {
-	jsonBody, _ := json.Marshal(body)
-	log.WithFields(log.Fields{
-		"gameID": gameID,
-		"type":   t,
-	}).Info(string(jsonBody))
+func (e *Dummy) Subscribe(gameID string) (chan interface{}, error) {
+	return e.C, nil
+}
+
+func (e *Dummy) Emit(gameID string, t Type, body interface{}) {
+	e.C <- body
 }
