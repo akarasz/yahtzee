@@ -62,17 +62,17 @@ func EventsWSHandler(sub events.Subscriber, s store.Store) http.Handler {
 			return
 		}
 
-		eventChannel, err := sub.Subscribe(gameID)
-		if err != nil {
-			http.Error(w, "Unable to subscribe", http.StatusInternalServerError)
-			return
-		}
-
 		ws, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			if _, ok := err.(websocket.HandshakeError); !ok {
 				http.Error(w, "Unknown error", http.StatusInternalServerError)
 			}
+			return
+		}
+
+		eventChannel, err := sub.Subscribe(gameID, ws)
+		if err != nil {
+			http.Error(w, "Unable to subscribe", http.StatusInternalServerError)
 			return
 		}
 

@@ -20,7 +20,8 @@ const (
 // Subscriber for subscribe events
 type Subscriber interface {
 	// Subscribe to get events from `gameID` to be send to `channel`
-	Subscribe(gameID string) (chan interface{}, error)
+	Subscribe(gameID string, clientID interface{}) (chan interface{}, error)
+	Unsubscribe(clientID interface{}) error
 }
 
 // Emitter used by the event producer side to fire events
@@ -52,7 +53,7 @@ type Broker struct {
 	clients map[string]*game
 }
 
-func (b *Broker) Subscribe(gameID string) (chan interface{}, error) {
+func (b *Broker) Subscribe(gameID string, clientID interface{}) (chan interface{}, error) {
 	c := make(chan interface{})
 
 	var g *game
@@ -72,6 +73,11 @@ func (b *Broker) Subscribe(gameID string) (chan interface{}, error) {
 	g.subscribers = append(g.subscribers, c)
 
 	return c, nil
+}
+
+func (b *Broker) Unsubscribe(clientID interface{}) error {
+
+	return nil
 }
 
 func (b *Broker) Emit(gameID string, t Type, body interface{}) {
