@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"strconv"
 
+	"github.com/akarasz/yahtzee/events"
 	"github.com/akarasz/yahtzee/models"
 	"github.com/akarasz/yahtzee/service"
 	"github.com/akarasz/yahtzee/store"
@@ -27,12 +28,14 @@ type Game interface {
 type Default struct {
 	store           store.Store
 	serviceProvider service.Provider
+	events          events.Emitter
 }
 
-func New(s store.Store, p service.Provider) *Default {
+func New(s store.Store, p service.Provider, e events.Emitter) *Default {
 	return &Default{
 		store:           s,
 		serviceProvider: p,
+		events:          e,
 	}
 }
 
@@ -105,7 +108,9 @@ func (c *Default) AddPlayer(u *models.User, gameID string) (*AddPlayerResponse, 
 		return nil, err
 	}
 
-	return NewAddPlayerResponse(&res), nil
+	changes := NewAddPlayerResponse(&res)
+	c.events.Emit(gameID, events.AddPlayer, changes)
+	return changes, nil
 }
 
 func (c *Default) Roll(u *models.User, gameID string) (*RollResponse, error) {
@@ -124,7 +129,9 @@ func (c *Default) Roll(u *models.User, gameID string) (*RollResponse, error) {
 		return nil, err
 	}
 
-	return NewRollResponse(&res), nil
+	changes := NewRollResponse(&res)
+	c.events.Emit(gameID, events.Roll, changes)
+	return changes, nil
 }
 
 func (c *Default) Lock(u *models.User, gameID string, dice string) (*LockResponse, error) {
@@ -148,7 +155,9 @@ func (c *Default) Lock(u *models.User, gameID string, dice string) (*LockRespons
 		return nil, err
 	}
 
-	return NewLockResponse(&res), nil
+	changes := NewLockResponse(&res)
+	c.events.Emit(gameID, events.Lock, changes)
+	return changes, nil
 }
 
 func (c *Default) Score(u *models.User, gameID string, category models.Category) (*ScoreResponse, error) {
@@ -167,7 +176,9 @@ func (c *Default) Score(u *models.User, gameID string, category models.Category)
 		return nil, err
 	}
 
-	return NewScoreResponse(&res), nil
+	changes := NewScoreResponse(&res)
+	c.events.Emit(gameID, events.Score, changes)
+	return changes, nil
 }
 
 func generateID() string {

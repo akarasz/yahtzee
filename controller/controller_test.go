@@ -6,6 +6,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 
+	"github.com/akarasz/yahtzee/events"
+	events_mocks "github.com/akarasz/yahtzee/events/mocks"
 	"github.com/akarasz/yahtzee/models"
 	service_mocks "github.com/akarasz/yahtzee/service/mocks"
 	store_mocks "github.com/akarasz/yahtzee/store/mocks"
@@ -18,8 +20,9 @@ func TestCreate(t *testing.T) {
 
 		mockStore := store_mocks.NewMockStore(mockCtrl)
 		mockServiceProvider := service_mocks.NewMockProvider(mockCtrl)
+		mockEvents := events_mocks.NewMockEmitter(mockCtrl)
 
-		c := New(mockStore, mockServiceProvider)
+		c := New(mockStore, mockServiceProvider, mockEvents)
 
 		var savedID string
 		mockStore.EXPECT().
@@ -45,8 +48,9 @@ func TestCreate(t *testing.T) {
 
 		mockStore := store_mocks.NewMockStore(mockCtrl)
 		mockServiceProvider := service_mocks.NewMockProvider(mockCtrl)
+		mockEvents := events_mocks.NewMockEmitter(mockCtrl)
 
-		c := New(mockStore, mockServiceProvider)
+		c := New(mockStore, mockServiceProvider, mockEvents)
 
 		var savedGame *models.Game
 		mockStore.EXPECT().
@@ -83,6 +87,9 @@ func TestGet(t *testing.T) {
 
 		mockStore := store_mocks.NewMockStore(mockCtrl)
 		mockServiceProvider := service_mocks.NewMockProvider(mockCtrl)
+		mockEvents := events_mocks.NewMockEmitter(mockCtrl)
+
+		c := New(mockStore, mockServiceProvider, mockEvents)
 
 		want := &models.Game{
 			Players:   []*models.Player{},
@@ -90,8 +97,6 @@ func TestGet(t *testing.T) {
 			RollCount: 2,
 			Round:     8,
 		}
-
-		c := New(mockStore, mockServiceProvider)
 
 		mockStore.EXPECT().
 			Load(gomock.Eq("gameID")).
@@ -116,6 +121,9 @@ func TestAddPlayer(t *testing.T) {
 		mockStore := store_mocks.NewMockStore(mockCtrl)
 		mockServiceProvider := service_mocks.NewMockProvider(mockCtrl)
 		mockService := service_mocks.NewMockGame(mockCtrl)
+		mockEvents := events_mocks.NewMockEmitter(mockCtrl)
+
+		c := New(mockStore, mockServiceProvider, mockEvents)
 
 		u := models.NewUser("alice")
 		before := models.Game{
@@ -127,13 +135,12 @@ func TestAddPlayer(t *testing.T) {
 			Dices:   []*models.Dice{},
 		}
 
-		c := New(mockStore, mockServiceProvider)
-
 		gomock.InOrder(
 			mockStore.EXPECT().Load("gameID").Return(before, nil),
 			mockServiceProvider.EXPECT().Create(gomock.Eq(before), *u).Return(mockService),
 			mockService.EXPECT().AddPlayer().Return(after, nil),
 			mockStore.EXPECT().Save("gameID", gomock.Eq(after)),
+			mockEvents.EXPECT().Emit("gameID", events.AddPlayer, gomock.Any()),
 		)
 
 		c.AddPlayer(u, "gameID")
@@ -148,6 +155,9 @@ func TestRoll(t *testing.T) {
 		mockStore := store_mocks.NewMockStore(mockCtrl)
 		mockServiceProvider := service_mocks.NewMockProvider(mockCtrl)
 		mockService := service_mocks.NewMockGame(mockCtrl)
+		mockEvents := events_mocks.NewMockEmitter(mockCtrl)
+
+		c := New(mockStore, mockServiceProvider, mockEvents)
 
 		u := models.NewUser("alice")
 		before := models.Game{
@@ -159,13 +169,12 @@ func TestRoll(t *testing.T) {
 			Dices:   []*models.Dice{},
 		}
 
-		c := New(mockStore, mockServiceProvider)
-
 		gomock.InOrder(
 			mockStore.EXPECT().Load("gameID").Return(before, nil),
 			mockServiceProvider.EXPECT().Create(gomock.Eq(before), *u).Return(mockService),
 			mockService.EXPECT().Roll().Return(after, nil),
 			mockStore.EXPECT().Save("gameID", gomock.Eq(after)),
+			mockEvents.EXPECT().Emit("gameID", events.Roll, gomock.Any()),
 		)
 
 		c.Roll(u, "gameID")
@@ -180,6 +189,9 @@ func TestLock(t *testing.T) {
 		mockStore := store_mocks.NewMockStore(mockCtrl)
 		mockServiceProvider := service_mocks.NewMockProvider(mockCtrl)
 		mockService := service_mocks.NewMockGame(mockCtrl)
+		mockEvents := events_mocks.NewMockEmitter(mockCtrl)
+
+		c := New(mockStore, mockServiceProvider, mockEvents)
 
 		u := models.NewUser("alice")
 		before := models.Game{
@@ -191,13 +203,12 @@ func TestLock(t *testing.T) {
 			Dices:   []*models.Dice{},
 		}
 
-		c := New(mockStore, mockServiceProvider)
-
 		gomock.InOrder(
 			mockStore.EXPECT().Load("gameID").Return(before, nil),
 			mockServiceProvider.EXPECT().Create(gomock.Eq(before), *u).Return(mockService),
 			mockService.EXPECT().Lock(4).Return(after, nil),
 			mockStore.EXPECT().Save("gameID", gomock.Eq(after)),
+			mockEvents.EXPECT().Emit("gameID", events.Lock, gomock.Any()),
 		)
 
 		c.Lock(u, "gameID", "4")
@@ -212,6 +223,9 @@ func TestScore(t *testing.T) {
 		mockStore := store_mocks.NewMockStore(mockCtrl)
 		mockServiceProvider := service_mocks.NewMockProvider(mockCtrl)
 		mockService := service_mocks.NewMockGame(mockCtrl)
+		mockEvents := events_mocks.NewMockEmitter(mockCtrl)
+
+		c := New(mockStore, mockServiceProvider, mockEvents)
 
 		u := models.NewUser("alice")
 		before := models.Game{
@@ -223,13 +237,12 @@ func TestScore(t *testing.T) {
 			Dices:   []*models.Dice{},
 		}
 
-		c := New(mockStore, mockServiceProvider)
-
 		gomock.InOrder(
 			mockStore.EXPECT().Load("gameID").Return(before, nil),
 			mockServiceProvider.EXPECT().Create(gomock.Eq(before), *u).Return(mockService),
 			mockService.EXPECT().Score(models.Category("test")).Return(after, nil),
 			mockStore.EXPECT().Save("gameID", gomock.Eq(after)),
+			mockEvents.EXPECT().Emit("gameID", events.Score, gomock.Any()),
 		)
 
 		c.Score(u, "gameID", models.Category("test"))
