@@ -34,7 +34,7 @@ type Emitter interface {
 
 func New() *Broker {
 	return &Broker{
-		clients: map[string]*game{},
+		games: map[string]*game{},
 	}
 }
 
@@ -51,7 +51,7 @@ func newGame() *game {
 
 type Broker struct {
 	sync.Mutex
-	clients map[string]*game
+	games map[string]*game
 }
 
 func (b *Broker) Subscribe(gameID string, clientID interface{}) (chan interface{}, error) {
@@ -59,13 +59,13 @@ func (b *Broker) Subscribe(gameID string, clientID interface{}) (chan interface{
 
 	var g *game
 
-	g, ok := b.clients[gameID]
+	g, ok := b.games[gameID]
 	if !ok {
 		b.Lock()
 		defer b.Unlock()
 
 		g = newGame()
-		b.clients[gameID] = g
+		b.games[gameID] = g
 	}
 
 	g.Lock()
@@ -77,7 +77,7 @@ func (b *Broker) Subscribe(gameID string, clientID interface{}) (chan interface{
 }
 
 func (b *Broker) Unsubscribe(gameID string, clientID interface{}) error {
-	g, ok := b.clients[gameID]
+	g, ok := b.games[gameID]
 	if !ok {
 		return errors.New("no game found")
 	}
@@ -90,11 +90,15 @@ func (b *Broker) Unsubscribe(gameID string, clientID interface{}) error {
 		delete(g.clients, clientID)
 	}
 
+	if len(g.clients) == 0 {
+		delete(b.games, gameID)
+	}
+
 	return nil
 }
 
 func (b *Broker) Emit(gameID string, t Type, body interface{}) {
-	g, ok := b.clients[gameID]
+	g, ok := b.games[gameID]
 	if !ok {
 		return
 	}
