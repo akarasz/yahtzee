@@ -16,7 +16,9 @@ const (
 	pingPeriod = (pongWait * 8) / 10
 )
 
-var upgrader = websocket.Upgrader{}
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool { return true },
+}
 
 func writer(ws *websocket.Conn, events <-chan interface{}, s events.Subscriber, gameID string) {
 	pingTicker := time.NewTicker(pingPeriod)
