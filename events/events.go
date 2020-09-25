@@ -3,6 +3,7 @@ package events
 //go:generate mockgen -destination=mocks/mock_events.go -package=mocks -build_flags=-mod=mod . Emitter,Subscriber
 
 import (
+	"errors"
 	"sync"
 )
 
@@ -21,7 +22,7 @@ const (
 type Subscriber interface {
 	// Subscribe to get events from `gameID` to be send to `channel`
 	Subscribe(gameID string, clientID interface{}) (chan interface{}, error)
-	Unsubscribe(clientID interface{}) error
+	Unsubscribe(gameID string, clientID interface{}) error
 }
 
 // Emitter used by the event producer side to fire events
@@ -39,12 +40,12 @@ func New() *Broker {
 
 type game struct {
 	sync.Mutex
-	subscribers []chan interface{}
+	clients map[interface{}]chan interface{}
 }
 
 func newGame() *game {
 	return &game{
-		subscribers: []chan interface{}{},
+		clients: map[interface{}]chan interface{}{},
 	}
 }
 
@@ -70,12 +71,24 @@ func (b *Broker) Subscribe(gameID string, clientID interface{}) (chan interface{
 	g.Lock()
 	defer g.Unlock()
 
-	g.subscribers = append(g.subscribers, c)
+	g.clients[clientID] = c
 
 	return c, nil
 }
 
-func (b *Broker) Unsubscribe(clientID interface{}) error {
+func (b *Broker) Unsubscribe(gameID string, clientID interface{}) error {
+	g, ok := b.clients[gameID]
+	if !ok {
+		return errors.New("no game found")
+	}
+
+	g.Lock()
+	defer g.Unlock()
+
+	if c, ok := g.clients[clientID]; ok {
+		close(c)
+		delete(g.clients, clientID)
+	}
 
 	return nil
 }
@@ -89,7 +102,7 @@ func (b *Broker) Emit(gameID string, t Type, body interface{}) {
 	g.Lock()
 	defer g.Unlock()
 
-	for _, s := range g.subscribers {
+	for _, s := range g.clients {
 		s <- body
 	}
 }

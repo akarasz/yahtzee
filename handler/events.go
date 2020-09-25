@@ -18,9 +18,10 @@ const (
 
 var upgrader = websocket.Upgrader{}
 
-func writer(ws *websocket.Conn, events <-chan interface{}) {
+func writer(ws *websocket.Conn, events <-chan interface{}, s events.Subscriber, gameID string) {
 	pingTicker := time.NewTicker(pingPeriod)
 	defer func() {
+		s.Unsubscribe(gameID, ws)
 		pingTicker.Stop()
 		ws.Close()
 	}()
@@ -39,8 +40,9 @@ func writer(ws *websocket.Conn, events <-chan interface{}) {
 	}
 }
 
-func reader(ws *websocket.Conn) {
+func reader(ws *websocket.Conn, s events.Subscriber, gameID string) {
 	defer func() {
+		s.Unsubscribe(gameID, ws)
 		ws.Close()
 	}()
 	ws.SetReadLimit(512)
@@ -76,7 +78,7 @@ func EventsWSHandler(sub events.Subscriber, s store.Store) http.Handler {
 			return
 		}
 
-		go writer(ws, eventChannel)
-		reader(ws)
+		go writer(ws, eventChannel, sub, gameID)
+		reader(ws, sub, gameID)
 	})
 }
