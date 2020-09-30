@@ -296,7 +296,7 @@ func TestDefault_Score(t *testing.T) {
 			bonus     bool
 		}{
 			{[]int{3, 6, -1, 16, 25, -1}, models.Sixes, []int{1, 3, 6, 2, 4}, false},
-			{[]int{-1, -1, 12, -1, 20, 36}, models.Fours, []int{1, 3, 6, 2, 4}, false},
+			{[]int{-1, -1, 12, -1, 20, 36}, models.Fours, []int{1, 3, 6, 2, 4}, true},
 			{[]int{3, 6, 9, 16, 25, -1}, models.Sixes, []int{1, 3, 6, 2, 4}, true},
 			{[]int{-1, 2, 3, 4, 15, 36}, models.Ones, []int{1, 1, 3, 3, 3}, false},
 			{[]int{-1, 2, 3, 4, 15, 36}, models.Ones, []int{1, 1, 1, 3, 3}, true},

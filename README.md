@@ -239,6 +239,5 @@ eg.
 
 ## TODO
 
-* bug: score bonus as soon as the 63 points are there (no need for filling the whole upper section)
 * store games in redis with an expiration
 * use some kind of oauth (github? google?) instead of basic auth

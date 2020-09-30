@@ -218,12 +218,10 @@ func (s *Default) Score(c models.Category) (models.Game, error) {
 			}
 		}
 
-		if types == 6 {
-			if total >= 63 {
-				currentPlayer.ScoreSheet[models.Bonus] = 35
-			} else {
-				currentPlayer.ScoreSheet[models.Bonus] = 0
-			}
+		if total >= 63 {
+			currentPlayer.ScoreSheet[models.Bonus] = 35
+		} else {
+			currentPlayer.ScoreSheet[models.Bonus] = 0
 		}
 	}
 
