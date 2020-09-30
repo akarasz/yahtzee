@@ -220,7 +220,7 @@ func (s *Default) Score(c models.Category) (models.Game, error) {
 
 		if total >= 63 {
 			currentPlayer.ScoreSheet[models.Bonus] = 35
-		} else {
+		} else if types == 6 {
 			currentPlayer.ScoreSheet[models.Bonus] = 0
 		}
 	}
