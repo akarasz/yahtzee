@@ -5,6 +5,9 @@ package store
 import (
 	"errors"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+
 	"github.com/akarasz/yahtzee/models"
 )
 
@@ -44,7 +47,16 @@ func (s *InMemory) Load(id string) (models.Game, error) {
 
 // NewInMemory creates an empty in-memory store.
 func New() *InMemory {
-	return &InMemory{
+	res := InMemory{
 		repo: map[string]models.Game{},
 	}
+
+	promauto.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name: "yahtzee_store_size",
+			Help: "The total number of games in the in memory store",
+		},
+		func() float64 { return float64(len(res.repo)) })
+
+	return &res
 }

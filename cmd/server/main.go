@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/akarasz/yahtzee/controller"
@@ -58,6 +59,11 @@ func main() {
 	r.HandleFunc("/{gameID}/score", h.ScoreHandler).
 		Methods("POST", "OPTIONS")
 	r.Handle("/{gameID}/ws", handler.EventsWSHandler(e, s))
+
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":2112", nil)
+	}()
 
 	port := "8000"
 	if envPort := os.Getenv("PORT"); envPort != "" {
