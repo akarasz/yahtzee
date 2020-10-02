@@ -5,6 +5,9 @@ package events
 import (
 	"errors"
 	"sync"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 // Type tells which kind of events happened
@@ -33,9 +36,31 @@ type Emitter interface {
 }
 
 func New() *Broker {
-	return &Broker{
+	res := Broker{
 		games: map[string]*game{},
 	}
+
+	promauto.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name: "yahtzee_websocket_games_total",
+			Help: "The total number of games with websocket channels",
+		},
+		func() float64 { return float64(len(res.games)) })
+
+	promauto.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name: "yahtzee_websocket_clients_total",
+			Help: "The total number of clients with websocket channels",
+		},
+		func() float64 {
+			total := 0
+			for _, g := range res.games {
+				total += len(g.clients)
+			}
+			return float64(total)
+		})
+
+	return &res
 }
 
 type game struct {
