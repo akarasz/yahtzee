@@ -21,4 +21,5 @@ run: docker
 	docker run -p 8000:8000 "$(docker_container):latest"
 
 push: docker
-	docker push $(docker_container)
+	docker push $(docker_container):latest
+	docker push $(docker_container):$(version)
