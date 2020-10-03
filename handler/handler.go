@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 
@@ -43,6 +44,7 @@ func New(root controller.Root, game controller.Game) *Default {
 func (h *Default) CreateHandler(w http.ResponseWriter, r *http.Request) {
 	gameID, err := h.rootController.Create()
 	if err != nil {
+		log.Print(err)
 		http.Error(w, "unable to create game", http.StatusInternalServerError)
 		return
 	}

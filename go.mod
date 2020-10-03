@@ -3,6 +3,7 @@ module github.com/akarasz/yahtzee
 go 1.14
 
 require (
+	github.com/go-redis/redis/v8 v8.2.3
 	github.com/golang/mock v1.4.4
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.4.2
