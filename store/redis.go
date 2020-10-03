@@ -17,6 +17,13 @@ type Redis struct {
 	expiration time.Duration
 }
 
+func NewRedis(client *redis.Client, expiration time.Duration) Store {
+	return &Redis{
+		client:     client,
+		expiration: expiration,
+	}
+}
+
 func (r *Redis) Load(id string) (models.Game, error) {
 	var res models.Game
 
