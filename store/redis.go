@@ -49,5 +49,10 @@ func (r *Redis) Load(id string) (models.Game, error) {
 }
 
 func (r *Redis) Save(id string, g models.Game) error {
-	return r.client.Set(ctx, id, g, r.expiration).Err()
+	raw, err := json.Marshal(g)
+	if err != nil {
+		return err
+	}
+
+	return r.client.Set(ctx, id, string(raw), r.expiration).Err()
 }
