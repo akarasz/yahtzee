@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/akarasz/yahtzee/models"
 )
@@ -18,6 +20,15 @@ type Redis struct {
 }
 
 func NewRedis(client *redis.Client, expiration time.Duration) Store {
+	promauto.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name: "yahtzee_redis_store_size",
+			Help: "The total number of games in the redis store",
+		},
+		func() float64 {
+			return float64(client.DBSize(ctx).Val())
+		})
+
 	return &Redis{
 		client:     client,
 		expiration: expiration,
