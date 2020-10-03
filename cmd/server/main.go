@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -35,9 +36,14 @@ func corsMiddleware(next http.Handler) http.Handler {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
+	rdb := redis.NewClient(&redis.Options{
+		Addr: os.Getenv("REDIS"),
+	})
+
 	e := events.New()
 	sp := service.NewProvider()
-	s := store.New()
+	s := store.NewRedis(rdb, 30*time.Minute)
+
 	c := controller.New(s, sp, e)
 	h := handler.New(c, c)
 
