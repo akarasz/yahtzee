@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/bsm/redislock"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -39,12 +40,13 @@ func main() {
 	rdb := redis.NewClient(&redis.Options{
 		Addr: os.Getenv("REDIS"),
 	})
+	defer rdb.Close()
 
 	e := events.New()
 	sp := service.NewProvider()
 	s := store.NewRedis(rdb, 30*time.Minute)
 
-	c := controller.New(s, sp, e)
+	c := controller.New(s, sp, e, redislock.New(rdb))
 	h := handler.New(c, c)
 
 	r := mux.NewRouter()

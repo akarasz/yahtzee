@@ -38,7 +38,7 @@ func NewRedis(client *redis.Client, expiration time.Duration) Store {
 func (r *Redis) Load(id string) (models.Game, error) {
 	var res models.Game
 
-	raw, err := r.client.Get(ctx, id).Bytes()
+	raw, err := r.client.Get(ctx, "game:"+id).Bytes()
 	if err != nil {
 		return models.Game{}, err
 	}
@@ -54,5 +54,5 @@ func (r *Redis) Save(id string, g models.Game) error {
 		return err
 	}
 
-	return r.client.Set(ctx, id, string(raw), r.expiration).Err()
+	return r.client.Set(ctx, "game:"+id, string(raw), r.expiration).Err()
 }
