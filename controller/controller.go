@@ -3,13 +3,22 @@ package controller
 //go:generate mockgen -destination=mocks/mock_controller.go -package=mocks -build_flags=-mod=mod . Root,Game
 
 import (
+	"log"
 	"math/rand"
 	"strconv"
+	"time"
+
+	"github.com/bsm/redislock"
 
 	"github.com/akarasz/yahtzee/events"
 	"github.com/akarasz/yahtzee/models"
 	"github.com/akarasz/yahtzee/service"
 	"github.com/akarasz/yahtzee/store"
+)
+
+var (
+	lockExpiration = 5 * time.Second
+	lockBackoff    = redislock.LinearBackoff(50 * time.Millisecond)
 )
 
 type Root interface {
@@ -29,13 +38,15 @@ type Default struct {
 	store           store.Store
 	serviceProvider service.Provider
 	events          events.Emitter
+	locker          *redislock.Client
 }
 
-func New(s store.Store, p service.Provider, e events.Emitter) *Default {
+func New(s store.Store, p service.Provider, e events.Emitter, l *redislock.Client) *Default {
 	return &Default{
 		store:           s,
 		serviceProvider: p,
 		events:          e,
+		locker:          l,
 	}
 }
 
@@ -92,7 +103,30 @@ func (c *Default) Scores(dices []string) (map[models.Category]int, error) {
 	return result, nil
 }
 
+func (c *Default) lockGame(gameID string) (*redislock.Lock, error) {
+	lock, err := c.locker.Obtain("lock:"+gameID, lockExpiration, &redislock.Options{
+		RetryStrategy: lockBackoff,
+	})
+
+	if err != nil {
+		if err == redislock.ErrNotObtained {
+			log.Println("could not obtain lock")
+		} else if err != nil {
+			log.Fatalln(err)
+		}
+		return nil, err
+	}
+
+	return lock, nil
+}
+
 func (c *Default) AddPlayer(u *models.User, gameID string) (*AddPlayerResponse, error) {
+	lock, err := c.lockGame(gameID)
+	if err != nil {
+		return nil, err
+	}
+	defer lock.Release()
+
 	g, err := c.store.Load(gameID)
 	if err != nil {
 		return nil, err
@@ -114,6 +148,12 @@ func (c *Default) AddPlayer(u *models.User, gameID string) (*AddPlayerResponse, 
 }
 
 func (c *Default) Roll(u *models.User, gameID string) (*RollResponse, error) {
+	lock, err := c.lockGame(gameID)
+	if err != nil {
+		return nil, err
+	}
+	defer lock.Release()
+
 	g, err := c.store.Load(gameID)
 	if err != nil {
 		return nil, err
@@ -135,6 +175,12 @@ func (c *Default) Roll(u *models.User, gameID string) (*RollResponse, error) {
 }
 
 func (c *Default) Lock(u *models.User, gameID string, dice string) (*LockResponse, error) {
+	lock, err := c.lockGame(gameID)
+	if err != nil {
+		return nil, err
+	}
+	defer lock.Release()
+
 	diceIndex, err := strconv.Atoi(dice)
 	if err != nil || diceIndex < 0 || diceIndex > 4 {
 		return nil, service.ErrInvalidDice
@@ -161,6 +207,12 @@ func (c *Default) Lock(u *models.User, gameID string, dice string) (*LockRespons
 }
 
 func (c *Default) Score(u *models.User, gameID string, category models.Category) (*ScoreResponse, error) {
+	lock, err := c.lockGame(gameID)
+	if err != nil {
+		return nil, err
+	}
+	defer lock.Release()
+
 	g, err := c.store.Load(gameID)
 	if err != nil {
 		return nil, err
