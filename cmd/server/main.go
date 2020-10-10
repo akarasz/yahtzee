@@ -20,6 +20,8 @@ import (
 )
 
 func main() {
+	log.SetFormatter(&log.JSONFormatter{})
+
 	rand.Seed(time.Now().UnixNano())
 
 	rdb := redis.NewClient(&redis.Options{
