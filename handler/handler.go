@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strings"
 
@@ -44,174 +43,192 @@ func New(root controller.Root, game controller.Game) *Default {
 func (h *Default) CreateHandler(w http.ResponseWriter, r *http.Request) {
 	gameID, err := h.rootController.Create()
 	if err != nil {
-		log.Print(err)
-		http.Error(w, "unable to create game", http.StatusInternalServerError)
+		handleError(w, r, err, "create game", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Location", fmt.Sprintf("/%s", gameID))
 	w.WriteHeader(http.StatusCreated)
+
+	LogFrom(r).Info("game created")
 }
 
 func (h *Default) GetHandler(w http.ResponseWriter, r *http.Request) {
 	gameID, err := extractGameID(r)
 	if err != nil {
+		handleError(w, r, err, "extract gameID", http.StatusBadRequest)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	g, err := h.rootController.Get(gameID)
-
-	if controllerHasError(err, w) {
+	if handleControllerError(w, r, err, "controller") {
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(g); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		handleError(w, r, err, "response json encode", http.StatusInternalServerError)
 		return
 	}
+
+	LogFrom(r).Info("game returned")
 }
 
 func (h *Default) ScoresHandler(w http.ResponseWriter, r *http.Request) {
 	res, err := h.rootController.Scores(strings.Split(mux.Vars(r)["dices"], ","))
-	if controllerHasError(err, w) {
+	if handleControllerError(w, r, err, "scores") {
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(res); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		handleError(w, r, err, "response json encoding", http.StatusInternalServerError)
 		return
 	}
+
+	LogFrom(r).Info("scores returned")
 }
 
 func (h *Default) AddPlayerHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := extractUser(r)
 	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
+		handleError(w, r, err, "extract user", http.StatusUnauthorized)
 		return
 	}
 
 	gameID, err := extractGameID(r)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		handleError(w, r, err, "extract gameID", http.StatusBadRequest)
 		return
 	}
 
 	res, err := h.gameController.AddPlayer(user, gameID)
-
-	if controllerHasError(err, w) {
+	if handleControllerError(w, r, err, "add player") {
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(res); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		handleError(w, r, err, "response json encoding", http.StatusInternalServerError)
 		return
 	}
+
+	LogFrom(r).Info("player added")
 }
 
 func (h *Default) RollHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := extractUser(r)
 	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
+		handleError(w, r, err, "extract user", http.StatusUnauthorized)
 		return
 	}
 
 	gameID, err := extractGameID(r)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		handleError(w, r, err, "extract gameID", http.StatusBadRequest)
 		return
 	}
 
 	res, err := h.gameController.Roll(user, gameID)
 
-	if controllerHasError(err, w) {
+	if handleControllerError(w, r, err, "roll") {
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(res); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		handleError(w, r, err, "response json encoding", http.StatusInternalServerError)
 		return
 	}
+
+	LogFrom(r).Info("rolled dices")
 }
 
 func (h *Default) LockHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := extractUser(r)
 	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
+		handleError(w, r, err, "extract user", http.StatusUnauthorized)
 		return
 	}
 
 	gameID, err := extractGameID(r)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		handleError(w, r, err, "extract gameID", http.StatusBadRequest)
 		return
 	}
 
 	dice, ok := mux.Vars(r)["dice"]
+	AddLogField(r, "dice", dice)
 	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
+		handleError(w, r, err, "extract dice index", http.StatusBadRequest)
 		return
 	}
 
 	res, err := h.gameController.Lock(user, gameID, dice)
-
-	if controllerHasError(err, w) {
+	if handleControllerError(w, r, err, "lock") {
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(res); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		handleError(w, r, err, "response json encoding", http.StatusInternalServerError)
 		return
 	}
+
+	LogFrom(r).Infof("toggled dice")
 }
 
 func (h *Default) ScoreHandler(w http.ResponseWriter, r *http.Request) {
 	user, err := extractUser(r)
 	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
+		handleError(w, r, err, "extract user", http.StatusUnauthorized)
 		return
 	}
 
 	gameID, err := extractGameID(r)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		handleError(w, r, err, "extract gameID", http.StatusBadRequest)
 		return
 	}
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "", http.StatusInternalServerError)
+		handleError(w, r, err, "extract category from body", http.StatusInternalServerError)
 		return
 	}
 	bodyString := string(body)
+	AddLogField(r, "category", bodyString)
 
 	res, err := h.gameController.Score(user, gameID, models.Category(bodyString))
-
-	if controllerHasError(err, w) {
+	if handleControllerError(w, r, err, "score") {
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(res); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		handleError(w, r, err, "response json encoding", http.StatusInternalServerError)
 		return
 	}
+
+	LogFrom(r).Info("scored")
 }
 
-func controllerHasError(err error, w http.ResponseWriter) bool {
+func handleError(w http.ResponseWriter, r *http.Request, err error, msg string, status int) {
+	log := LogFrom(r)
+	log.Errorf("%s: %v", msg, err)
+	http.Error(w, "", status)
+}
+
+func handleControllerError(w http.ResponseWriter, r *http.Request, err error, msg string) bool {
 	if errors.As(err, &store.ErrNotExists) {
-		w.WriteHeader(http.StatusNotFound)
+		handleError(w, r, err, msg, http.StatusNotFound)
 		return true
 	}
 
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		handleError(w, r, err, msg, http.StatusInternalServerError)
 		return true
 	}
 
@@ -223,6 +240,7 @@ func extractGameID(r *http.Request) (string, error) {
 	if !ok {
 		return "", errors.New("no gameID")
 	}
+	AddLogField(r, "gid", gameID)
 	return gameID, nil
 }
 
@@ -233,5 +251,6 @@ func extractUser(r *http.Request) (*models.User, error) {
 		return nil, errors.New("no user")
 	}
 	res = models.User(user)
+	AddLogField(r, "user", res)
 	return &res, nil
 }
