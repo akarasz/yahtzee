@@ -35,8 +35,8 @@ type Emitter interface {
 	Emit(gameID string, t Type, body interface{})
 }
 
-func New() *Broker {
-	res := Broker{
+func New() *InApp {
+	res := InApp{
 		games: map[string]*game{},
 	}
 
@@ -74,12 +74,12 @@ func newGame() *game {
 	}
 }
 
-type Broker struct {
+type InApp struct {
 	sync.Mutex
 	games map[string]*game
 }
 
-func (b *Broker) Subscribe(gameID string, clientID interface{}) (chan interface{}, error) {
+func (b *InApp) Subscribe(gameID string, clientID interface{}) (chan interface{}, error) {
 	c := make(chan interface{})
 
 	var g *game
@@ -101,7 +101,7 @@ func (b *Broker) Subscribe(gameID string, clientID interface{}) (chan interface{
 	return c, nil
 }
 
-func (b *Broker) Unsubscribe(gameID string, clientID interface{}) error {
+func (b *InApp) Unsubscribe(gameID string, clientID interface{}) error {
 	g, ok := b.games[gameID]
 	if !ok {
 		return errors.New("no game found")
@@ -122,7 +122,7 @@ func (b *Broker) Unsubscribe(gameID string, clientID interface{}) error {
 	return nil
 }
 
-func (b *Broker) Emit(gameID string, t Type, body interface{}) {
+func (b *InApp) Emit(gameID string, t Type, body interface{}) {
 	g, ok := b.games[gameID]
 	if !ok {
 		return
