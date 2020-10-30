@@ -33,6 +33,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	defer e.Close()
 
 	sp := service.NewProvider()
 	s := store.NewRedis(rdb, 30*time.Minute)
