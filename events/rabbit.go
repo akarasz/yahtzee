@@ -2,7 +2,6 @@ package events
 
 import (
 	"encoding/json"
-	"log"
 
 	"github.com/streadway/amqp"
 )
@@ -50,8 +49,8 @@ func (r *Rabbit) Emit(gameID string, t Type, body interface{}) {
 		false,  // mandatory
 		false,  // immediate
 		amqp.Publishing{
-			ContentType: "text/plain",
-			Body:        []byte(jsonBody),
+			ContentType: "application/json",
+			Body:        jsonBody,
 		})
 }
 
@@ -94,13 +93,14 @@ func (r *Rabbit) Subscribe(gameID string, clientID interface{}) (chan interface{
 		nil,    // args
 	)
 
+	c := make(chan interface{})
 	go func() {
 		for d := range msgs {
-			log.Printf("%q: %s: %s", clientID, gameID, d.Body)
+			c <- string(d.Body)
 		}
 	}()
 
-	return make(chan interface{}), nil
+	return c, nil
 }
 
 func (r *Rabbit) Unsubscribe(gameID string, clientID interface{}) error {

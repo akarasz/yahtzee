@@ -29,7 +29,11 @@ func main() {
 	})
 	defer rdb.Close()
 
-	e := events.New()
+	e, err := events.NewRabbit("amqp://guest:guest@localhost:5672/")
+	if err != nil {
+		panic(err)
+	}
+
 	sp := service.NewProvider()
 	s := store.NewRedis(rdb, 30*time.Minute)
 
