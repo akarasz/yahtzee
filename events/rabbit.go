@@ -9,6 +9,8 @@ import (
 type Rabbit struct {
 	conn *amqp.Connection
 	ch   *amqp.Channel
+
+	destroyChans map[interface{}]chan interface{}
 }
 
 func (r *Rabbit) Close() {
@@ -30,6 +32,7 @@ func NewRabbit(uri string) (*Rabbit, error) {
 	return &Rabbit{
 		conn: conn,
 		ch:   ch,
+		destroyChans: map[interface{}]chan interface{}{},
 	}, nil
 }
 
@@ -94,9 +97,16 @@ func (r *Rabbit) Subscribe(gameID string, clientID interface{}) (chan interface{
 	)
 
 	c := make(chan interface{})
+	d := make(chan interface{})
+	r.destroyChans[clientID] = d
 	go func() {
-		for d := range msgs {
-			c <- string(d.Body)
+		for {
+			select {
+			case m := <-msgs:
+				c <- string(m.Body)
+			case <-d:
+				return
+			}
 		}
 	}()
 
@@ -104,6 +114,11 @@ func (r *Rabbit) Subscribe(gameID string, clientID interface{}) (chan interface{
 }
 
 func (r *Rabbit) Unsubscribe(gameID string, clientID interface{}) error {
+	if d, ok := r.destroyChans[clientID]; ok {
+		d <- struct{}{}
+		delete(r.destroyChans, clientID)
+	}
+
 	return nil
 }
 
