@@ -36,7 +36,7 @@ func main() {
 	defer e.Close()
 
 	sp := service.NewProvider()
-	s := store.NewRedis(rdb, 30*time.Minute)
+	s := store.NewRedis(rdb, 48*time.Hour)
 
 	c := controller.New(s, sp, e, redislock.New(rdb))
 	h := handler.New(c, c)
