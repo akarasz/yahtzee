@@ -8,6 +8,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+
+	"github.com/akarasz/yahtzee/models"
 )
 
 // Type tells which kind of events happened
@@ -30,9 +32,15 @@ type Subscriber interface {
 
 // Emitter used by the event producer side to fire events
 type Emitter interface {
-	// Emit notifies the consumers of `gameID` that a `t` event happened
-	// with the changes described in `body`
-	Emit(gameID string, t Type, body interface{})
+	// Emit notifies the consumers of `gameID` that `u` user triggered `t` event
+	// that caused changes described in `body`
+	Emit(gameID string, u *models.User, t Type, body interface{})
+}
+
+type Event struct {
+	User   *models.User
+	Action Type
+	Data   interface{}
 }
 
 func New() *InApp {
@@ -122,7 +130,7 @@ func (b *InApp) Unsubscribe(gameID string, clientID interface{}) error {
 	return nil
 }
 
-func (b *InApp) Emit(gameID string, t Type, body interface{}) {
+func (b *InApp) Emit(gameID string, u *models.User, t Type, body interface{}) {
 	g, ok := b.games[gameID]
 	if !ok {
 		return
@@ -132,6 +140,6 @@ func (b *InApp) Emit(gameID string, t Type, body interface{}) {
 	defer g.Unlock()
 
 	for _, s := range g.clients {
-		s <- body
+		s <- Event{u, t, body}
 	}
 }

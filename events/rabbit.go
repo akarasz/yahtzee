@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 
 	"github.com/streadway/amqp"
+
+	"github.com/akarasz/yahtzee/models"
 )
 
 type Rabbit struct {
@@ -30,18 +32,18 @@ func NewRabbit(uri string) (*Rabbit, error) {
 	}
 
 	return &Rabbit{
-		conn: conn,
-		ch:   ch,
+		conn:         conn,
+		ch:           ch,
 		destroyChans: map[interface{}]chan interface{}{},
 	}, nil
 }
 
-func (r *Rabbit) Emit(gameID string, t Type, body interface{}) {
+func (r *Rabbit) Emit(gameID string, u *models.User, t Type, body interface{}) {
 	if err := r.exchangeDeclare(gameID); err != nil {
 		return
 	}
 
-	jsonBody, err := json.Marshal(body)
+	jsonBody, err := json.Marshal(Event{u, t, body})
 	if err != nil {
 		return
 	}

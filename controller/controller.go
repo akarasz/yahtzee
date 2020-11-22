@@ -143,7 +143,7 @@ func (c *Default) AddPlayer(u *models.User, gameID string) (*AddPlayerResponse, 
 	}
 
 	changes := NewAddPlayerResponse(&res)
-	c.events.Emit(gameID, events.AddPlayer, changes)
+	c.events.Emit(gameID, u, events.AddPlayer, changes)
 	return changes, nil
 }
 
@@ -170,7 +170,7 @@ func (c *Default) Roll(u *models.User, gameID string) (*RollResponse, error) {
 	}
 
 	changes := NewRollResponse(&res)
-	c.events.Emit(gameID, events.Roll, changes)
+	c.events.Emit(gameID, u, events.Roll, changes)
 	return changes, nil
 }
 
@@ -202,7 +202,7 @@ func (c *Default) Lock(u *models.User, gameID string, dice string) (*LockRespons
 	}
 
 	changes := NewLockResponse(&res)
-	c.events.Emit(gameID, events.Lock, changes)
+	c.events.Emit(gameID, u, events.Lock, changes)
 	return changes, nil
 }
 
@@ -229,7 +229,7 @@ func (c *Default) Score(u *models.User, gameID string, category models.Category)
 	}
 
 	changes := NewScoreResponse(&res)
-	c.events.Emit(gameID, events.Score, changes)
+	c.events.Emit(gameID, u, events.Score, changes)
 	return changes, nil
 }
 
