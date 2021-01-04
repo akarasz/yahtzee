@@ -1,7 +1,5 @@
 package service
 
-//go:generate mockgen -destination=mocks/mock_service.go -package=mocks -build_flags=-mod=mod . Game,Provider
-
 import (
 	"errors"
 	"math/rand"

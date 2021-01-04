@@ -5,7 +5,6 @@ go 1.14
 require (
 	github.com/bsm/redislock v0.6.0
 	github.com/go-redis/redis/v8 v8.2.3
-	github.com/golang/mock v1.4.4
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.4.2

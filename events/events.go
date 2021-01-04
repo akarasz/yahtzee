@@ -1,7 +1,5 @@
 package events
 
-//go:generate mockgen -destination=mocks/mock_events.go -package=mocks -build_flags=-mod=mod . Emitter,Subscriber
-
 import (
 	"errors"
 	"sync"

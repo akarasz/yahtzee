@@ -1,7 +1,5 @@
 package controller
 
-//go:generate mockgen -destination=mocks/mock_controller.go -package=mocks -build_flags=-mod=mod . Root,Game
-
 import (
 	"log"
 	"math/rand"

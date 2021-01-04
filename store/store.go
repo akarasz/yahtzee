@@ -1,7 +1,5 @@
 package store
 
-//go:generate mockgen -destination=mocks/mock_store.go -package=mocks -build_flags=-mod=mod . Store
-
 import (
 	"errors"
 
