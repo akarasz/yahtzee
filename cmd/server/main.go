@@ -13,7 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/akarasz/yahtzee/controller"
-	"github.com/akarasz/yahtzee/event"
+	event "github.com/akarasz/yahtzee/event/rabbit"
 	"github.com/akarasz/yahtzee/handler"
 	"github.com/akarasz/yahtzee/service"
 	store "github.com/akarasz/yahtzee/store/redis"
@@ -29,7 +29,7 @@ func main() {
 	})
 	defer rdb.Close()
 
-	e, err := event.NewRabbit(os.Getenv("RABBIT"))
+	e, err := event.New(os.Getenv("RABBIT"))
 	if err != nil {
 		panic(err)
 	}

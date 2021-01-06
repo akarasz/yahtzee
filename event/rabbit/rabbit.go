@@ -1,10 +1,11 @@
-package event
+package rabbit
 
 import (
 	"encoding/json"
 
 	"github.com/streadway/amqp"
 
+	"github.com/akarasz/yahtzee/event"
 	"github.com/akarasz/yahtzee/model"
 )
 
@@ -20,7 +21,7 @@ func (r *Rabbit) Close() {
 	r.conn.Close()
 }
 
-func NewRabbit(uri string) (*Rabbit, error) {
+func New(uri string) (*Rabbit, error) {
 	conn, err := amqp.Dial(uri)
 	if err != nil {
 		return nil, err
@@ -38,12 +39,16 @@ func NewRabbit(uri string) (*Rabbit, error) {
 	}, nil
 }
 
-func (r *Rabbit) Emit(gameID string, u *model.User, t Type, body interface{}) {
+func (r *Rabbit) Emit(gameID string, u *model.User, t event.Type, body interface{}) {
 	if err := r.exchangeDeclare(gameID); err != nil {
 		return
 	}
 
-	jsonBody, err := json.Marshal(Event{u, t, body})
+	jsonBody, err := json.Marshal(event.Event{
+		User:   u,
+		Action: t,
+		Data:   body,
+	})
 	if err != nil {
 		return
 	}
