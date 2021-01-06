@@ -1,4 +1,4 @@
-package models
+package model
 
 var (
 	// NumberOfDices shows how many dices are used for a game.

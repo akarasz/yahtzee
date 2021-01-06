@@ -11,7 +11,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/akarasz/yahtzee/controller"
-	"github.com/akarasz/yahtzee/models"
+	"github.com/akarasz/yahtzee/model"
 	"github.com/akarasz/yahtzee/store"
 )
 
@@ -201,7 +201,7 @@ func (h *Default) ScoreHandler(w http.ResponseWriter, r *http.Request) {
 	bodyString := string(body)
 	AddLogField(r, "category", bodyString)
 
-	res, err := h.gameController.Score(user, gameID, models.Category(bodyString))
+	res, err := h.gameController.Score(user, gameID, model.Category(bodyString))
 	if handleControllerError(w, r, err, "score") {
 		return
 	}
@@ -244,13 +244,13 @@ func extractGameID(r *http.Request) (string, error) {
 	return gameID, nil
 }
 
-func extractUser(r *http.Request) (*models.User, error) {
-	var res models.User
+func extractUser(r *http.Request) (*model.User, error) {
+	var res model.User
 	user, _, ok := r.BasicAuth()
 	if !ok {
 		return nil, errors.New("no user")
 	}
-	res = models.User(user)
+	res = model.User(user)
 	AddLogField(r, "user", res)
 	return &res, nil
 }

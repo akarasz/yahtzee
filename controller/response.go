@@ -1,25 +1,25 @@
 package controller
 
 import (
-	"github.com/akarasz/yahtzee/models"
+	"github.com/akarasz/yahtzee/model"
 )
 
 type AddPlayerResponse struct {
-	Players []*models.Player
+	Players []*model.Player
 }
 
-func NewAddPlayerResponse(g *models.Game) *AddPlayerResponse {
+func NewAddPlayerResponse(g *model.Game) *AddPlayerResponse {
 	return &AddPlayerResponse{
 		Players: g.Players,
 	}
 }
 
 type RollResponse struct {
-	Dices     []*models.Dice
+	Dices     []*model.Dice
 	RollCount int
 }
 
-func NewRollResponse(g *models.Game) *RollResponse {
+func NewRollResponse(g *model.Game) *RollResponse {
 	return &RollResponse{
 		Dices:     g.Dices,
 		RollCount: g.RollCount,
@@ -27,19 +27,19 @@ func NewRollResponse(g *models.Game) *RollResponse {
 }
 
 type LockResponse struct {
-	Dices []*models.Dice
+	Dices []*model.Dice
 }
 
-func NewLockResponse(g *models.Game) *LockResponse {
+func NewLockResponse(g *model.Game) *LockResponse {
 	return &LockResponse{
 		Dices: g.Dices,
 	}
 }
 
 type ScoreResponse struct {
-	models.Game
+	model.Game
 }
 
-func NewScoreResponse(g *models.Game) *ScoreResponse {
+func NewScoreResponse(g *model.Game) *ScoreResponse {
 	return &ScoreResponse{*g}
 }

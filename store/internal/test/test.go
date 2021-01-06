@@ -4,7 +4,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	model_test "github.com/akarasz/yahtzee/internal/test/model"
-	"github.com/akarasz/yahtzee/models"
+	"github.com/akarasz/yahtzee/model"
 	"github.com/akarasz/yahtzee/store"
 )
 
@@ -38,7 +38,7 @@ func (ts *StoreTestSuite) TestLoad() {
 func (ts *StoreTestSuite) TestSave() {
 	s := ts.subject
 
-	empty := *models.NewGame()
+	empty := *model.NewGame()
 	ts.NoError(s.Save("bbbbb", empty))
 
 	if got, err := s.Load("bbbbb"); ts.NoError(err) {

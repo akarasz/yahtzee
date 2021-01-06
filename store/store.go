@@ -3,7 +3,7 @@ package store
 import (
 	"errors"
 
-	"github.com/akarasz/yahtzee/models"
+	"github.com/akarasz/yahtzee/model"
 )
 
 var (
@@ -14,8 +14,8 @@ var (
 // Store contains game elements by their IDs.
 type Store interface {
 	// Load returns a game from the store.
-	Load(id string) (models.Game, error)
+	Load(id string) (model.Game, error)
 
 	// Save adds the game to the store.
-	Save(id string, g models.Game) error
+	Save(id string, g model.Game) error
 }

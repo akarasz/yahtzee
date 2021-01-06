@@ -4,7 +4,7 @@ import (
 	"errors"
 	"math/rand"
 
-	"github.com/akarasz/yahtzee/models"
+	"github.com/akarasz/yahtzee/model"
 )
 
 const (
@@ -49,42 +49,42 @@ var (
 // Game contains the possible actions for a yahtzee game.
 type Game interface {
 	// AddPlayer add a user to the game.
-	AddPlayer() (models.Game, error)
+	AddPlayer() (model.Game, error)
 
 	// Roll gives a new value for the unlocked dices.
-	Roll() (models.Game, error)
+	Roll() (model.Game, error)
 
 	// Lock enables or disables a dice to roll.
-	Lock(dice int) (models.Game, error)
+	Lock(dice int) (model.Game, error)
 
 	// Score saves the points in the player's score sheet.
-	Score(c models.Category) (models.Game, error)
+	Score(c model.Category) (model.Game, error)
 }
 
 // Provider returns a new Game service.
 type Provider interface {
 	// Create returns a Game service object
-	Create(g models.Game, u models.User) Game
+	Create(g model.Game, u model.User) Game
 }
 
 // Default is the implementation of yahtzee.
 type Default struct {
-	game models.Game
-	user models.User
+	game model.Game
+	user model.User
 }
 
 func NewProvider() *Default {
 	return &Default{}
 }
 
-func (s *Default) Create(g models.Game, u models.User) Game {
+func (s *Default) Create(g model.Game, u model.User) Game {
 	return &Default{
 		game: g,
 		user: u,
 	}
 }
 
-func (s *Default) AddPlayer() (models.Game, error) {
+func (s *Default) AddPlayer() (model.Game, error) {
 	g := s.game
 
 	if g.CurrentPlayer > 0 || g.Round > 0 {
@@ -97,11 +97,11 @@ func (s *Default) AddPlayer() (models.Game, error) {
 		}
 	}
 
-	g.Players = append(g.Players, models.NewPlayer(s.user))
+	g.Players = append(g.Players, model.NewPlayer(s.user))
 	return g, nil
 }
 
-func (s *Default) Roll() (models.Game, error) {
+func (s *Default) Roll() (model.Game, error) {
 	g := s.game
 
 	if len(g.Players) == 0 {
@@ -135,7 +135,7 @@ func (s *Default) Roll() (models.Game, error) {
 	return g, nil
 }
 
-func (s *Default) Lock(diceIndex int) (models.Game, error) {
+func (s *Default) Lock(diceIndex int) (model.Game, error) {
 	g := s.game
 
 	if len(g.Players) == 0 {
@@ -169,7 +169,7 @@ func (s *Default) Lock(diceIndex int) (models.Game, error) {
 	return g, nil
 }
 
-func (s *Default) Score(c models.Category) (models.Game, error) {
+func (s *Default) Score(c model.Category) (model.Game, error) {
 	g := s.game
 
 	if len(g.Players) == 0 {
@@ -206,20 +206,20 @@ func (s *Default) Score(c models.Category) (models.Game, error) {
 
 	currentPlayer.ScoreSheet[c] = score
 
-	if _, ok := currentPlayer.ScoreSheet[models.Bonus]; !ok {
+	if _, ok := currentPlayer.ScoreSheet[model.Bonus]; !ok {
 		var total, types int
 		for k, v := range currentPlayer.ScoreSheet {
-			if k == models.Ones || k == models.Twos || k == models.Threes ||
-				k == models.Fours || k == models.Fives || k == models.Sixes {
+			if k == model.Ones || k == model.Twos || k == model.Threes ||
+				k == model.Fours || k == model.Fives || k == model.Sixes {
 				types++
 				total += v
 			}
 		}
 
 		if total >= 63 {
-			currentPlayer.ScoreSheet[models.Bonus] = 35
+			currentPlayer.ScoreSheet[model.Bonus] = 35
 		} else if types == 6 {
-			currentPlayer.ScoreSheet[models.Bonus] = 0
+			currentPlayer.ScoreSheet[model.Bonus] = 0
 		}
 	}
 
@@ -237,46 +237,46 @@ func (s *Default) Score(c models.Category) (models.Game, error) {
 }
 
 // Score calculates the category value for the given dices.
-func Score(category models.Category, dices []int) (int, error) {
+func Score(category model.Category, dices []int) (int, error) {
 	s := 0
 	switch category {
-	case models.Ones:
+	case model.Ones:
 		for _, d := range dices {
 			if d == 1 {
 				s++
 			}
 		}
-	case models.Twos:
+	case model.Twos:
 		for _, d := range dices {
 			if d == 2 {
 				s += 2
 			}
 		}
-	case models.Threes:
+	case model.Threes:
 		for _, d := range dices {
 			if d == 3 {
 				s += 3
 			}
 		}
-	case models.Fours:
+	case model.Fours:
 		for _, d := range dices {
 			if d == 4 {
 				s += 4
 			}
 		}
-	case models.Fives:
+	case model.Fives:
 		for _, d := range dices {
 			if d == 5 {
 				s += 5
 			}
 		}
-	case models.Sixes:
+	case model.Sixes:
 		for _, d := range dices {
 			if d == 6 {
 				s += 6
 			}
 		}
-	case models.ThreeOfAKind:
+	case model.ThreeOfAKind:
 		occurrences := map[int]int{}
 		for _, d := range dices {
 			occurrences[d]++
@@ -287,7 +287,7 @@ func Score(category models.Category, dices []int) (int, error) {
 				s = 3 * k
 			}
 		}
-	case models.FourOfAKind:
+	case model.FourOfAKind:
 		occurrences := map[int]int{}
 		for _, d := range dices {
 			occurrences[d]++
@@ -298,7 +298,7 @@ func Score(category models.Category, dices []int) (int, error) {
 				s = 4 * k
 			}
 		}
-	case models.FullHouse:
+	case model.FullHouse:
 		one, oneCount, other := dices[0], 1, 0
 		for i := 1; i < len(dices); i++ {
 			v := dices[i]
@@ -315,7 +315,7 @@ func Score(category models.Category, dices []int) (int, error) {
 		if oneCount == 2 || oneCount == 3 {
 			s = 25
 		}
-	case models.SmallStraight:
+	case model.SmallStraight:
 		hit := [6]bool{}
 		for _, d := range dices {
 			hit[d-1] = true
@@ -326,7 +326,7 @@ func Score(category models.Category, dices []int) (int, error) {
 			(hit[2] && hit[3] && hit[4] && hit[5]) {
 			s = 30
 		}
-	case models.LargeStraight:
+	case model.LargeStraight:
 		hit := [6]bool{}
 		for _, d := range dices {
 			hit[d-1] = true
@@ -336,7 +336,7 @@ func Score(category models.Category, dices []int) (int, error) {
 			(hit[1] && hit[2] && hit[3] && hit[4] && hit[5]) {
 			s = 40
 		}
-	case models.Yahtzee:
+	case model.Yahtzee:
 		same := true
 		for i := 0; i < len(dices)-1; i++ {
 			same = same && dices[i] == dices[i+1]
@@ -345,7 +345,7 @@ func Score(category models.Category, dices []int) (int, error) {
 		if same {
 			s = 50
 		}
-	case models.Chance:
+	case model.Chance:
 		for _, d := range dices {
 			s += d
 		}

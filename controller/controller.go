@@ -9,7 +9,7 @@ import (
 	"github.com/bsm/redislock"
 
 	"github.com/akarasz/yahtzee/events"
-	"github.com/akarasz/yahtzee/models"
+	"github.com/akarasz/yahtzee/model"
 	"github.com/akarasz/yahtzee/service"
 	"github.com/akarasz/yahtzee/store"
 )
@@ -21,15 +21,15 @@ var (
 
 type Root interface {
 	Create() (string, error)
-	Get(gameID string) (*models.Game, error)
-	Scores(dices []string) (map[models.Category]int, error)
+	Get(gameID string) (*model.Game, error)
+	Scores(dices []string) (map[model.Category]int, error)
 }
 
 type Game interface {
-	AddPlayer(u *models.User, gameID string) (*AddPlayerResponse, error)
-	Roll(u *models.User, gameID string) (*RollResponse, error)
-	Lock(u *models.User, gameID string, dice string) (*LockResponse, error)
-	Score(u *models.User, gameID string, c models.Category) (*ScoreResponse, error)
+	AddPlayer(u *model.User, gameID string) (*AddPlayerResponse, error)
+	Roll(u *model.User, gameID string) (*RollResponse, error)
+	Lock(u *model.User, gameID string, dice string) (*LockResponse, error)
+	Score(u *model.User, gameID string, c model.Category) (*ScoreResponse, error)
 }
 
 type Default struct {
@@ -50,16 +50,16 @@ func New(s store.Store, p service.Provider, e events.Emitter, l *redislock.Clien
 
 func (c *Default) Create() (string, error) {
 	id := generateID()
-	err := c.store.Save(id, *models.NewGame())
+	err := c.store.Save(id, *model.NewGame())
 	return id, err
 }
 
-func (c *Default) Get(gameID string) (*models.Game, error) {
+func (c *Default) Get(gameID string) (*model.Game, error) {
 	g, err := c.store.Load(gameID)
 	return &g, err
 }
 
-func (c *Default) Scores(dices []string) (map[models.Category]int, error) {
+func (c *Default) Scores(dices []string) (map[model.Category]int, error) {
 	dd := make([]int, 5)
 	for i, d := range dices {
 		v, err := strconv.Atoi(d)
@@ -73,23 +73,23 @@ func (c *Default) Scores(dices []string) (map[models.Category]int, error) {
 		dd[i] = v
 	}
 
-	categories := []models.Category{
-		models.Ones,
-		models.Twos,
-		models.Threes,
-		models.Fours,
-		models.Fives,
-		models.Sixes,
-		models.ThreeOfAKind,
-		models.FourOfAKind,
-		models.FullHouse,
-		models.SmallStraight,
-		models.LargeStraight,
-		models.Yahtzee,
-		models.Chance,
+	categories := []model.Category{
+		model.Ones,
+		model.Twos,
+		model.Threes,
+		model.Fours,
+		model.Fives,
+		model.Sixes,
+		model.ThreeOfAKind,
+		model.FourOfAKind,
+		model.FullHouse,
+		model.SmallStraight,
+		model.LargeStraight,
+		model.Yahtzee,
+		model.Chance,
 	}
 
-	result := map[models.Category]int{}
+	result := map[model.Category]int{}
 	for _, c := range categories {
 		score, err := service.Score(c, dd)
 		if err != nil {
@@ -118,7 +118,7 @@ func (c *Default) lockGame(gameID string) (*redislock.Lock, error) {
 	return lock, nil
 }
 
-func (c *Default) AddPlayer(u *models.User, gameID string) (*AddPlayerResponse, error) {
+func (c *Default) AddPlayer(u *model.User, gameID string) (*AddPlayerResponse, error) {
 	lock, err := c.lockGame(gameID)
 	if err != nil {
 		return nil, err
@@ -145,7 +145,7 @@ func (c *Default) AddPlayer(u *models.User, gameID string) (*AddPlayerResponse, 
 	return changes, nil
 }
 
-func (c *Default) Roll(u *models.User, gameID string) (*RollResponse, error) {
+func (c *Default) Roll(u *model.User, gameID string) (*RollResponse, error) {
 	lock, err := c.lockGame(gameID)
 	if err != nil {
 		return nil, err
@@ -172,7 +172,7 @@ func (c *Default) Roll(u *models.User, gameID string) (*RollResponse, error) {
 	return changes, nil
 }
 
-func (c *Default) Lock(u *models.User, gameID string, dice string) (*LockResponse, error) {
+func (c *Default) Lock(u *model.User, gameID string, dice string) (*LockResponse, error) {
 	lock, err := c.lockGame(gameID)
 	if err != nil {
 		return nil, err
@@ -204,7 +204,7 @@ func (c *Default) Lock(u *models.User, gameID string, dice string) (*LockRespons
 	return changes, nil
 }
 
-func (c *Default) Score(u *models.User, gameID string, category models.Category) (*ScoreResponse, error) {
+func (c *Default) Score(u *model.User, gameID string, category model.Category) (*ScoreResponse, error) {
 	lock, err := c.lockGame(gameID)
 	if err != nil {
 		return nil, err

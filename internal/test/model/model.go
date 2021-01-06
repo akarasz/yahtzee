@@ -1,34 +1,34 @@
 package model
 
 import (
-	"github.com/akarasz/yahtzee/models"
+	"github.com/akarasz/yahtzee/model"
 )
 
-func NewAdvanced() *models.Game {
-	return &models.Game{
-		Players: []*models.Player{
+func NewAdvanced() *model.Game {
+	return &model.Game{
+		Players: []*model.Player{
 			{
-				User: models.User("Alice"),
-				ScoreSheet: map[models.Category]int{
-					models.Twos:      6,
-					models.Fives:     15,
-					models.FullHouse: 25,
+				User: model.User("Alice"),
+				ScoreSheet: map[model.Category]int{
+					model.Twos:      6,
+					model.Fives:     15,
+					model.FullHouse: 25,
 				},
 			}, {
-				User: models.User("Bob"),
-				ScoreSheet: map[models.Category]int{
-					models.Threes:      6,
-					models.FourOfAKind: 16,
+				User: model.User("Bob"),
+				ScoreSheet: map[model.Category]int{
+					model.Threes:      6,
+					model.FourOfAKind: 16,
 				},
 			}, {
-				User: models.User("Carol"),
-				ScoreSheet: map[models.Category]int{
-					models.Twos:          6,
-					models.SmallStraight: 30,
+				User: model.User("Carol"),
+				ScoreSheet: map[model.Category]int{
+					model.Twos:          6,
+					model.SmallStraight: 30,
 				},
 			},
 		},
-		Dices: []*models.Dice{
+		Dices: []*model.Dice{
 			{Value: 3, Locked: true},
 			{Value: 2, Locked: false},
 			{Value: 3, Locked: true},

@@ -5,7 +5,7 @@ import (
 
 	"github.com/streadway/amqp"
 
-	"github.com/akarasz/yahtzee/models"
+	"github.com/akarasz/yahtzee/model"
 )
 
 type Rabbit struct {
@@ -38,7 +38,7 @@ func NewRabbit(uri string) (*Rabbit, error) {
 	}, nil
 }
 
-func (r *Rabbit) Emit(gameID string, u *models.User, t Type, body interface{}) {
+func (r *Rabbit) Emit(gameID string, u *model.User, t Type, body interface{}) {
 	if err := r.exchangeDeclare(gameID); err != nil {
 		return
 	}
