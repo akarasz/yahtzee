@@ -3,6 +3,9 @@ package store
 import (
 	"errors"
 
+	"github.com/stretchr/testify/suite"
+
+	model_test "github.com/akarasz/yahtzee/internal/test/model"
 	"github.com/akarasz/yahtzee/model"
 )
 
@@ -18,4 +21,43 @@ type Store interface {
 
 	// Save adds the game to the store.
 	Save(id string, g model.Game) error
+}
+
+type TestSuite struct {
+	suite.Suite
+
+	Subject Store
+}
+
+func (ts *TestSuite) TestLoad() {
+	s := ts.Subject
+
+	_, err := s.Load("aaaaa")
+	ts.Exactly(ErrNotExists, err)
+
+	saved := *model_test.NewAdvanced()
+
+	ts.Require().NoError(s.Save("aaaaa", saved))
+
+	if got, err := s.Load("aaaaa"); ts.NoError(err) {
+		ts.Exactly(saved, got)
+	}
+}
+
+func (ts *TestSuite) TestSave() {
+	s := ts.Subject
+
+	empty := *model.NewGame()
+	ts.NoError(s.Save("bbbbb", empty))
+
+	if got, err := s.Load("bbbbb"); ts.NoError(err) {
+		ts.Exactly(empty, got)
+	}
+
+	advanced := *model_test.NewAdvanced()
+	ts.NoError(s.Save("bbbbb", advanced))
+
+	if got, err := s.Load("bbbbb"); ts.NoError(err) {
+		ts.Exactly(advanced, got)
+	}
 }
