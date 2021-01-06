@@ -35,7 +35,7 @@ type Game interface {
 type Default struct {
 	store           store.Store
 	serviceProvider service.Provider
-	event          event.Emitter
+	event           event.Emitter
 	locker          *redislock.Client
 }
 
@@ -43,7 +43,7 @@ func New(s store.Store, p service.Provider, e event.Emitter, l *redislock.Client
 	return &Default{
 		store:           s,
 		serviceProvider: p,
-		event:          e,
+		event:           e,
 		locker:          l,
 	}
 }
