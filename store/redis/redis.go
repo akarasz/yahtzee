@@ -1,4 +1,4 @@
-package store
+package redis
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/akarasz/yahtzee/models"
+	"github.com/akarasz/yahtzee/store"
 )
 
 var ctx = context.Background()
@@ -19,7 +20,7 @@ type Redis struct {
 	expiration time.Duration
 }
 
-func NewRedis(client *redis.Client, expiration time.Duration) Store {
+func New(client *redis.Client, expiration time.Duration) store.Store {
 	promauto.NewGaugeFunc(
 		prometheus.GaugeOpts{
 			Name: "yahtzee_redis_store_size",

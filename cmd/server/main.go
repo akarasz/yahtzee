@@ -16,7 +16,7 @@ import (
 	"github.com/akarasz/yahtzee/events"
 	"github.com/akarasz/yahtzee/handler"
 	"github.com/akarasz/yahtzee/service"
-	"github.com/akarasz/yahtzee/store"
+	store "github.com/akarasz/yahtzee/store/redis"
 )
 
 func main() {
@@ -36,7 +36,7 @@ func main() {
 	defer e.Close()
 
 	sp := service.NewProvider()
-	s := store.NewRedis(rdb, 48*time.Hour)
+	s := store.New(rdb, 48*time.Hour)
 
 	c := controller.New(s, sp, e, redislock.New(rdb))
 	h := handler.New(c, c)
