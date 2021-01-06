@@ -8,7 +8,7 @@ import (
 
 	"github.com/bsm/redislock"
 
-	"github.com/akarasz/yahtzee/events"
+	"github.com/akarasz/yahtzee/event"
 	"github.com/akarasz/yahtzee/model"
 	"github.com/akarasz/yahtzee/service"
 	"github.com/akarasz/yahtzee/store"
@@ -35,15 +35,15 @@ type Game interface {
 type Default struct {
 	store           store.Store
 	serviceProvider service.Provider
-	events          events.Emitter
+	event          event.Emitter
 	locker          *redislock.Client
 }
 
-func New(s store.Store, p service.Provider, e events.Emitter, l *redislock.Client) *Default {
+func New(s store.Store, p service.Provider, e event.Emitter, l *redislock.Client) *Default {
 	return &Default{
 		store:           s,
 		serviceProvider: p,
-		events:          e,
+		event:          e,
 		locker:          l,
 	}
 }
@@ -141,7 +141,7 @@ func (c *Default) AddPlayer(u *model.User, gameID string) (*AddPlayerResponse, e
 	}
 
 	changes := NewAddPlayerResponse(&res)
-	c.events.Emit(gameID, u, events.AddPlayer, changes)
+	c.event.Emit(gameID, u, event.AddPlayer, changes)
 	return changes, nil
 }
 
@@ -168,7 +168,7 @@ func (c *Default) Roll(u *model.User, gameID string) (*RollResponse, error) {
 	}
 
 	changes := NewRollResponse(&res)
-	c.events.Emit(gameID, u, events.Roll, changes)
+	c.event.Emit(gameID, u, event.Roll, changes)
 	return changes, nil
 }
 
@@ -200,7 +200,7 @@ func (c *Default) Lock(u *model.User, gameID string, dice string) (*LockResponse
 	}
 
 	changes := NewLockResponse(&res)
-	c.events.Emit(gameID, u, events.Lock, changes)
+	c.event.Emit(gameID, u, event.Lock, changes)
 	return changes, nil
 }
 
@@ -227,7 +227,7 @@ func (c *Default) Score(u *model.User, gameID string, category model.Category) (
 	}
 
 	changes := NewScoreResponse(&res)
-	c.events.Emit(gameID, u, events.Score, changes)
+	c.event.Emit(gameID, u, event.Score, changes)
 	return changes, nil
 }
 

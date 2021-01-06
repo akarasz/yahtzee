@@ -7,7 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 
-	"github.com/akarasz/yahtzee/events"
+	"github.com/akarasz/yahtzee/event"
 	"github.com/akarasz/yahtzee/store"
 )
 
@@ -20,7 +20,7 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-func writer(ws *websocket.Conn, events <-chan interface{}, s events.Subscriber, gameID string) {
+func writer(ws *websocket.Conn, events <-chan interface{}, s event.Subscriber, gameID string) {
 	pingTicker := time.NewTicker(pingPeriod)
 	defer func() {
 		s.Unsubscribe(gameID, ws)
@@ -42,7 +42,7 @@ func writer(ws *websocket.Conn, events <-chan interface{}, s events.Subscriber, 
 	}
 }
 
-func reader(ws *websocket.Conn, s events.Subscriber, gameID string) {
+func reader(ws *websocket.Conn, s event.Subscriber, gameID string) {
 	defer func() {
 		s.Unsubscribe(gameID, ws)
 		ws.Close()
@@ -58,7 +58,7 @@ func reader(ws *websocket.Conn, s events.Subscriber, gameID string) {
 	}
 }
 
-func EventsWSHandler(sub events.Subscriber, s store.Store) http.Handler {
+func EventsWSHandler(sub event.Subscriber, s store.Store) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gameID := mux.Vars(r)["gameID"]
 		if _, err := s.Load(gameID); err != nil {
