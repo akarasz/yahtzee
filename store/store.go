@@ -2,6 +2,7 @@ package store
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/stretchr/testify/suite"
 
@@ -60,4 +61,19 @@ func (ts *TestSuite) TestSave() {
 	if got, err := s.Load("bbbbb"); ts.NoError(err) {
 		ts.Exactly(advanced, got)
 	}
+}
+
+func (ts *TestSuite) TestRace() {
+	s := ts.Subject
+	wg := &sync.WaitGroup{}
+
+	for i := 0; i < 3; i++ {
+		wg.Add(1)
+		go func() {
+			s.Save("ccccc", *model_test.NewAdvanced())
+			s.Load("ccccc")
+			wg.Done()
+		}()
+	}
+	wg.Wait()
 }
