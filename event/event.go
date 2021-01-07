@@ -1,6 +1,8 @@
 package event
 
 import (
+	"github.com/stretchr/testify/suite"
+
 	"github.com/akarasz/yahtzee/model"
 )
 
@@ -33,4 +35,20 @@ type Event struct {
 	User   *model.User
 	Action Type
 	Data   interface{}
+}
+
+type TestSuite struct {
+	suite.Suite
+
+	S Subscriber
+	E Emitter
+}
+
+func (ts *TestSuite) TestSubscribe() {
+}
+
+func (ts *TestSuite) TestUnsubscribe() {
+}
+
+func (ts *TestSuite) TestEmit() {
 }
