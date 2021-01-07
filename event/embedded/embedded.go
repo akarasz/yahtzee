@@ -1,4 +1,4 @@
-package in_app
+package embedded
 
 import (
 	"errors"
