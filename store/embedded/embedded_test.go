@@ -1,4 +1,4 @@
-package in_memory_test
+package embedded_test
 
 import (
 	"testing"
@@ -6,10 +6,10 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/akarasz/yahtzee/store"
-	"github.com/akarasz/yahtzee/store/in_memory"
+	"github.com/akarasz/yahtzee/store/embedded"
 )
 
 func TestSuite(t *testing.T) {
-	s := in_memory.New()
+	s := embedded.New()
 	suite.Run(t, &store.TestSuite{Subject: s})
 }

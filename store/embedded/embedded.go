@@ -1,4 +1,4 @@
-package in_memory
+package embedded
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
