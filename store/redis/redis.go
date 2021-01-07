@@ -41,7 +41,7 @@ func (r *Redis) Load(id string) (model.Game, error) {
 
 	raw, err := r.client.Get(ctx, "game:"+id).Bytes()
 	if err != nil {
-		return model.Game{}, err
+		return model.Game{}, store.ErrNotExists
 	}
 
 	err = json.Unmarshal(raw, &res)
