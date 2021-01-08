@@ -33,8 +33,7 @@ func NewHandler(s store.Store, e event.Emitter, sub event.Subscriber) http.Handl
 	r.HandleFunc("/", h.Create).
 		Methods("POST", "OPTIONS")
 	r.HandleFunc("/score", h.Hints).
-		Methods("GET", "OPTIONS").
-		Queries("dices", "{dices:[1-6],[1-6],[1-6],[1-6],[1-6]}")
+		Methods("GET", "OPTIONS")
 	r.HandleFunc("/{gameID}", h.Get).
 		Methods("GET", "OPTIONS")
 	r.HandleFunc("/{gameID}/join", h.AddPlayer).
@@ -505,7 +504,8 @@ func readDiceIndex(w http.ResponseWriter, r *http.Request) (int, bool) {
 }
 
 func readDices(w http.ResponseWriter, r *http.Request) ([]int, bool) {
-	rawDices := strings.Split(mux.Vars(r)["dices"], ",")
+	raw := r.URL.Query().Get("dices")
+	rawDices := strings.Split(raw, ",")
 	if len(rawDices) != 5 {
 		writeError(w, r, nil, "wrong number of dices", http.StatusBadRequest)
 		return nil, false
