@@ -11,8 +11,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/streadway/amqp"
 
-	"github.com/akarasz/yahtzee"
 	event "github.com/akarasz/yahtzee/event/rabbit"
+	"github.com/akarasz/yahtzee/handler"
 	store "github.com/akarasz/yahtzee/store/redis"
 )
 
@@ -53,5 +53,5 @@ func main() {
 	}
 
 	listenAddress := ":" + port
-	log.Fatal(http.ListenAndServe(listenAddress, yahtzee.NewHandler(s, e, e)))
+	log.Fatal(http.ListenAndServe(listenAddress, handler.New(s, e, e)))
 }

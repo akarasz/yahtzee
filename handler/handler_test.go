@@ -1,4 +1,4 @@
-package yahtzee_test
+package handler_test
 
 import (
 	"encoding/base64"
@@ -12,9 +12,9 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/akarasz/yahtzee"
 	"github.com/akarasz/yahtzee/event"
 	event_impl "github.com/akarasz/yahtzee/event/embedded"
+	"github.com/akarasz/yahtzee/handler"
 	"github.com/akarasz/yahtzee/model"
 	store "github.com/akarasz/yahtzee/store/embedded"
 )
@@ -35,7 +35,7 @@ func TestSuite(t *testing.T) {
 	suite.Run(t, &testSuite{
 		store:   s,
 		event:   e,
-		handler: yahtzee.NewHandler(s, e, e),
+		handler: handler.New(s, e, e),
 	})
 }
 
@@ -221,7 +221,7 @@ func (ts *testSuite) TestAddPlayer() {
 	// add player event emitted
 	if got := <-eChan; ts.NotNil(got) {
 		ts.Exactly(event.AddPlayer, got.Action)
-		ts.Exactly(&yahtzee.AddPlayerResponse{
+		ts.Exactly(&handler.AddPlayerResponse{
 			Players: []*model.Player{model.NewPlayer("Alice")},
 		}, got.Data)
 	}
@@ -289,10 +289,10 @@ func (ts *testSuite) TestRoll() {
 	if got := <-eChan; ts.NotNil(got) {
 		ts.Exactly(event.Roll, got.Action)
 
-		ts.Exactly(saved.RollCount, got.Data.(*yahtzee.RollResponse).RollCount)
-		ts.Exactly(saved.Dices, got.Data.(*yahtzee.RollResponse).Dices)
+		ts.Exactly(saved.RollCount, got.Data.(*handler.RollResponse).RollCount)
+		ts.Exactly(saved.Dices, got.Data.(*handler.RollResponse).Dices)
 
-		if eventJSON, err := json.Marshal(got.Data.(*yahtzee.RollResponse)); ts.NoError(err) {
+		if eventJSON, err := json.Marshal(got.Data.(*handler.RollResponse)); ts.NoError(err) {
 			ts.JSONEq(string(eventJSON), rr.Body.String())
 		}
 	}
@@ -431,7 +431,7 @@ func (ts *testSuite) TestLock() {
 	if got := <-eChan; ts.NotNil(got) {
 		ts.Exactly(event.Lock, got.Action)
 
-		ts.Exactly(saved.Dices, got.Data.(*yahtzee.LockResponse).Dices)
+		ts.Exactly(saved.Dices, got.Data.(*handler.LockResponse).Dices)
 	}
 }
 
