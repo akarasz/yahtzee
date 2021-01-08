@@ -13,12 +13,12 @@ import (
 
 type game struct {
 	sync.Mutex
-	clients map[interface{}]chan interface{}
+	clients map[interface{}]chan *event.Event
 }
 
 func newGame() *game {
 	return &game{
-		clients: map[interface{}]chan interface{}{},
+		clients: map[interface{}]chan *event.Event{},
 	}
 }
 
@@ -55,8 +55,8 @@ func New() *InApp {
 	return &res
 }
 
-func (b *InApp) Subscribe(gameID string, clientID interface{}) (chan interface{}, error) {
-	c := make(chan interface{})
+func (b *InApp) Subscribe(gameID string, clientID interface{}) (chan *event.Event, error) {
+	c := make(chan *event.Event)
 
 	var g *game
 
@@ -108,7 +108,7 @@ func (b *InApp) Emit(gameID string, u *model.User, t event.Type, body interface{
 	defer g.Unlock()
 
 	for _, s := range g.clients {
-		s <- event.Event{
+		s <- &event.Event{
 			User:   u,
 			Action: t,
 			Data:   body,

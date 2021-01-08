@@ -422,7 +422,7 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-func wsWriter(ws *websocket.Conn, events <-chan interface{}, s event.Subscriber, gameID string) {
+func wsWriter(ws *websocket.Conn, events <-chan *event.Event, s event.Subscriber, gameID string) {
 	pingTicker := time.NewTicker(wsPingPeriod)
 	defer func() {
 		s.Unsubscribe(gameID, ws)

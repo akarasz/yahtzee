@@ -2,6 +2,7 @@ package rabbit
 
 import (
 	"encoding/json"
+	"log"
 
 	"github.com/streadway/amqp"
 
@@ -64,7 +65,7 @@ func (r *Rabbit) Emit(gameID string, u *model.User, t event.Type, body interface
 		})
 }
 
-func (r *Rabbit) Subscribe(gameID string, clientID interface{}) (chan interface{}, error) {
+func (r *Rabbit) Subscribe(gameID string, clientID interface{}) (chan *event.Event, error) {
 	if err := r.exchangeDeclare(gameID); err != nil {
 		return nil, err
 	}
@@ -103,14 +104,19 @@ func (r *Rabbit) Subscribe(gameID string, clientID interface{}) (chan interface{
 		nil,    // args
 	)
 
-	c := make(chan interface{})
+	c := make(chan *event.Event)
 	d := make(chan interface{})
 	r.destroyChans[clientID] = d
 	go func() {
 		for {
 			select {
 			case m := <-msgs:
-				c <- string(m.Body)
+				var e event.Event
+				if err := json.Unmarshal(m.Body, &e); err != nil {
+					log.Printf("unable to unmarshal event: %v: %q", err, string(m.Body))
+				} else {
+					c <- &e
+				}
 			case <-d:
 				return
 			}

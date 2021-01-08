@@ -24,7 +24,7 @@ const (
 // Subscriber for subscribe events
 type Subscriber interface {
 	// Subscribe to get events from `gameID` to be send to `channel`
-	Subscribe(gameID string, clientID interface{}) (chan interface{}, error)
+	Subscribe(gameID string, clientID interface{}) (chan *Event, error)
 	Unsubscribe(gameID string, clientID interface{}) error
 }
 
@@ -106,7 +106,7 @@ func (ts *TestSuite) TestRace() {
 			c, err := s.Subscribe(id, id+"WS")
 			ts.Require().NoError(err)
 
-			go func(c chan interface{}) {
+			go func(c chan *Event) {
 				for {
 					<-c
 				}
@@ -123,7 +123,7 @@ func (ts *TestSuite) TestRace() {
 	wg.Wait()
 }
 
-func (ts *TestSuite) receiveWithTimeout(c <-chan interface{}) chan interface{} {
+func (ts *TestSuite) receiveWithTimeout(c <-chan *Event) chan interface{} {
 	res := make(chan interface{}, 1)
 
 	go func() {

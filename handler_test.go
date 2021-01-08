@@ -187,8 +187,8 @@ func (ts *testSuite) TestAddPlayer() {
 	if got := <-eChan; ts.NotNil(got) {
 		ts.Exactly(event.AddPlayer, got.Action)
 		ts.Exactly(&yahtzee.AddPlayerResponse{
-				Players: []*model.Player{ model.NewPlayer("Alice") },
-			}, got.Data)
+			Players: []*model.Player{model.NewPlayer("Alice")},
+		}, got.Data)
 	}
 
 	// player already joined
@@ -216,19 +216,19 @@ func (ts *testSuite) fromStore(id string) *model.Game {
 	return &res
 }
 
-func (ts *testSuite) receiveEvents(id string) chan event.Event {
+func (ts *testSuite) receiveEvents(id string) chan *event.Event {
 	c, err := ts.event.Subscribe(id, id)
 	ts.Require().NoError(err)
 
-	res := make(chan event.Event, 1)
+	res := make(chan *event.Event, 1)
 
 	go func() {
 		for {
 			select {
 			case got := <-c:
-				res <- got.(event.Event)
+				res <- got
 			case <-time.After(500 * time.Millisecond):
-				res <- event.Event{}
+				res <- nil
 				return
 			}
 		}
