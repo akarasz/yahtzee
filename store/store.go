@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	model_test "github.com/akarasz/yahtzee/internal/test/model"
 	"github.com/akarasz/yahtzee/model"
 )
 
@@ -36,7 +35,7 @@ func (ts *TestSuite) TestLoad() {
 	_, err := s.Load("aaaaa")
 	ts.Exactly(ErrNotExists, err)
 
-	saved := *model_test.NewAdvanced()
+	saved := *ts.newAdvancedGame()
 
 	ts.Require().NoError(s.Save("aaaaa", saved))
 
@@ -55,7 +54,7 @@ func (ts *TestSuite) TestSave() {
 		ts.Exactly(empty, got)
 	}
 
-	advanced := *model_test.NewAdvanced()
+	advanced := *ts.newAdvancedGame()
 	ts.NoError(s.Save("bbbbb", advanced))
 
 	if got, err := s.Load("bbbbb"); ts.NoError(err) {
@@ -70,10 +69,47 @@ func (ts *TestSuite) TestRace() {
 	for i := 0; i < 3; i++ {
 		wg.Add(1)
 		go func() {
-			s.Save("ccccc", *model_test.NewAdvanced())
+			s.Save("ccccc", *ts.newAdvancedGame())
 			s.Load("ccccc")
 			wg.Done()
 		}()
 	}
 	wg.Wait()
+}
+
+func (ts *TestSuite) newAdvancedGame() *model.Game {
+	return &model.Game{
+		Players: []*model.Player{
+			{
+				User: model.User("Alice"),
+				ScoreSheet: map[model.Category]int{
+					model.Twos:      6,
+					model.Fives:     15,
+					model.FullHouse: 25,
+				},
+			}, {
+				User: model.User("Bob"),
+				ScoreSheet: map[model.Category]int{
+					model.Threes:      6,
+					model.FourOfAKind: 16,
+				},
+			}, {
+				User: model.User("Carol"),
+				ScoreSheet: map[model.Category]int{
+					model.Twos:          6,
+					model.SmallStraight: 30,
+				},
+			},
+		},
+		Dices: []*model.Dice{
+			{Value: 3, Locked: true},
+			{Value: 2, Locked: false},
+			{Value: 3, Locked: true},
+			{Value: 1, Locked: false},
+			{Value: 5, Locked: false},
+		},
+		Round:         5,
+		CurrentPlayer: 1,
+		RollCount:     1,
+	}
 }
