@@ -304,7 +304,7 @@ func (h *handler) Lock(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	changes := LockResponse{
+	changes := &LockResponse{
 		Dices: g.Dices,
 	}
 

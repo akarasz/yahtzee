@@ -303,11 +303,11 @@ func (ts *testSuite) TestRollingALot() {
 		model.NewPlayer("Alice"),
 	}
 	g.Dices[1] = &model.Dice{
-		Value: 3,
+		Value:  3,
 		Locked: true,
 	}
 	g.Dices[4] = &model.Dice{
-		Value: 2,
+		Value:  2,
 		Locked: true,
 	}
 	ts.Require().NoError(ts.store.Save("rollALotID", *g))
@@ -323,6 +323,114 @@ func (ts *testSuite) TestRollingALot() {
 		ts.Require().GreaterOrEqual(afterRoll.Dices[3].Value, 1)
 		ts.Require().LessOrEqual(afterRoll.Dices[3].Value, 6)
 		ts.Require().Exactly(2, afterRoll.Dices[4].Value)
+	}
+}
+
+func (ts *testSuite) TestLock() {
+	// missing user
+	rr := ts.record(request("POST", "/lockID/lock/2"))
+	ts.Exactly(http.StatusUnauthorized, rr.Code)
+
+	// game not exists
+	rr = ts.record(request("POST", "/lockID/lock/2"), asUser("Alice"))
+	ts.Exactly(http.StatusNotFound, rr.Code)
+
+	// no players yet
+	g := model.NewGame()
+	g.RollCount = 1
+	ts.Require().NoError(ts.store.Save("lockID", *g))
+
+	rr = ts.record(request("POST", "/lockID/lock/2"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// another player's turn
+	g.Players = []*model.Player{
+		model.NewPlayer("Alice"),
+		model.NewPlayer("Bob"),
+	}
+	g.CurrentPlayer = 1
+	ts.Require().NoError(ts.store.Save("lockID", *g))
+
+	rr = ts.record(request("POST", "/lockID/lock/2"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// game is over
+	g.CurrentPlayer = 0
+	g.Round = 13
+	ts.Require().NoError(ts.store.Save("lockID", *g))
+
+	rr = ts.record(request("POST", "/lockID/lock/2"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// no roll happened yet
+	g.Round = 0
+	g.RollCount = 0
+	ts.Require().NoError(ts.store.Save("lockID", *g))
+
+	rr = ts.record(request("POST", "/lockID/lock/2"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// out of rolls
+	g.RollCount = 3
+	ts.Require().NoError(ts.store.Save("lockID", *g))
+
+	rr = ts.record(request("POST", "/lockID/lock/2"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// invalid dice index
+	g.RollCount = 1
+	ts.Require().NoError(ts.store.Save("lockID", *g))
+
+	rr = ts.record(request("POST", "/lockID/lock/-1"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+	rr = ts.record(request("POST", "/lockID/lock/5"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// locks an unlocked dice
+	ts.record(request("POST", "/lockID/lock/2"), asUser("Alice"))
+	saved := ts.fromStore("lockID")
+	ts.True(saved.Dices[2].Locked)
+
+	// unlocks a locked dice
+	ts.record(request("POST", "/lockID/lock/2"), asUser("Alice"))
+	saved = ts.fromStore("lockID")
+	ts.False(saved.Dices[2].Locked)
+
+	// successful request
+	eChan := ts.receiveEvents("lockID")
+
+	rr = ts.record(request("POST", "/lockID/lock/2"), asUser("Alice"))
+	ts.Exactly(http.StatusOK, rr.Code)
+	ts.JSONEq(`{
+		"Dices": [
+			{
+				"Value": 1,
+				"Locked": false
+			},
+			{
+				"Value": 1,
+				"Locked": false
+			},
+			{
+				"Value": 1,
+				"Locked": true
+			},
+			{
+				"Value": 1,
+				"Locked": false
+			},
+			{
+				"Value": 1,
+				"Locked": false
+			}
+		]
+	}`, rr.Body.String())
+
+	saved = ts.fromStore("lockID")
+	if got := <-eChan; ts.NotNil(got) {
+		ts.Exactly(event.Lock, got.Action)
+
+		ts.Exactly(saved.Dices, got.Data.(*yahtzee.LockResponse).Dices)
 	}
 }
 
