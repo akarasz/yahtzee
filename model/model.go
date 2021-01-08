@@ -36,6 +36,24 @@ const (
 	Chance        = "chance"
 )
 
+func Categories() []Category {
+	return []Category{
+		Ones,
+		Twos,
+		Threes,
+		Fours,
+		Fives,
+		Sixes,
+		ThreeOfAKind,
+		FourOfAKind,
+		FullHouse,
+		SmallStraight,
+		LargeStraight,
+		Yahtzee,
+		Chance,
+	}
+}
+
 // Player contains all data representing a player.
 type Player struct {
 	// User who plays
