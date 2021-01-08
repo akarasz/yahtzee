@@ -17,8 +17,8 @@ docker:
 	docker build -t "$(docker_container):latest" -t "$(docker_container):$(version)" .
 
 .PHONY := run
-run: docker
-	docker run -p 8000:8000 "$(docker_container):latest"
+run:
+	REDIS=localhost:6379 RABBIT=amqp://guest:guest@localhost:5672 go run cmd/server/main.go
 
 push: docker
 	docker push $(docker_container):latest
