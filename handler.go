@@ -20,12 +20,12 @@ import (
 )
 
 type handler struct {
-	store store.Store
-	emitter event.Emitter
+	store      store.Store
+	emitter    event.Emitter
 	subscriber event.Subscriber
 }
 
-func New(s store.Store, e event.Emitter, sub event.Subscriber) *mux.Router {
+func New(s store.Store, e event.Emitter, sub event.Subscriber) http.Handler {
 	h := &handler{s, e, sub}
 
 	r := mux.NewRouter()
@@ -106,7 +106,7 @@ func (h *handler) Hints(w http.ResponseWriter, r *http.Request) {
 		res[c] = score
 	}
 
-	if ok := writeJSON(w, g, res); !ok {
+	if ok := writeJSON(w, r, res); !ok {
 		return
 	}
 
@@ -239,7 +239,7 @@ func (h *handler) Roll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	changes := &rollResponse{
-		Dices: g.Dices,
+		Dices:     g.Dices,
 		RollCount: g.RollCount,
 	}
 

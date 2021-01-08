@@ -1,4 +1,4 @@
-package service
+package yahtzee_test
 
 import (
 	"testing"
