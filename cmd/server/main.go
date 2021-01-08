@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/streadway/amqp"
 
 	"github.com/akarasz/yahtzee"
 	event "github.com/akarasz/yahtzee/event/rabbit"
@@ -18,19 +19,28 @@ import (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
+	// redis
 	rdb := redis.NewClient(&redis.Options{
 		Addr: os.Getenv("REDIS"),
 	})
 	defer rdb.Close()
 	s := store.New(rdb, 48*time.Hour)
 
-	e, err := event.New(os.Getenv("RABBIT"))
+	// rabbit
+	rabbitConn, err := amqp.Dial(os.Getenv("RABBIT"))
 	if err != nil {
 		panic(err)
 	}
-	defer e.Close()
-
-	r := yahtzee.NewHandler(s, e, e)
+	defer rabbitConn.Close()
+	rabbitChan, err := rabbitConn.Channel()
+	if err != nil {
+		panic(err)
+	}
+	defer rabbitChan.Close()
+	e, err := event.New(rabbitChan)
+	if err != nil {
+		panic(err)
+	}
 
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
@@ -43,5 +53,5 @@ func main() {
 	}
 
 	listenAddress := ":" + port
-	log.Fatal(http.ListenAndServe(listenAddress, r))
+	log.Fatal(http.ListenAndServe(listenAddress, yahtzee.NewHandler(s, e, e)))
 }

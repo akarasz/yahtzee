@@ -11,30 +11,13 @@ import (
 )
 
 type Rabbit struct {
-	conn *amqp.Connection
-	ch   *amqp.Channel
+	ch *amqp.Channel
 
 	destroyChans map[interface{}]chan interface{}
 }
 
-func (r *Rabbit) Close() {
-	r.ch.Close()
-	r.conn.Close()
-}
-
-func New(uri string) (*Rabbit, error) {
-	conn, err := amqp.Dial(uri)
-	if err != nil {
-		return nil, err
-	}
-
-	ch, err := conn.Channel()
-	if err != nil {
-		return nil, err
-	}
-
+func New(ch *amqp.Channel) (*Rabbit, error) {
 	return &Rabbit{
-		conn:         conn,
 		ch:           ch,
 		destroyChans: map[interface{}]chan interface{}{},
 	}, nil

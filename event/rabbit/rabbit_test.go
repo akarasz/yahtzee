@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
@@ -36,7 +37,18 @@ func TestSuite(t *testing.T) {
 	port, err := container.MappedPort(ctx, "5672")
 	require.NoError(t, err)
 
-	subject, err := rabbit.New(fmt.Sprintf("amqp://guest:guest@%s:%s/", ip, port.Port()))
+	conn, err := amqp.Dial(fmt.Sprintf("amqp://guest:guest@%s:%s/", ip, port.Port()))
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close()
+	ch, err := conn.Channel()
+	if err != nil {
+		panic(err)
+	}
+	defer ch.Close()
+
+	subject, err := rabbit.New(ch)
 	require.NoError(t, err)
 
 	suite.Run(t, &event.TestSuite{
