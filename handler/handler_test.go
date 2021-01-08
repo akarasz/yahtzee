@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/akarasz/yahtzee"
@@ -693,6 +694,31 @@ func (ts *testSuite) TestScore() {
 		ts.Exactly(tc.nextRound, got.Round, "for %s", tc.description)
 		ts.Exactly(tc.nextCurrentPlayer, got.CurrentPlayer, "for %s", tc.description)
 		ts.Exactly(tc.nextRollCount, got.RollCount, "for %s", tc.description)
+	}
+}
+
+func (ts *testSuite) TestWS() {
+	server := httptest.NewServer(ts.handler)
+	defer server.Close()
+	baseUrl := "ws" + strings.TrimPrefix(server.URL, "http")
+
+	ts.Require().NoError(ts.store.Save("wsID", *yahtzee.NewGame()))
+
+	ws, _, err := websocket.DefaultDialer.Dial(baseUrl+"/wsID/ws", nil)
+	if !ts.NoError(err) {
+		return
+	}
+	defer ws.Close()
+
+	ts.event.Emit("wsID", yahtzee.NewUser("Alice"), event.AddPlayer, nil)
+
+	_, p, err := ws.ReadMessage()
+	if ts.NoError(err) {
+		ts.JSONEq(`{
+				"User": "Alice",
+				"Action": "add-player",
+				"Data": null
+			}`, string(p))
 	}
 }
 
