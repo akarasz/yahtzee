@@ -6,11 +6,13 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 
 	"github.com/akarasz/yahtzee"
-	event "github.com/akarasz/yahtzee/event/embedded"
+	"github.com/akarasz/yahtzee/event"
+	event_impl "github.com/akarasz/yahtzee/event/embedded"
 	"github.com/akarasz/yahtzee/model"
 	store "github.com/akarasz/yahtzee/store/embedded"
 )
@@ -19,14 +21,14 @@ type testSuite struct {
 	suite.Suite
 
 	store *store.InMemory
-	event *event.InApp
+	event *event_impl.InApp
 
 	handler http.Handler
 }
 
 func TestSuite(t *testing.T) {
 	s := store.New()
-	e := event.New()
+	e := event_impl.New()
 
 	suite.Run(t, &testSuite{
 		store:   s,
@@ -165,6 +167,7 @@ func (ts *testSuite) TestAddPlayer() {
 	game := model.NewGame()
 	ts.store.Save("addPlayerID", *game)
 
+	eChan := ts.receiveEvents("addPlayerID")
 	rr = ts.record(request("POST", "/addPlayerID/join"), asUser("Alice"))
 	ts.Exactly(http.StatusCreated, rr.Code)
 	ts.JSONEq(`{
@@ -181,7 +184,12 @@ func (ts *testSuite) TestAddPlayer() {
 	ts.Exactly(*model.NewUser("Alice"), saved.Players[0].User)
 
 	// add player event emitted
-	// TODO
+	if got := <-eChan; ts.NotNil(got) {
+		ts.Exactly(event.AddPlayer, got.Action)
+		ts.Exactly(&yahtzee.AddPlayerResponse{
+				Players: []*model.Player{ model.NewPlayer("Alice") },
+			}, got.Data)
+	}
 
 	// player already joined
 	rr = ts.record(request("POST", "/addPlayerID/join"), asUser("Alice"))
@@ -206,6 +214,27 @@ func (ts *testSuite) fromStore(id string) *model.Game {
 	res, err := ts.store.Load(id)
 	ts.Require().NoError(err)
 	return &res
+}
+
+func (ts *testSuite) receiveEvents(id string) chan event.Event {
+	c, err := ts.event.Subscribe(id, id)
+	ts.Require().NoError(err)
+
+	res := make(chan event.Event, 1)
+
+	go func() {
+		for {
+			select {
+			case got := <-c:
+				res <- got.(event.Event)
+			case <-time.After(500 * time.Millisecond):
+				res <- event.Event{}
+				return
+			}
+		}
+	}()
+
+	return res
 }
 
 func (ts *testSuite) newAdvancedGame() *model.Game {

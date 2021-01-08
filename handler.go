@@ -131,7 +131,7 @@ func (h *handler) Get(w http.ResponseWriter, r *http.Request) {
 	log.Print("game returned")
 }
 
-type addPlayerResponse struct {
+type AddPlayerResponse struct {
 	Players []*model.Player
 }
 
@@ -169,7 +169,7 @@ func (h *handler) AddPlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	changes := &addPlayerResponse{
+	changes := &AddPlayerResponse{
 		Players: g.Players,
 	}
 
@@ -183,7 +183,7 @@ func (h *handler) AddPlayer(w http.ResponseWriter, r *http.Request) {
 	log.Print("player added")
 }
 
-type rollResponse struct {
+type RollResponse struct {
 	Dices     []*model.Dice
 	RollCount int
 }
@@ -237,7 +237,7 @@ func (h *handler) Roll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	changes := &rollResponse{
+	changes := &RollResponse{
 		Dices:     g.Dices,
 		RollCount: g.RollCount,
 	}
@@ -251,7 +251,7 @@ func (h *handler) Roll(w http.ResponseWriter, r *http.Request) {
 	log.Print("rolled dices")
 }
 
-type lockResponse struct {
+type LockResponse struct {
 	Dices []*model.Dice
 }
 
@@ -304,7 +304,7 @@ func (h *handler) Lock(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	changes := lockResponse{
+	changes := LockResponse{
 		Dices: g.Dices,
 	}
 
