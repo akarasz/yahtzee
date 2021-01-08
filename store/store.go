@@ -21,6 +21,9 @@ type Store interface {
 
 	// Save adds the game to the store.
 	Save(id string, g yahtzee.Game) error
+
+	// Lock reserves the `id` so another locking on the same would block.
+	Lock(id string) (func(), error)
 }
 
 type TestSuite struct {
@@ -69,8 +72,13 @@ func (ts *TestSuite) TestRace() {
 	for i := 0; i < 3; i++ {
 		wg.Add(1)
 		go func() {
+			unlock, err := s.Lock("ccccc")
+			ts.Require().NoError(err)
+
 			s.Save("ccccc", *ts.newAdvancedGame())
 			s.Load("ccccc")
+
+			unlock()
 			wg.Done()
 		}()
 	}
