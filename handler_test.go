@@ -35,7 +35,7 @@ func TestSuite(t *testing.T) {
 }
 
 func (ts *testSuite) TestCreate() {
-	rr := ts.newRequest("POST", "/")
+	rr := ts.record(request("POST", "/"))
 	ts.Exactly(http.StatusCreated, rr.Code)
 	if ts.Contains(rr.HeaderMap, "Location") && ts.Len(rr.HeaderMap["Location"], 1) {
 		got, err := ts.store.Load(strings.TrimLeft(rr.HeaderMap["Location"][0], "/"))
@@ -47,21 +47,22 @@ func (ts *testSuite) TestCreate() {
 func (ts *testSuite) TestHints() {
 	badInputs := []struct {
 		description string
-		query       string
+		key       string
+		value       string
 	}{
-		{"no query", "noop=true"},
-		{"empty dices", "dices=1,2,3,4"},
-		{"too few dices", "dices=1,2,3,4"},
-		{"too many dices", "dices=1,2,3,4,5,6"},
-		{"has low face value", "dices=1,1,1,0,1"},
-		{"has high face value", "dices=7,6,6,6,6"},
+		{"no query", "noop", "true"},
+		{"empty dices", "dices", "1,2,3,4"},
+		{"too few dices", "dices", "1,2,3,4"},
+		{"too many dices", "dices", "1,2,3,4,5,6"},
+		{"has low face value", "dices", "1,1,1,0,1"},
+		{"has high face value", "dices", "7,6,6,6,6"},
 	}
 	for _, tc := range badInputs {
-		rr := ts.newRequest("GET", "/score", tc.query)
+		rr := ts.record(withQuery(request("GET", "/score"), tc.key, tc.value))
 		ts.Exactly(http.StatusBadRequest, rr.Code, "when %s", tc.description)
 	}
 
-	rr := ts.newRequest("GET", "/score", "dices=3,2,6,4,5")
+	rr := ts.record(withQuery(request("GET", "/score"), "dices", "3,2,6,4,5"))
 	ts.Exactly(http.StatusOK, rr.Code)
 	ts.JSONEq(`{
 			"ones":0,
@@ -81,12 +82,12 @@ func (ts *testSuite) TestHints() {
 }
 
 func (ts *testSuite) TestGet() {
-	rr := ts.newRequest("GET", "/getID")
+	rr := ts.record(request("GET", "/getID"))
 	ts.Exactly(http.StatusNotFound, rr.Code)
 
 	ts.Require().NoError(ts.store.Save("getID", *ts.newAdvancedGame()))
 
-	rr = ts.newRequest("GET", "/getID")
+	rr = ts.record(request("GET", "/getID"))
 	ts.Exactly(http.StatusOK, rr.Code)
 	ts.JSONEq(`{
 		"Dices": [
@@ -141,20 +142,34 @@ func (ts *testSuite) TestGet() {
 	}`, rr.Body.String())
 }
 
-func (ts *testSuite) newRequest(method string, url string, query ...string) *httptest.ResponseRecorder {
+func (ts *testSuite) TestAddPlayer() {
+	// user not authenticated (401)
+	// game not exists (404)
+	// game already started (400)
+	// player already joined (409)
+
+	// request successful (200)
+	// add player event emitted
+	// requesting the game shows the added player
+}
+
+func request(method string, url string) *http.Request {
 	req, err := http.NewRequest(method, url, nil)
-	ts.NoError(err)
-
-	if len(query) > 0 {
-		q := req.URL.Query()
-		for _, kv := range query {
-			got := strings.Split(kv, "=")
-			ts.Require().Len(got, 2)
-			q.Add(got[0], got[1])
-		}
-		req.URL.RawQuery = q.Encode()
+	if err != nil {
+		panic(err)
 	}
+	return req
+}
 
+func withQuery(req *http.Request, key, value string) *http.Request {
+	q := req.URL.Query()
+	q.Add(key, value)
+	req.URL.RawQuery = q.Encode()
+
+	return req
+}
+
+func (ts *testSuite) record(req *http.Request) *httptest.ResponseRecorder {
 	rr := httptest.NewRecorder()
 	ts.handler.ServeHTTP(rr, req)
 
