@@ -1,6 +1,7 @@
 package yahtzee_test
 
 import (
+	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -38,16 +39,15 @@ func (ts *testSuite) TestCreate() {
 	rr := ts.record(request("POST", "/"))
 	ts.Exactly(http.StatusCreated, rr.Code)
 	if ts.Contains(rr.HeaderMap, "Location") && ts.Len(rr.HeaderMap["Location"], 1) {
-		got, err := ts.store.Load(strings.TrimLeft(rr.HeaderMap["Location"][0], "/"))
-		ts.Require().NoError(err)
-		ts.Exactly(*model.NewGame(), got)
+		created := ts.fromStore(strings.TrimLeft(rr.HeaderMap["Location"][0], "/"))
+		ts.Exactly(model.NewGame(), created)
 	}
 }
 
 func (ts *testSuite) TestHints() {
 	badInputs := []struct {
 		description string
-		key       string
+		key         string
 		value       string
 	}{
 		{"no query", "noop", "true"},
@@ -58,11 +58,11 @@ func (ts *testSuite) TestHints() {
 		{"has high face value", "dices", "7,6,6,6,6"},
 	}
 	for _, tc := range badInputs {
-		rr := ts.record(withQuery(request("GET", "/score"), tc.key, tc.value))
+		rr := ts.record(request("GET", "/score"), withQuery(tc.key, tc.value))
 		ts.Exactly(http.StatusBadRequest, rr.Code, "when %s", tc.description)
 	}
 
-	rr := ts.record(withQuery(request("GET", "/score"), "dices", "3,2,6,4,5"))
+	rr := ts.record(request("GET", "/score"), withQuery("dices", "3,2,6,4,5"))
 	ts.Exactly(http.StatusOK, rr.Code)
 	ts.JSONEq(`{
 			"ones":0,
@@ -82,9 +82,11 @@ func (ts *testSuite) TestHints() {
 }
 
 func (ts *testSuite) TestGet() {
+	// game not exists
 	rr := ts.record(request("GET", "/getID"))
 	ts.Exactly(http.StatusNotFound, rr.Code)
 
+	// success
 	ts.Require().NoError(ts.store.Save("getID", *ts.newAdvancedGame()))
 
 	rr = ts.record(request("GET", "/getID"))
@@ -143,37 +145,67 @@ func (ts *testSuite) TestGet() {
 }
 
 func (ts *testSuite) TestAddPlayer() {
-	// user not authenticated (401)
-	// game not exists (404)
-	// game already started (400)
-	// player already joined (409)
+	// missing user
+	rr := ts.record(request("POST", "/addPlayerID/join"))
+	ts.Exactly(http.StatusUnauthorized, rr.Code)
+
+	// game not exists
+	rr = ts.record(request("POST", "/addPlayerID/join"), asUser("Alice"))
+	ts.Exactly(http.StatusNotFound, rr.Code)
+
+	// game already started
+	advanced := model.NewGame()
+	advanced.Round = 8
+	ts.store.Save("addPlayer-advancedID", *advanced)
+
+	rr = ts.record(request("POST", "/addPlayer-advancedID/join"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
 
 	// request successful (200)
+	game := model.NewGame()
+	ts.store.Save("addPlayerID", *game)
+
+	rr = ts.record(request("POST", "/addPlayerID/join"), asUser("Alice"))
+	ts.Exactly(http.StatusCreated, rr.Code)
+	ts.JSONEq(`{
+		"Players": [
+			{
+				"User": "Alice",
+				"ScoreSheet": {}
+			}
+		]
+	}`, rr.Body.String())
+
+	// player is saved in store
+	saved := ts.fromStore("addPlayerID")
+	ts.Exactly(*model.NewUser("Alice"), saved.Players[0].User)
+
 	// add player event emitted
-	// requesting the game shows the added player
+	// TODO
+
+	// player already joined
+	rr = ts.record(request("POST", "/addPlayerID/join"), asUser("Alice"))
+	ts.Exactly(http.StatusConflict, rr.Code)
 }
 
-func request(method string, url string) *http.Request {
-	req, err := http.NewRequest(method, url, nil)
-	if err != nil {
-		panic(err)
-	}
-	return req
-}
-
-func withQuery(req *http.Request, key, value string) *http.Request {
-	q := req.URL.Query()
-	q.Add(key, value)
-	req.URL.RawQuery = q.Encode()
-
-	return req
-}
-
-func (ts *testSuite) record(req *http.Request) *httptest.ResponseRecorder {
+func (ts *testSuite) record(
+	req *http.Request,
+	modifiers ...func(*http.Request) *http.Request) *httptest.ResponseRecorder {
 	rr := httptest.NewRecorder()
+
+	for _, modifier := range modifiers {
+		req = modifier(req)
+	}
+
 	ts.handler.ServeHTTP(rr, req)
 
 	return rr
+}
+
+func (ts *testSuite) fromStore(id string) *model.Game {
+	res, err := ts.store.Load(id)
+	ts.Require().NoError(err)
+	return &res
 }
 
 func (ts *testSuite) newAdvancedGame() *model.Game {
@@ -210,5 +242,29 @@ func (ts *testSuite) newAdvancedGame() *model.Game {
 		Round:         5,
 		CurrentPlayer: 1,
 		RollCount:     1,
+	}
+}
+
+func request(method string, url string) *http.Request {
+	req, err := http.NewRequest(method, url, nil)
+	if err != nil {
+		panic(err)
+	}
+	return req
+}
+
+func withQuery(key, value string) func(*http.Request) *http.Request {
+	return func(req *http.Request) *http.Request {
+		q := req.URL.Query()
+		q.Add(key, value)
+		req.URL.RawQuery = q.Encode()
+		return req
+	}
+}
+
+func asUser(name string) func(*http.Request) *http.Request {
+	return func(req *http.Request) *http.Request {
+		req.Header.Add("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(name+":")))
+		return req
 	}
 }
