@@ -12,10 +12,10 @@ import (
 
 // InMemory is the in-memory implementation of Store.
 type InMemory struct {
-	repo map[string]yahtzee.Game
+	repo  map[string]yahtzee.Game
 	locks map[string]*sync.Mutex
 
-	repoLock *sync.RWMutex
+	repoLock  *sync.RWMutex
 	locksLock *sync.Mutex
 }
 
@@ -57,10 +57,10 @@ func (s *InMemory) Lock(id string) (func(), error) {
 // NewInMemory creates an empty in-memory store.
 func New() *InMemory {
 	res := InMemory{
-		repo: map[string]yahtzee.Game{},
+		repo:  map[string]yahtzee.Game{},
 		locks: map[string]*sync.Mutex{},
 
-		repoLock: &sync.RWMutex{},
+		repoLock:  &sync.RWMutex{},
 		locksLock: &sync.Mutex{},
 	}
 

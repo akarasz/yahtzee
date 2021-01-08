@@ -118,6 +118,13 @@ func (h *handler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	unlocker, err := h.store.Lock(gameID)
+	if err != nil {
+		writeError(w, r, err, "locking issue", http.StatusInternalServerError)
+		return
+	}
+	defer unlocker()
+
 	g, err := h.store.Load(gameID)
 	if err != nil {
 		writeStoreError(w, r, err)
@@ -144,6 +151,13 @@ func (h *handler) AddPlayer(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+
+	unlocker, err := h.store.Lock(gameID)
+	if err != nil {
+		writeError(w, r, err, "locking issue", http.StatusInternalServerError)
+		return
+	}
+	defer unlocker()
 
 	g, err := h.store.Load(gameID)
 	if err != nil {
@@ -197,6 +211,13 @@ func (h *handler) Roll(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+
+	unlocker, err := h.store.Lock(gameID)
+	if err != nil {
+		writeError(w, r, err, "locking issue", http.StatusInternalServerError)
+		return
+	}
+	defer unlocker()
 
 	g, err := h.store.Load(gameID)
 	if err != nil {
@@ -269,6 +290,13 @@ func (h *handler) Lock(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	unlocker, err := h.store.Lock(gameID)
+	if err != nil {
+		writeError(w, r, err, "locking issue", http.StatusInternalServerError)
+		return
+	}
+	defer unlocker()
+
 	g, err := h.store.Load(gameID)
 	if err != nil {
 		writeStoreError(w, r, err)
@@ -330,6 +358,13 @@ func (h *handler) Score(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+
+	unlocker, err := h.store.Lock(gameID)
+	if err != nil {
+		writeError(w, r, err, "locking issue", http.StatusInternalServerError)
+		return
+	}
+	defer unlocker()
 
 	g, err := h.store.Load(gameID)
 	if err != nil {
@@ -466,7 +501,14 @@ func (h *handler) WS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := h.store.Load(gameID); err != nil {
+	unlock, err := h.store.Lock(gameID)
+	if err != nil {
+		writeError(w, r, err, "locking issue", http.StatusInternalServerError)
+		return
+	}
+	_, err = h.store.Load(gameID)
+	unlock()
+	if err != nil {
 		writeStoreError(w, r, err)
 		return
 	}
