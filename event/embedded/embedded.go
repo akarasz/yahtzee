@@ -23,7 +23,7 @@ func newGame() *game {
 }
 
 type InApp struct {
-	sync.Mutex
+	sync.RWMutex
 	games map[string]*game
 }
 
@@ -37,7 +37,12 @@ func New() *InApp {
 			Name: "yahtzee_websocket_games_total",
 			Help: "The total number of games with websocket channels",
 		},
-		func() float64 { return float64(len(res.games)) })
+		func() float64 {
+			res.RLock()
+			total := len(res.games)
+			res.RUnlock()
+			return float64(total)
+		})
 
 	promauto.NewGaugeFunc(
 		prometheus.GaugeOpts{
@@ -46,9 +51,11 @@ func New() *InApp {
 		},
 		func() float64 {
 			total := 0
+			res.RLock()
 			for _, g := range res.games {
 				total += len(g.clients)
 			}
+			res.RUnlock()
 			return float64(total)
 		})
 
@@ -56,36 +63,37 @@ func New() *InApp {
 }
 
 func (b *InApp) Subscribe(gameID string, clientID interface{}) (chan *event.Event, error) {
+	b.Lock()
+	defer b.Unlock()
+
 	c := make(chan *event.Event)
 
 	var g *game
 
 	g, ok := b.games[gameID]
 	if !ok {
-		b.Lock()
-		defer b.Unlock()
 
 		g = newGame()
 		b.games[gameID] = g
 	}
 
 	g.Lock()
-	defer g.Unlock()
-
 	g.clients[clientID] = c
+	g.Unlock()
 
 	return c, nil
 }
 
 func (b *InApp) Unsubscribe(gameID string, clientID interface{}) error {
+	b.Lock()
+	defer b.Unlock()
+
 	g, ok := b.games[gameID]
 	if !ok {
 		return errors.New("no game found")
 	}
 
 	g.Lock()
-	defer g.Unlock()
-
 	if c, ok := g.clients[clientID]; ok {
 		close(c)
 		delete(g.clients, clientID)
@@ -94,12 +102,15 @@ func (b *InApp) Unsubscribe(gameID string, clientID interface{}) error {
 	if len(g.clients) == 0 {
 		delete(b.games, gameID)
 	}
+	g.Unlock()
 
 	return nil
 }
 
 func (b *InApp) Emit(gameID string, u *yahtzee.User, t event.Type, body interface{}) {
+	b.RLock()
 	g, ok := b.games[gameID]
+	b.RUnlock()
 	if !ok {
 		return
 	}

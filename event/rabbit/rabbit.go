@@ -3,6 +3,7 @@ package rabbit
 import (
 	"encoding/json"
 	"log"
+	"sync"
 
 	"github.com/streadway/amqp"
 
@@ -13,6 +14,7 @@ import (
 type Rabbit struct {
 	ch *amqp.Channel
 
+	sync.Mutex
 	destroyChans map[interface{}]chan interface{}
 }
 
@@ -89,7 +91,9 @@ func (r *Rabbit) Subscribe(gameID string, clientID interface{}) (chan *event.Eve
 
 	c := make(chan *event.Event)
 	d := make(chan interface{})
+	r.Lock()
 	r.destroyChans[clientID] = d
+	r.Unlock()
 	go func() {
 		for {
 			select {
@@ -110,10 +114,12 @@ func (r *Rabbit) Subscribe(gameID string, clientID interface{}) (chan *event.Eve
 }
 
 func (r *Rabbit) Unsubscribe(gameID string, clientID interface{}) error {
+	r.Lock()
 	if d, ok := r.destroyChans[clientID]; ok {
 		d <- struct{}{}
 		delete(r.destroyChans, clientID)
 	}
+	r.Unlock()
 
 	return nil
 }
