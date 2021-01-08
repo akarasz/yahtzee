@@ -89,7 +89,40 @@ func (ts *testSuite) TestGet() {
 	ts.Exactly(http.StatusNotFound, rr.Code)
 
 	// success
-	ts.Require().NoError(ts.store.Save("getID", *ts.newAdvancedGame()))
+	ts.Require().NoError(ts.store.Save("getID", model.Game{
+		Players: []*model.Player{
+			{
+				User: model.User("Alice"),
+				ScoreSheet: map[model.Category]int{
+					model.Twos:      6,
+					model.Fives:     15,
+					model.FullHouse: 25,
+				},
+			}, {
+				User: model.User("Bob"),
+				ScoreSheet: map[model.Category]int{
+					model.Threes:      6,
+					model.FourOfAKind: 16,
+				},
+			}, {
+				User: model.User("Carol"),
+				ScoreSheet: map[model.Category]int{
+					model.Twos:          6,
+					model.SmallStraight: 30,
+				},
+			},
+		},
+		Dices: []*model.Dice{
+			{Value: 3, Locked: true},
+			{Value: 2, Locked: false},
+			{Value: 3, Locked: true},
+			{Value: 1, Locked: false},
+			{Value: 5, Locked: false},
+		},
+		Round:         5,
+		CurrentPlayer: 1,
+		RollCount:     1,
+	}))
 
 	rr = ts.record(request("GET", "/getID"))
 	ts.Exactly(http.StatusOK, rr.Code)
@@ -235,43 +268,6 @@ func (ts *testSuite) receiveEvents(id string) chan *event.Event {
 	}()
 
 	return res
-}
-
-func (ts *testSuite) newAdvancedGame() *model.Game {
-	return &model.Game{
-		Players: []*model.Player{
-			{
-				User: model.User("Alice"),
-				ScoreSheet: map[model.Category]int{
-					model.Twos:      6,
-					model.Fives:     15,
-					model.FullHouse: 25,
-				},
-			}, {
-				User: model.User("Bob"),
-				ScoreSheet: map[model.Category]int{
-					model.Threes:      6,
-					model.FourOfAKind: 16,
-				},
-			}, {
-				User: model.User("Carol"),
-				ScoreSheet: map[model.Category]int{
-					model.Twos:          6,
-					model.SmallStraight: 30,
-				},
-			},
-		},
-		Dices: []*model.Dice{
-			{Value: 3, Locked: true},
-			{Value: 2, Locked: false},
-			{Value: 3, Locked: true},
-			{Value: 1, Locked: false},
-			{Value: 5, Locked: false},
-		},
-		Round:         5,
-		CurrentPlayer: 1,
-		RollCount:     1,
-	}
 }
 
 func request(method string, url string) *http.Request {
