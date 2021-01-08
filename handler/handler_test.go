@@ -12,10 +12,10 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/akarasz/yahtzee"
 	"github.com/akarasz/yahtzee/event"
 	event_impl "github.com/akarasz/yahtzee/event/embedded"
 	"github.com/akarasz/yahtzee/handler"
-	"github.com/akarasz/yahtzee/model"
 	store "github.com/akarasz/yahtzee/store/embedded"
 )
 
@@ -44,7 +44,7 @@ func (ts *testSuite) TestCreate() {
 	ts.Exactly(http.StatusCreated, rr.Code)
 	if ts.Contains(rr.HeaderMap, "Location") && ts.Len(rr.HeaderMap["Location"], 1) {
 		created := ts.fromStore(strings.TrimLeft(rr.HeaderMap["Location"][0], "/"))
-		ts.Exactly(model.NewGame(), created)
+		ts.Exactly(yahtzee.NewGame(), created)
 	}
 }
 
@@ -91,30 +91,30 @@ func (ts *testSuite) TestGet() {
 	ts.Exactly(http.StatusNotFound, rr.Code)
 
 	// success
-	ts.Require().NoError(ts.store.Save("getID", model.Game{
-		Players: []*model.Player{
+	ts.Require().NoError(ts.store.Save("getID", yahtzee.Game{
+		Players: []*yahtzee.Player{
 			{
-				User: model.User("Alice"),
-				ScoreSheet: map[model.Category]int{
-					model.Twos:      6,
-					model.Fives:     15,
-					model.FullHouse: 25,
+				User: yahtzee.User("Alice"),
+				ScoreSheet: map[yahtzee.Category]int{
+					yahtzee.Twos:      6,
+					yahtzee.Fives:     15,
+					yahtzee.FullHouse: 25,
 				},
 			}, {
-				User: model.User("Bob"),
-				ScoreSheet: map[model.Category]int{
-					model.Threes:      6,
-					model.FourOfAKind: 16,
+				User: yahtzee.User("Bob"),
+				ScoreSheet: map[yahtzee.Category]int{
+					yahtzee.Threes:      6,
+					yahtzee.FourOfAKind: 16,
 				},
 			}, {
-				User: model.User("Carol"),
-				ScoreSheet: map[model.Category]int{
-					model.Twos:          6,
-					model.SmallStraight: 30,
+				User: yahtzee.User("Carol"),
+				ScoreSheet: map[yahtzee.Category]int{
+					yahtzee.Twos:          6,
+					yahtzee.SmallStraight: 30,
 				},
 			},
 		},
-		Dices: []*model.Dice{
+		Dices: []*yahtzee.Dice{
 			{Value: 3, Locked: true},
 			{Value: 2, Locked: false},
 			{Value: 3, Locked: true},
@@ -191,7 +191,7 @@ func (ts *testSuite) TestAddPlayer() {
 	ts.Exactly(http.StatusNotFound, rr.Code)
 
 	// game already started
-	advanced := model.NewGame()
+	advanced := yahtzee.NewGame()
 	advanced.Round = 8
 	ts.Require().NoError(ts.store.Save("addPlayer-advancedID", *advanced))
 
@@ -199,7 +199,7 @@ func (ts *testSuite) TestAddPlayer() {
 	ts.Exactly(http.StatusBadRequest, rr.Code)
 
 	// request successful (200)
-	game := model.NewGame()
+	game := yahtzee.NewGame()
 	ts.Require().NoError(ts.store.Save("addPlayerID", *game))
 
 	eChan := ts.receiveEvents("addPlayerID")
@@ -216,13 +216,13 @@ func (ts *testSuite) TestAddPlayer() {
 
 	// player is saved in store
 	saved := ts.fromStore("addPlayerID")
-	ts.Exactly(*model.NewUser("Alice"), saved.Players[0].User)
+	ts.Exactly(*yahtzee.NewUser("Alice"), saved.Players[0].User)
 
 	// add player event emitted
 	if got := <-eChan; ts.NotNil(got) {
 		ts.Exactly(event.AddPlayer, got.Action)
 		ts.Exactly(&handler.AddPlayerResponse{
-			Players: []*model.Player{model.NewPlayer("Alice")},
+			Players: []*yahtzee.Player{yahtzee.NewPlayer("Alice")},
 		}, got.Data)
 	}
 
@@ -241,16 +241,16 @@ func (ts *testSuite) TestRoll() {
 	ts.Exactly(http.StatusNotFound, rr.Code)
 
 	// no players yet
-	g := model.NewGame()
+	g := yahtzee.NewGame()
 	ts.Require().NoError(ts.store.Save("rollID", *g))
 
 	rr = ts.record(request("POST", "/rollID/roll"), asUser("Alice"))
 	ts.Exactly(http.StatusBadRequest, rr.Code)
 
 	// another player's turn
-	g.Players = []*model.Player{
-		model.NewPlayer("Alice"),
-		model.NewPlayer("Bob"),
+	g.Players = []*yahtzee.Player{
+		yahtzee.NewPlayer("Alice"),
+		yahtzee.NewPlayer("Bob"),
 	}
 	g.CurrentPlayer = 1
 	ts.Require().NoError(ts.store.Save("rollID", *g))
@@ -299,15 +299,15 @@ func (ts *testSuite) TestRoll() {
 }
 
 func (ts *testSuite) TestRollingALot() {
-	g := model.NewGame()
-	g.Players = []*model.Player{
-		model.NewPlayer("Alice"),
+	g := yahtzee.NewGame()
+	g.Players = []*yahtzee.Player{
+		yahtzee.NewPlayer("Alice"),
 	}
-	g.Dices[1] = &model.Dice{
+	g.Dices[1] = &yahtzee.Dice{
 		Value:  3,
 		Locked: true,
 	}
-	g.Dices[4] = &model.Dice{
+	g.Dices[4] = &yahtzee.Dice{
 		Value:  2,
 		Locked: true,
 	}
@@ -337,7 +337,7 @@ func (ts *testSuite) TestLock() {
 	ts.Exactly(http.StatusNotFound, rr.Code)
 
 	// no players yet
-	g := model.NewGame()
+	g := yahtzee.NewGame()
 	g.RollCount = 1
 	ts.Require().NoError(ts.store.Save("lockID", *g))
 
@@ -345,9 +345,9 @@ func (ts *testSuite) TestLock() {
 	ts.Exactly(http.StatusBadRequest, rr.Code)
 
 	// another player's turn
-	g.Players = []*model.Player{
-		model.NewPlayer("Alice"),
-		model.NewPlayer("Bob"),
+	g.Players = []*yahtzee.Player{
+		yahtzee.NewPlayer("Alice"),
+		yahtzee.NewPlayer("Bob"),
 	}
 	g.CurrentPlayer = 1
 	ts.Require().NoError(ts.store.Save("lockID", *g))
@@ -445,16 +445,16 @@ func (ts *testSuite) TestScore() {
 	ts.Exactly(http.StatusNotFound, rr.Code)
 
 	// no players
-	g := model.NewGame()
+	g := yahtzee.NewGame()
 	ts.Require().NoError(ts.store.Save("scoreID", *g))
 
 	rr = ts.record(request("POST", "/scoreID/score", "chance"), asUser("Alice"))
 	ts.Exactly(http.StatusBadRequest, rr.Code)
 
 	// another player's turn
-	g.Players = []*model.Player{
-		model.NewPlayer("Alice"),
-		model.NewPlayer("Bob"),
+	g.Players = []*yahtzee.Player{
+		yahtzee.NewPlayer("Alice"),
+		yahtzee.NewPlayer("Bob"),
 	}
 	g.CurrentPlayer = 1
 	ts.Require().NoError(ts.store.Save("scoreID", *g))
@@ -487,7 +487,7 @@ func (ts *testSuite) TestScore() {
 	ts.Exactly(http.StatusBadRequest, rr.Code)
 
 	// category is already scored
-	g.Players[0].ScoreSheet[model.FullHouse] = 25
+	g.Players[0].ScoreSheet[yahtzee.FullHouse] = 25
 	ts.Require().NoError(ts.store.Save("scoreID", *g))
 
 	rr = ts.record(request("POST", "/scoreID/score", "full-house"), asUser("Alice"))
@@ -542,49 +542,49 @@ func (ts *testSuite) TestScore() {
 	saved := ts.fromStore("scoreID")
 	if got := <-eChan; ts.NotNil(got) {
 		ts.Exactly(event.Score, got.Action)
-		ts.Exactly(saved, got.Data.(*model.Game))
+		ts.Exactly(saved, got.Data.(*yahtzee.Game))
 	}
 
 	// scoring
 	scoringCases := []struct {
 		dices    []int
-		category model.Category
+		category yahtzee.Category
 		value    int
 	}{
-		{[]int{1, 2, 3, 1, 1}, model.Ones, 3},
-		{[]int{2, 3, 4, 2, 3}, model.Twos, 4},
-		{[]int{6, 4, 2, 2, 3}, model.Threes, 3},
-		{[]int{1, 6, 3, 3, 5}, model.Fours, 0},
-		{[]int{4, 4, 1, 2, 4}, model.Fours, 12},
-		{[]int{6, 6, 3, 5, 2}, model.Fives, 5},
-		{[]int{5, 3, 6, 6, 6}, model.Sixes, 18},
-		{[]int{2, 4, 3, 6, 4}, model.ThreeOfAKind, 0},
-		{[]int{3, 1, 3, 1, 3}, model.ThreeOfAKind, 9},
-		{[]int{5, 2, 5, 5, 5}, model.ThreeOfAKind, 15},
-		{[]int{2, 6, 3, 2, 2}, model.FourOfAKind, 0},
-		{[]int{1, 6, 6, 6, 6}, model.FourOfAKind, 24},
-		{[]int{4, 4, 4, 4, 4}, model.FourOfAKind, 16},
-		{[]int{5, 5, 2, 5, 5}, model.FullHouse, 0},
-		{[]int{2, 5, 3, 6, 5}, model.FullHouse, 0},
-		{[]int{5, 5, 2, 5, 2}, model.FullHouse, 25},
-		{[]int{3, 1, 3, 1, 3}, model.FullHouse, 25},
-		{[]int{6, 2, 5, 1, 3}, model.SmallStraight, 0},
-		{[]int{6, 2, 4, 1, 3}, model.SmallStraight, 30},
-		{[]int{4, 2, 3, 5, 3}, model.SmallStraight, 30},
-		{[]int{1, 6, 3, 5, 4}, model.SmallStraight, 30},
-		{[]int{3, 5, 2, 3, 4}, model.LargeStraight, 0},
-		{[]int{3, 5, 2, 1, 4}, model.LargeStraight, 40},
-		{[]int{5, 2, 6, 3, 4}, model.LargeStraight, 40},
-		{[]int{3, 3, 3, 3, 3}, model.Yahtzee, 50},
-		{[]int{1, 1, 1, 1, 1}, model.Yahtzee, 50},
-		{[]int{6, 2, 4, 1, 3}, model.Chance, 16},
-		{[]int{1, 6, 3, 3, 5}, model.Chance, 18},
-		{[]int{2, 3, 4, 2, 3}, model.Chance, 14},
+		{[]int{1, 2, 3, 1, 1}, yahtzee.Ones, 3},
+		{[]int{2, 3, 4, 2, 3}, yahtzee.Twos, 4},
+		{[]int{6, 4, 2, 2, 3}, yahtzee.Threes, 3},
+		{[]int{1, 6, 3, 3, 5}, yahtzee.Fours, 0},
+		{[]int{4, 4, 1, 2, 4}, yahtzee.Fours, 12},
+		{[]int{6, 6, 3, 5, 2}, yahtzee.Fives, 5},
+		{[]int{5, 3, 6, 6, 6}, yahtzee.Sixes, 18},
+		{[]int{2, 4, 3, 6, 4}, yahtzee.ThreeOfAKind, 0},
+		{[]int{3, 1, 3, 1, 3}, yahtzee.ThreeOfAKind, 9},
+		{[]int{5, 2, 5, 5, 5}, yahtzee.ThreeOfAKind, 15},
+		{[]int{2, 6, 3, 2, 2}, yahtzee.FourOfAKind, 0},
+		{[]int{1, 6, 6, 6, 6}, yahtzee.FourOfAKind, 24},
+		{[]int{4, 4, 4, 4, 4}, yahtzee.FourOfAKind, 16},
+		{[]int{5, 5, 2, 5, 5}, yahtzee.FullHouse, 0},
+		{[]int{2, 5, 3, 6, 5}, yahtzee.FullHouse, 0},
+		{[]int{5, 5, 2, 5, 2}, yahtzee.FullHouse, 25},
+		{[]int{3, 1, 3, 1, 3}, yahtzee.FullHouse, 25},
+		{[]int{6, 2, 5, 1, 3}, yahtzee.SmallStraight, 0},
+		{[]int{6, 2, 4, 1, 3}, yahtzee.SmallStraight, 30},
+		{[]int{4, 2, 3, 5, 3}, yahtzee.SmallStraight, 30},
+		{[]int{1, 6, 3, 5, 4}, yahtzee.SmallStraight, 30},
+		{[]int{3, 5, 2, 3, 4}, yahtzee.LargeStraight, 0},
+		{[]int{3, 5, 2, 1, 4}, yahtzee.LargeStraight, 40},
+		{[]int{5, 2, 6, 3, 4}, yahtzee.LargeStraight, 40},
+		{[]int{3, 3, 3, 3, 3}, yahtzee.Yahtzee, 50},
+		{[]int{1, 1, 1, 1, 1}, yahtzee.Yahtzee, 50},
+		{[]int{6, 2, 4, 1, 3}, yahtzee.Chance, 16},
+		{[]int{1, 6, 3, 3, 5}, yahtzee.Chance, 18},
+		{[]int{2, 3, 4, 2, 3}, yahtzee.Chance, 14},
 	}
 
 	for _, tc := range scoringCases {
-		g := model.NewGame()
-		g.Players = append(g.Players, model.NewPlayer("Alice"))
+		g := yahtzee.NewGame()
+		g.Players = append(g.Players, yahtzee.NewPlayer("Alice"))
 		g.RollCount = 1
 		for d := 0; d < 5; d++ {
 			g.Dices[d].Value = tc.dices[d]
@@ -602,21 +602,21 @@ func (ts *testSuite) TestScore() {
 	bonusCases := []struct {
 		dices         []int
 		upperSection  []int
-		scoring       model.Category
+		scoring       yahtzee.Category
 		givesBonus    bool
 		mustHaveValue bool
 	}{
-		{[]int{1, 3, 6, 2, 4}, []int{3, 6, -1, 16, 25, -1}, model.Sixes, false, false},
-		{[]int{1, 3, 6, 2, 4}, []int{-1, -1, 12, -1, 20, 36}, model.Fours, true, false},
-		{[]int{1, 3, 6, 2, 4}, []int{3, 6, 9, 16, 25, -1}, model.Sixes, true, true},
-		{[]int{1, 1, 3, 3, 3}, []int{-1, 2, 3, 4, 15, 36}, model.Ones, false, true},
-		{[]int{1, 1, 1, 3, 3}, []int{-1, 2, 3, 4, 15, 36}, model.Ones, true, true},
-		{[]int{1, 1, 1, 1, 3}, []int{-1, 2, 3, 4, 15, 36}, model.Ones, true, true},
+		{[]int{1, 3, 6, 2, 4}, []int{3, 6, -1, 16, 25, -1}, yahtzee.Sixes, false, false},
+		{[]int{1, 3, 6, 2, 4}, []int{-1, -1, 12, -1, 20, 36}, yahtzee.Fours, true, false},
+		{[]int{1, 3, 6, 2, 4}, []int{3, 6, 9, 16, 25, -1}, yahtzee.Sixes, true, true},
+		{[]int{1, 1, 3, 3, 3}, []int{-1, 2, 3, 4, 15, 36}, yahtzee.Ones, false, true},
+		{[]int{1, 1, 1, 3, 3}, []int{-1, 2, 3, 4, 15, 36}, yahtzee.Ones, true, true},
+		{[]int{1, 1, 1, 1, 3}, []int{-1, 2, 3, 4, 15, 36}, yahtzee.Ones, true, true},
 	}
 
 	for _, tc := range bonusCases {
-		g := model.NewGame()
-		g.Players = append(g.Players, model.NewPlayer("Alice"))
+		g := yahtzee.NewGame()
+		g.Players = append(g.Players, yahtzee.NewPlayer("Alice"))
 		g.RollCount = 1
 		for d := 0; d < 5; d++ {
 			g.Dices[d].Value = tc.dices[d]
@@ -674,10 +674,10 @@ func (ts *testSuite) TestScore() {
 	}
 
 	for _, tc := range counterCases {
-		g := model.NewGame()
-		g.Players = []*model.Player{
-			model.NewPlayer("Alice"),
-			model.NewPlayer("Bob"),
+		g := yahtzee.NewGame()
+		g.Players = []*yahtzee.Player{
+			yahtzee.NewPlayer("Alice"),
+			yahtzee.NewPlayer("Bob"),
 		}
 		g.Round = tc.round
 		g.CurrentPlayer = tc.currentPlayer
@@ -710,7 +710,7 @@ func (ts *testSuite) record(
 	return rr
 }
 
-func (ts *testSuite) fromStore(id string) *model.Game {
+func (ts *testSuite) fromStore(id string) *yahtzee.Game {
 	res, err := ts.store.Load(id)
 	ts.Require().NoError(err)
 	return &res

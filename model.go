@@ -1,4 +1,4 @@
-package model
+package yahtzee
 
 var (
 	// NumberOfDices shows how many dices are used for a game.

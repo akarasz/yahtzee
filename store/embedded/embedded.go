@@ -4,22 +4,22 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
-	"github.com/akarasz/yahtzee/model"
+	"github.com/akarasz/yahtzee"
 	"github.com/akarasz/yahtzee/store"
 )
 
 // InMemory is the in-memory implementation of Store.
 type InMemory struct {
-	repo map[string]model.Game
+	repo map[string]yahtzee.Game
 }
 
-func (s *InMemory) Save(id string, g model.Game) error {
+func (s *InMemory) Save(id string, g yahtzee.Game) error {
 	s.repo[id] = g
 
 	return nil
 }
 
-func (s *InMemory) Load(id string) (model.Game, error) {
+func (s *InMemory) Load(id string) (yahtzee.Game, error) {
 	g, ok := s.repo[id]
 	if !ok {
 		return g, store.ErrNotExists
@@ -31,7 +31,7 @@ func (s *InMemory) Load(id string) (model.Game, error) {
 // NewInMemory creates an empty in-memory store.
 func New() *InMemory {
 	res := InMemory{
-		repo: map[string]model.Game{},
+		repo: map[string]yahtzee.Game{},
 	}
 
 	promauto.NewGaugeFunc(

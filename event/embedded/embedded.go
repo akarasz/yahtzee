@@ -7,8 +7,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
+	"github.com/akarasz/yahtzee"
 	"github.com/akarasz/yahtzee/event"
-	"github.com/akarasz/yahtzee/model"
 )
 
 type game struct {
@@ -98,7 +98,7 @@ func (b *InApp) Unsubscribe(gameID string, clientID interface{}) error {
 	return nil
 }
 
-func (b *InApp) Emit(gameID string, u *model.User, t event.Type, body interface{}) {
+func (b *InApp) Emit(gameID string, u *yahtzee.User, t event.Type, body interface{}) {
 	g, ok := b.games[gameID]
 	if !ok {
 		return

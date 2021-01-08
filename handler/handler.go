@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/akarasz/yahtzee"
 	"github.com/akarasz/yahtzee/event"
-	"github.com/akarasz/yahtzee/model"
 	"github.com/akarasz/yahtzee/store"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -78,7 +78,7 @@ func generateID() string {
 
 func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	gameID := generateID()
-	if err := h.store.Save(gameID, *model.NewGame()); err != nil {
+	if err := h.store.Save(gameID, *yahtzee.NewGame()); err != nil {
 		writeError(w, r, err, "create game", http.StatusInternalServerError)
 		return
 	}
@@ -95,8 +95,8 @@ func (h *handler) Hints(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := map[model.Category]int{}
-	for _, c := range model.Categories() {
+	res := map[yahtzee.Category]int{}
+	for _, c := range yahtzee.Categories() {
 		score, err := score(c, dices)
 		if err != nil {
 			writeError(w, r, err, "", http.StatusInternalServerError)
@@ -132,7 +132,7 @@ func (h *handler) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 type AddPlayerResponse struct {
-	Players []*model.Player
+	Players []*yahtzee.Player
 }
 
 func (h *handler) AddPlayer(w http.ResponseWriter, r *http.Request) {
@@ -162,7 +162,7 @@ func (h *handler) AddPlayer(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	g.Players = append(g.Players, model.NewPlayer(user))
+	g.Players = append(g.Players, yahtzee.NewPlayer(user))
 
 	if err := h.store.Save(gameID, g); err != nil {
 		writeStoreError(w, r, err)
@@ -184,7 +184,7 @@ func (h *handler) AddPlayer(w http.ResponseWriter, r *http.Request) {
 }
 
 type RollResponse struct {
-	Dices     []*model.Dice
+	Dices     []*yahtzee.Dice
 	RollCount int
 }
 
@@ -252,7 +252,7 @@ func (h *handler) Roll(w http.ResponseWriter, r *http.Request) {
 }
 
 type LockResponse struct {
-	Dices []*model.Dice
+	Dices []*yahtzee.Dice
 }
 
 func (h *handler) Lock(w http.ResponseWriter, r *http.Request) {
@@ -372,20 +372,20 @@ func (h *handler) Score(w http.ResponseWriter, r *http.Request) {
 
 	currentPlayer.ScoreSheet[category] = score
 
-	if _, ok := currentPlayer.ScoreSheet[model.Bonus]; !ok {
+	if _, ok := currentPlayer.ScoreSheet[yahtzee.Bonus]; !ok {
 		var total, types int
 		for k, v := range currentPlayer.ScoreSheet {
-			if k == model.Ones || k == model.Twos || k == model.Threes ||
-				k == model.Fours || k == model.Fives || k == model.Sixes {
+			if k == yahtzee.Ones || k == yahtzee.Twos || k == yahtzee.Threes ||
+				k == yahtzee.Fours || k == yahtzee.Fives || k == yahtzee.Sixes {
 				types++
 				total += v
 			}
 		}
 
 		if total >= 63 {
-			currentPlayer.ScoreSheet[model.Bonus] = 35
+			currentPlayer.ScoreSheet[yahtzee.Bonus] = 35
 		} else if types == 6 {
-			currentPlayer.ScoreSheet[model.Bonus] = 0
+			currentPlayer.ScoreSheet[yahtzee.Bonus] = 0
 		}
 	}
 
@@ -522,7 +522,7 @@ func readDices(w http.ResponseWriter, r *http.Request) ([]int, bool) {
 	return dices, true
 }
 
-func readCategory(w http.ResponseWriter, r *http.Request) (model.Category, bool) {
+func readCategory(w http.ResponseWriter, r *http.Request) (yahtzee.Category, bool) {
 	if r.Body == nil {
 		writeError(w, r, nil, "no category", http.StatusBadRequest)
 		return "", false
@@ -532,7 +532,7 @@ func readCategory(w http.ResponseWriter, r *http.Request) (model.Category, bool)
 		writeError(w, r, err, "extract category from body", http.StatusInternalServerError)
 		return "", false
 	}
-	return model.Category(body), true
+	return yahtzee.Category(body), true
 }
 
 func readGameID(w http.ResponseWriter, r *http.Request) (string, bool) {
@@ -545,14 +545,14 @@ func readGameID(w http.ResponseWriter, r *http.Request) (string, bool) {
 	return gameID, true
 }
 
-func readUser(w http.ResponseWriter, r *http.Request) (model.User, bool) {
+func readUser(w http.ResponseWriter, r *http.Request) (yahtzee.User, bool) {
 	user, _, ok := r.BasicAuth()
 	if !ok {
 		err := errors.New("no user")
 		writeError(w, r, err, "no user in request", http.StatusUnauthorized)
 		return "", false
 	}
-	return model.User(user), true
+	return yahtzee.User(user), true
 }
 
 func writeJSON(w http.ResponseWriter, r *http.Request, body interface{}) bool {
@@ -577,46 +577,46 @@ func writeStoreError(w http.ResponseWriter, r *http.Request, err error) {
 	}
 }
 
-func score(category model.Category, dices []int) (int, error) {
+func score(category yahtzee.Category, dices []int) (int, error) {
 	s := 0
 	switch category {
-	case model.Ones:
+	case yahtzee.Ones:
 		for _, d := range dices {
 			if d == 1 {
 				s++
 			}
 		}
-	case model.Twos:
+	case yahtzee.Twos:
 		for _, d := range dices {
 			if d == 2 {
 				s += 2
 			}
 		}
-	case model.Threes:
+	case yahtzee.Threes:
 		for _, d := range dices {
 			if d == 3 {
 				s += 3
 			}
 		}
-	case model.Fours:
+	case yahtzee.Fours:
 		for _, d := range dices {
 			if d == 4 {
 				s += 4
 			}
 		}
-	case model.Fives:
+	case yahtzee.Fives:
 		for _, d := range dices {
 			if d == 5 {
 				s += 5
 			}
 		}
-	case model.Sixes:
+	case yahtzee.Sixes:
 		for _, d := range dices {
 			if d == 6 {
 				s += 6
 			}
 		}
-	case model.ThreeOfAKind:
+	case yahtzee.ThreeOfAKind:
 		occurrences := map[int]int{}
 		for _, d := range dices {
 			occurrences[d]++
@@ -627,7 +627,7 @@ func score(category model.Category, dices []int) (int, error) {
 				s = 3 * k
 			}
 		}
-	case model.FourOfAKind:
+	case yahtzee.FourOfAKind:
 		occurrences := map[int]int{}
 		for _, d := range dices {
 			occurrences[d]++
@@ -638,7 +638,7 @@ func score(category model.Category, dices []int) (int, error) {
 				s = 4 * k
 			}
 		}
-	case model.FullHouse:
+	case yahtzee.FullHouse:
 		one, oneCount, other := dices[0], 1, 0
 		for i := 1; i < len(dices); i++ {
 			v := dices[i]
@@ -655,7 +655,7 @@ func score(category model.Category, dices []int) (int, error) {
 		if oneCount == 2 || oneCount == 3 {
 			s = 25
 		}
-	case model.SmallStraight:
+	case yahtzee.SmallStraight:
 		hit := [6]bool{}
 		for _, d := range dices {
 			hit[d-1] = true
@@ -666,7 +666,7 @@ func score(category model.Category, dices []int) (int, error) {
 			(hit[2] && hit[3] && hit[4] && hit[5]) {
 			s = 30
 		}
-	case model.LargeStraight:
+	case yahtzee.LargeStraight:
 		hit := [6]bool{}
 		for _, d := range dices {
 			hit[d-1] = true
@@ -676,7 +676,7 @@ func score(category model.Category, dices []int) (int, error) {
 			(hit[1] && hit[2] && hit[3] && hit[4] && hit[5]) {
 			s = 40
 		}
-	case model.Yahtzee:
+	case yahtzee.Yahtzee:
 		same := true
 		for i := 0; i < len(dices)-1; i++ {
 			same = same && dices[i] == dices[i+1]
@@ -685,7 +685,7 @@ func score(category model.Category, dices []int) (int, error) {
 		if same {
 			s = 50
 		}
-	case model.Chance:
+	case yahtzee.Chance:
 		for _, d := range dices {
 			s += d
 		}

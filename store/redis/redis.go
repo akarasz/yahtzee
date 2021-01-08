@@ -9,7 +9,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
-	"github.com/akarasz/yahtzee/model"
+	"github.com/akarasz/yahtzee"
 	"github.com/akarasz/yahtzee/store"
 )
 
@@ -36,12 +36,12 @@ func New(client *redis.Client, expiration time.Duration) store.Store {
 	}
 }
 
-func (r *Redis) Load(id string) (model.Game, error) {
-	var res model.Game
+func (r *Redis) Load(id string) (yahtzee.Game, error) {
+	var res yahtzee.Game
 
 	raw, err := r.client.Get(ctx, "game:"+id).Bytes()
 	if err != nil {
-		return model.Game{}, store.ErrNotExists
+		return yahtzee.Game{}, store.ErrNotExists
 	}
 
 	err = json.Unmarshal(raw, &res)
@@ -49,7 +49,7 @@ func (r *Redis) Load(id string) (model.Game, error) {
 	return res, err
 }
 
-func (r *Redis) Save(id string, g model.Game) error {
+func (r *Redis) Save(id string, g yahtzee.Game) error {
 	raw, err := json.Marshal(g)
 	if err != nil {
 		return err

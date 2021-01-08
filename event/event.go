@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/akarasz/yahtzee/model"
+	"github.com/akarasz/yahtzee"
 )
 
 // Type tells which kind of events happened
@@ -32,11 +32,11 @@ type Subscriber interface {
 type Emitter interface {
 	// Emit notifies the consumers of `gameID` that `u` user triggered `t` event
 	// that caused changes described in `body`
-	Emit(gameID string, u *model.User, t Type, body interface{})
+	Emit(gameID string, u *yahtzee.User, t Type, body interface{})
 }
 
 type Event struct {
-	User   *model.User
+	User   *yahtzee.User
 	Action Type
 	Data   interface{}
 }
@@ -56,7 +56,7 @@ func (ts *TestSuite) TestSubscribe() {
 	ts.NoError(err)
 
 	got := ts.receiveWithTimeout(c)
-	e.Emit("subscribeID", model.NewUser("Alice"), AddPlayer, nil)
+	e.Emit("subscribeID", yahtzee.NewUser("Alice"), AddPlayer, nil)
 	ts.NotNil(<-got)
 }
 
@@ -70,7 +70,7 @@ func (ts *TestSuite) TestUnsubscribe() {
 	ts.NoError(s.Unsubscribe("unsubscribeID", "unsubscribeWSID"))
 
 	got := ts.receiveWithTimeout(c)
-	e.Emit("unsubscribeID", model.NewUser("Alice"), AddPlayer, nil)
+	e.Emit("unsubscribeID", yahtzee.NewUser("Alice"), AddPlayer, nil)
 	ts.Nil(<-got)
 }
 
@@ -88,7 +88,7 @@ func (ts *TestSuite) TestEmit() {
 	got1 := ts.receiveWithTimeout(c1)
 	got2 := ts.receiveWithTimeout(c2)
 	got3 := ts.receiveWithTimeout(c3)
-	e.Emit("emitID", model.NewUser("Alice"), AddPlayer, nil)
+	e.Emit("emitID", yahtzee.NewUser("Alice"), AddPlayer, nil)
 	ts.NotNil(<-got1)
 	ts.NotNil(<-got2)
 	ts.Nil(<-got3)
@@ -113,7 +113,7 @@ func (ts *TestSuite) TestRace() {
 			}(c)
 
 			for j := 0; j < 3; j++ {
-				e.Emit(id, model.NewUser("Alice"), AddPlayer, nil)
+				e.Emit(id, yahtzee.NewUser("Alice"), AddPlayer, nil)
 			}
 
 			ts.Require().NoError(s.Unsubscribe(id, id+"WS"))

@@ -6,8 +6,8 @@ import (
 
 	"github.com/streadway/amqp"
 
+	"github.com/akarasz/yahtzee"
 	"github.com/akarasz/yahtzee/event"
-	"github.com/akarasz/yahtzee/model"
 )
 
 type Rabbit struct {
@@ -23,7 +23,7 @@ func New(ch *amqp.Channel) (*Rabbit, error) {
 	}, nil
 }
 
-func (r *Rabbit) Emit(gameID string, u *model.User, t event.Type, body interface{}) {
+func (r *Rabbit) Emit(gameID string, u *yahtzee.User, t event.Type, body interface{}) {
 	if err := r.exchangeDeclare(gameID); err != nil {
 		return
 	}

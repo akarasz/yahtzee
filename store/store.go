@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/akarasz/yahtzee/model"
+	"github.com/akarasz/yahtzee"
 )
 
 var (
@@ -17,10 +17,10 @@ var (
 // Store contains game elements by their IDs.
 type Store interface {
 	// Load returns a game from the store.
-	Load(id string) (model.Game, error)
+	Load(id string) (yahtzee.Game, error)
 
 	// Save adds the game to the store.
-	Save(id string, g model.Game) error
+	Save(id string, g yahtzee.Game) error
 }
 
 type TestSuite struct {
@@ -47,7 +47,7 @@ func (ts *TestSuite) TestLoad() {
 func (ts *TestSuite) TestSave() {
 	s := ts.Subject
 
-	empty := *model.NewGame()
+	empty := *yahtzee.NewGame()
 	ts.NoError(s.Save("bbbbb", empty))
 
 	if got, err := s.Load("bbbbb"); ts.NoError(err) {
@@ -77,31 +77,31 @@ func (ts *TestSuite) TestRace() {
 	wg.Wait()
 }
 
-func (ts *TestSuite) newAdvancedGame() *model.Game {
-	return &model.Game{
-		Players: []*model.Player{
+func (ts *TestSuite) newAdvancedGame() *yahtzee.Game {
+	return &yahtzee.Game{
+		Players: []*yahtzee.Player{
 			{
-				User: model.User("Alice"),
-				ScoreSheet: map[model.Category]int{
-					model.Twos:      6,
-					model.Fives:     15,
-					model.FullHouse: 25,
+				User: yahtzee.User("Alice"),
+				ScoreSheet: map[yahtzee.Category]int{
+					yahtzee.Twos:      6,
+					yahtzee.Fives:     15,
+					yahtzee.FullHouse: 25,
 				},
 			}, {
-				User: model.User("Bob"),
-				ScoreSheet: map[model.Category]int{
-					model.Threes:      6,
-					model.FourOfAKind: 16,
+				User: yahtzee.User("Bob"),
+				ScoreSheet: map[yahtzee.Category]int{
+					yahtzee.Threes:      6,
+					yahtzee.FourOfAKind: 16,
 				},
 			}, {
-				User: model.User("Carol"),
-				ScoreSheet: map[model.Category]int{
-					model.Twos:          6,
-					model.SmallStraight: 30,
+				User: yahtzee.User("Carol"),
+				ScoreSheet: map[yahtzee.Category]int{
+					yahtzee.Twos:          6,
+					yahtzee.SmallStraight: 30,
 				},
 			},
 		},
-		Dices: []*model.Dice{
+		Dices: []*yahtzee.Dice{
 			{Value: 3, Locked: true},
 			{Value: 2, Locked: false},
 			{Value: 3, Locked: true},
