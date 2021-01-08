@@ -2,6 +2,7 @@ package yahtzee_test
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -191,14 +192,14 @@ func (ts *testSuite) TestAddPlayer() {
 	// game already started
 	advanced := model.NewGame()
 	advanced.Round = 8
-	ts.store.Save("addPlayer-advancedID", *advanced)
+	ts.Require().NoError(ts.store.Save("addPlayer-advancedID", *advanced))
 
 	rr = ts.record(request("POST", "/addPlayer-advancedID/join"), asUser("Alice"))
 	ts.Exactly(http.StatusBadRequest, rr.Code)
 
 	// request successful (200)
 	game := model.NewGame()
-	ts.store.Save("addPlayerID", *game)
+	ts.Require().NoError(ts.store.Save("addPlayerID", *game))
 
 	eChan := ts.receiveEvents("addPlayerID")
 	rr = ts.record(request("POST", "/addPlayerID/join"), asUser("Alice"))
@@ -227,6 +228,102 @@ func (ts *testSuite) TestAddPlayer() {
 	// player already joined
 	rr = ts.record(request("POST", "/addPlayerID/join"), asUser("Alice"))
 	ts.Exactly(http.StatusConflict, rr.Code)
+}
+
+func (ts *testSuite) TestRoll() {
+	// missing user
+	rr := ts.record(request("POST", "/rollID/roll"))
+	ts.Exactly(http.StatusUnauthorized, rr.Code)
+
+	// game not exists
+	rr = ts.record(request("POST", "/rollID/roll"), asUser("Alice"))
+	ts.Exactly(http.StatusNotFound, rr.Code)
+
+	// no players yet
+	g := model.NewGame()
+	ts.Require().NoError(ts.store.Save("rollID", *g))
+
+	rr = ts.record(request("POST", "/rollID/roll"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// another player's turn
+	g.Players = []*model.Player{
+		model.NewPlayer("Alice"),
+		model.NewPlayer("Bob"),
+	}
+	g.CurrentPlayer = 1
+	ts.Require().NoError(ts.store.Save("rollID", *g))
+
+	rr = ts.record(request("POST", "/rollID/roll"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// game is over
+	g.CurrentPlayer = 0
+	g.Round = 13
+	ts.Require().NoError(ts.store.Save("rollID", *g))
+
+	rr = ts.record(request("POST", "/rollID/roll"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// out of rolls
+	g.Round = 0
+	g.RollCount = 3
+	ts.Require().NoError(ts.store.Save("rollID", *g))
+
+	rr = ts.record(request("POST", "/rollID/roll"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// success
+	g.Round = 0
+	g.RollCount = 0
+	ts.Require().NoError(ts.store.Save("rollID", *g))
+
+	eChan := ts.receiveEvents("rollID")
+
+	rr = ts.record(request("POST", "/rollID/roll"), asUser("Alice"))
+	ts.Exactly(http.StatusOK, rr.Code)
+
+	saved := ts.fromStore("rollID")
+	ts.Exactly(g.RollCount+1, saved.RollCount)
+	if got := <-eChan; ts.NotNil(got) {
+		ts.Exactly(event.Roll, got.Action)
+
+		ts.Exactly(saved.RollCount, got.Data.(*yahtzee.RollResponse).RollCount)
+		ts.Exactly(saved.Dices, got.Data.(*yahtzee.RollResponse).Dices)
+
+		if eventJSON, err := json.Marshal(got.Data.(*yahtzee.RollResponse)); ts.NoError(err) {
+			ts.JSONEq(string(eventJSON), rr.Body.String())
+		}
+	}
+}
+
+func (ts *testSuite) TestRollingALot() {
+	g := model.NewGame()
+	g.Players = []*model.Player{
+		model.NewPlayer("Alice"),
+	}
+	g.Dices[1] = &model.Dice{
+		Value: 3,
+		Locked: true,
+	}
+	g.Dices[4] = &model.Dice{
+		Value: 2,
+		Locked: true,
+	}
+	ts.Require().NoError(ts.store.Save("rollALotID", *g))
+
+	for i := 0; i < 1000; i++ {
+		ts.record(request("POST", "/rollALotID/roll"), asUser("Alice"))
+		afterRoll := ts.fromStore("rollALotID")
+		ts.Require().GreaterOrEqual(afterRoll.Dices[0].Value, 1)
+		ts.Require().LessOrEqual(afterRoll.Dices[0].Value, 6)
+		ts.Require().Exactly(3, afterRoll.Dices[1].Value)
+		ts.Require().GreaterOrEqual(afterRoll.Dices[2].Value, 1)
+		ts.Require().LessOrEqual(afterRoll.Dices[2].Value, 6)
+		ts.Require().GreaterOrEqual(afterRoll.Dices[3].Value, 1)
+		ts.Require().LessOrEqual(afterRoll.Dices[3].Value, 6)
+		ts.Require().Exactly(2, afterRoll.Dices[4].Value)
+	}
 }
 
 func (ts *testSuite) record(

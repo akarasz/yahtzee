@@ -205,7 +205,7 @@ func (h *handler) Roll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(g.Players) == 0 {
-		writeError(w, r, nil, "another players turn", http.StatusBadRequest)
+		writeError(w, r, nil, "no players joined", http.StatusBadRequest)
 		return
 	}
 	currentPlayer := g.Players[g.CurrentPlayer]
@@ -276,7 +276,7 @@ func (h *handler) Lock(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(g.Players) == 0 {
-		writeError(w, r, nil, "another players turn", http.StatusBadRequest)
+		writeError(w, r, nil, "no players joined", http.StatusBadRequest)
 		return
 	}
 	currentPlayer := g.Players[g.CurrentPlayer]
@@ -338,7 +338,7 @@ func (h *handler) Score(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(g.Players) == 0 {
-		writeError(w, r, nil, "another players turn", http.StatusBadRequest)
+		writeError(w, r, nil, "no players joined", http.StatusBadRequest)
 		return
 	}
 	currentPlayer := g.Players[g.CurrentPlayer]
