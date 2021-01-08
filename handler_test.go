@@ -14,7 +14,7 @@ import (
 	store "github.com/akarasz/yahtzee/store/embedded"
 )
 
-type TestHandlerSuite struct {
+type testSuite struct {
 	suite.Suite
 
 	store *store.InMemory
@@ -27,14 +27,14 @@ func TestSuite(t *testing.T) {
 	s := store.New()
 	e := event.New()
 
-	suite.Run(t, &TestHandlerSuite{
+	suite.Run(t, &testSuite{
 		store:   s,
 		event:   e,
 		handler: yahtzee.NewHandler(s, e, e),
 	})
 }
 
-func (ts *TestHandlerSuite) TestCreate() {
+func (ts *testSuite) TestCreate() {
 	rr := ts.newRequest("POST", "/")
 	ts.Exactly(http.StatusCreated, rr.Code)
 	if ts.Contains(rr.HeaderMap, "Location") && ts.Len(rr.HeaderMap["Location"], 1) {
@@ -44,7 +44,7 @@ func (ts *TestHandlerSuite) TestCreate() {
 	}
 }
 
-func (ts *TestHandlerSuite) TestHints() {
+func (ts *testSuite) TestHints() {
 	badInputs := []struct {
 		description string
 		query       string
@@ -80,7 +80,68 @@ func (ts *TestHandlerSuite) TestHints() {
 		}`, rr.Body.String())
 }
 
-func (ts *TestHandlerSuite) newRequest(method string, url string, query ...string) *httptest.ResponseRecorder {
+func (ts *testSuite) TestGet() {
+	rr := ts.newRequest("GET", "/getID")
+	ts.Exactly(http.StatusNotFound, rr.Code)
+
+	ts.Require().NoError(ts.store.Save("getID", *ts.newAdvancedGame()))
+
+	rr = ts.newRequest("GET", "/getID")
+	ts.Exactly(http.StatusOK, rr.Code)
+	ts.JSONEq(`{
+		"Dices": [
+			{
+				"Locked": true,
+				"Value": 3
+			},
+			{
+				"Locked": false,
+				"Value": 2
+			},
+			{
+				"Locked": true,
+				"Value": 3
+			},
+			{
+				"Locked": false,
+				"Value": 1
+			},
+			{
+				"Locked": false,
+				"Value": 5
+			}
+		],
+		"Players": [
+			{
+				"User": "Alice",
+				"ScoreSheet": {
+					"fives": 15,
+					"full-house": 25,
+					"twos": 6
+				}
+			},
+			{
+				"User": "Bob",
+				"ScoreSheet": {
+					"four-of-a-kind": 16,
+					"threes": 6
+				}
+			},
+			{
+				"User": "Carol",
+				"ScoreSheet": {
+					"small-straight": 30,
+					"twos": 6
+				}
+			}
+		],
+		"Round": 5,
+		"CurrentPlayer": 1,
+		"RollCount": 1
+	}`, rr.Body.String())
+}
+
+func (ts *testSuite) newRequest(method string, url string, query ...string) *httptest.ResponseRecorder {
 	req, err := http.NewRequest(method, url, nil)
 	ts.NoError(err)
 
@@ -98,4 +159,41 @@ func (ts *TestHandlerSuite) newRequest(method string, url string, query ...strin
 	ts.handler.ServeHTTP(rr, req)
 
 	return rr
+}
+
+func (ts *testSuite) newAdvancedGame() *model.Game {
+	return &model.Game{
+		Players: []*model.Player{
+			{
+				User: model.User("Alice"),
+				ScoreSheet: map[model.Category]int{
+					model.Twos:      6,
+					model.Fives:     15,
+					model.FullHouse: 25,
+				},
+			}, {
+				User: model.User("Bob"),
+				ScoreSheet: map[model.Category]int{
+					model.Threes:      6,
+					model.FourOfAKind: 16,
+				},
+			}, {
+				User: model.User("Carol"),
+				ScoreSheet: map[model.Category]int{
+					model.Twos:          6,
+					model.SmallStraight: 30,
+				},
+			},
+		},
+		Dices: []*model.Dice{
+			{Value: 3, Locked: true},
+			{Value: 2, Locked: false},
+			{Value: 3, Locked: true},
+			{Value: 1, Locked: false},
+			{Value: 5, Locked: false},
+		},
+		Round:         5,
+		CurrentPlayer: 1,
+		RollCount:     1,
+	}
 }
