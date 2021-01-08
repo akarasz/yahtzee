@@ -25,7 +25,7 @@ type handler struct {
 	subscriber event.Subscriber
 }
 
-func New(s store.Store, e event.Emitter, sub event.Subscriber) http.Handler {
+func NewHandler(s store.Store, e event.Emitter, sub event.Subscriber) http.Handler {
 	h := &handler{s, e, sub}
 
 	r := mux.NewRouter()

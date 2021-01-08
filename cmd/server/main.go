@@ -30,7 +30,7 @@ func main() {
 	}
 	defer e.Close()
 
-	r := yahtzee.New(s, e, e)
+	r := yahtzee.NewHandler(s, e, e)
 
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
