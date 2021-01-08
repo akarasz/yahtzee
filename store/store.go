@@ -1,14 +1,12 @@
 package store
 
-//go:generate mockgen -destination=mocks/mock_store.go -package=mocks -build_flags=-mod=mod . Store
-
 import (
 	"errors"
+	"sync"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/stretchr/testify/suite"
 
-	"github.com/akarasz/yahtzee/models"
+	"github.com/akarasz/yahtzee"
 )
 
 var (
@@ -19,44 +17,107 @@ var (
 // Store contains game elements by their IDs.
 type Store interface {
 	// Load returns a game from the store.
-	Load(id string) (models.Game, error)
+	Load(id string) (yahtzee.Game, error)
 
 	// Save adds the game to the store.
-	Save(id string, g models.Game) error
+	Save(id string, g yahtzee.Game) error
+
+	// Lock reserves the `id` so another locking on the same would block.
+	Lock(id string) (func(), error)
 }
 
-// InMemory is the in-memory implementation of Store.
-type InMemory struct {
-	repo map[string]models.Game
+type TestSuite struct {
+	suite.Suite
+
+	Subject Store
 }
 
-func (s *InMemory) Save(id string, g models.Game) error {
-	s.repo[id] = g
+func (ts *TestSuite) TestLoad() {
+	s := ts.Subject
 
-	return nil
+	_, err := s.Load("aaaaa")
+	ts.Exactly(ErrNotExists, err)
+
+	saved := *ts.newAdvancedGame()
+
+	ts.Require().NoError(s.Save("aaaaa", saved))
+
+	if got, err := s.Load("aaaaa"); ts.NoError(err) {
+		ts.Exactly(saved, got)
+	}
 }
 
-func (s *InMemory) Load(id string) (models.Game, error) {
-	g, ok := s.repo[id]
-	if !ok {
-		return g, ErrNotExists
+func (ts *TestSuite) TestSave() {
+	s := ts.Subject
+
+	empty := *yahtzee.NewGame()
+	ts.NoError(s.Save("bbbbb", empty))
+
+	if got, err := s.Load("bbbbb"); ts.NoError(err) {
+		ts.Exactly(empty, got)
 	}
 
-	return g, nil
+	advanced := *ts.newAdvancedGame()
+	ts.NoError(s.Save("bbbbb", advanced))
+
+	if got, err := s.Load("bbbbb"); ts.NoError(err) {
+		ts.Exactly(advanced, got)
+	}
 }
 
-// NewInMemory creates an empty in-memory store.
-func New() *InMemory {
-	res := InMemory{
-		repo: map[string]models.Game{},
-	}
+func (ts *TestSuite) TestRace() {
+	s := ts.Subject
+	wg := &sync.WaitGroup{}
 
-	promauto.NewGaugeFunc(
-		prometheus.GaugeOpts{
-			Name: "yahtzee_store_size",
-			Help: "The total number of games in the in memory store",
+	for i := 0; i < 3; i++ {
+		wg.Add(1)
+		go func() {
+			unlock, err := s.Lock("ccccc")
+			ts.Require().NoError(err)
+
+			s.Save("ccccc", *ts.newAdvancedGame())
+			s.Load("ccccc")
+
+			unlock()
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+}
+
+func (ts *TestSuite) newAdvancedGame() *yahtzee.Game {
+	return &yahtzee.Game{
+		Players: []*yahtzee.Player{
+			{
+				User: yahtzee.User("Alice"),
+				ScoreSheet: map[yahtzee.Category]int{
+					yahtzee.Twos:      6,
+					yahtzee.Fives:     15,
+					yahtzee.FullHouse: 25,
+				},
+			}, {
+				User: yahtzee.User("Bob"),
+				ScoreSheet: map[yahtzee.Category]int{
+					yahtzee.Threes:      6,
+					yahtzee.FourOfAKind: 16,
+				},
+			}, {
+				User: yahtzee.User("Carol"),
+				ScoreSheet: map[yahtzee.Category]int{
+					yahtzee.Twos:          6,
+					yahtzee.SmallStraight: 30,
+				},
+			},
 		},
-		func() float64 { return float64(len(res.repo)) })
-
-	return &res
+		Dices: []*yahtzee.Dice{
+			{Value: 3, Locked: true},
+			{Value: 2, Locked: false},
+			{Value: 3, Locked: true},
+			{Value: 1, Locked: false},
+			{Value: 5, Locked: false},
+		},
+		Round:         5,
+		CurrentPlayer: 1,
+		RollCount:     1,
+	}
 }

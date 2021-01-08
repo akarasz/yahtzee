@@ -1,49 +1,40 @@
-package events
+package rabbit
 
 import (
 	"encoding/json"
+	"log"
+	"sync"
 
 	"github.com/streadway/amqp"
 
-	"github.com/akarasz/yahtzee/models"
+	"github.com/akarasz/yahtzee"
+	"github.com/akarasz/yahtzee/event"
 )
 
 type Rabbit struct {
-	conn *amqp.Connection
-	ch   *amqp.Channel
+	ch *amqp.Channel
 
+	sync.Mutex
 	destroyChans map[interface{}]chan interface{}
 }
 
-func (r *Rabbit) Close() {
-	r.ch.Close()
-	r.conn.Close()
-}
-
-func NewRabbit(uri string) (*Rabbit, error) {
-	conn, err := amqp.Dial(uri)
-	if err != nil {
-		return nil, err
-	}
-
-	ch, err := conn.Channel()
-	if err != nil {
-		return nil, err
-	}
-
+func New(ch *amqp.Channel) (*Rabbit, error) {
 	return &Rabbit{
-		conn:         conn,
 		ch:           ch,
 		destroyChans: map[interface{}]chan interface{}{},
 	}, nil
 }
 
-func (r *Rabbit) Emit(gameID string, u *models.User, t Type, body interface{}) {
+func (r *Rabbit) Emit(gameID string, u *yahtzee.User, t event.Type, body interface{}) {
 	if err := r.exchangeDeclare(gameID); err != nil {
 		return
 	}
 
-	jsonBody, err := json.Marshal(Event{u, t, body})
+	jsonBody, err := json.Marshal(event.Event{
+		User:   u,
+		Action: t,
+		Data:   body,
+	})
 	if err != nil {
 		return
 	}
@@ -59,7 +50,7 @@ func (r *Rabbit) Emit(gameID string, u *models.User, t Type, body interface{}) {
 		})
 }
 
-func (r *Rabbit) Subscribe(gameID string, clientID interface{}) (chan interface{}, error) {
+func (r *Rabbit) Subscribe(gameID string, clientID interface{}) (chan *event.Event, error) {
 	if err := r.exchangeDeclare(gameID); err != nil {
 		return nil, err
 	}
@@ -98,14 +89,21 @@ func (r *Rabbit) Subscribe(gameID string, clientID interface{}) (chan interface{
 		nil,    // args
 	)
 
-	c := make(chan interface{})
+	c := make(chan *event.Event)
 	d := make(chan interface{})
+	r.Lock()
 	r.destroyChans[clientID] = d
+	r.Unlock()
 	go func() {
 		for {
 			select {
 			case m := <-msgs:
-				c <- string(m.Body)
+				var e event.Event
+				if err := json.Unmarshal(m.Body, &e); err != nil {
+					log.Printf("unable to unmarshal event: %v: %q", err, string(m.Body))
+				} else {
+					c <- &e
+				}
 			case <-d:
 				return
 			}
@@ -116,10 +114,12 @@ func (r *Rabbit) Subscribe(gameID string, clientID interface{}) (chan interface{
 }
 
 func (r *Rabbit) Unsubscribe(gameID string, clientID interface{}) error {
+	r.Lock()
 	if d, ok := r.destroyChans[clientID]; ok {
 		d <- struct{}{}
 		delete(r.destroyChans, clientID)
 	}
+	r.Unlock()
 
 	return nil
 }

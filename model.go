@@ -1,4 +1,4 @@
-package models
+package yahtzee
 
 var (
 	// NumberOfDices shows how many dices are used for a game.
@@ -35,6 +35,24 @@ const (
 	Yahtzee       = "yahtzee"
 	Chance        = "chance"
 )
+
+func Categories() []Category {
+	return []Category{
+		Ones,
+		Twos,
+		Threes,
+		Fours,
+		Fives,
+		Sixes,
+		ThreeOfAKind,
+		FourOfAKind,
+		FullHouse,
+		SmallStraight,
+		LargeStraight,
+		Yahtzee,
+		Chance,
+	}
+}
 
 // Player contains all data representing a player.
 type Player struct {

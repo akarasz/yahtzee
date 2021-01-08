@@ -1,66 +1,46 @@
 package main
 
 import (
+	"log"
 	"math/rand"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/bsm/redislock"
 	"github.com/go-redis/redis/v8"
-	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "github.com/sirupsen/logrus"
+	"github.com/streadway/amqp"
 
-	"github.com/akarasz/yahtzee/controller"
-	"github.com/akarasz/yahtzee/events"
+	event "github.com/akarasz/yahtzee/event/rabbit"
 	"github.com/akarasz/yahtzee/handler"
-	"github.com/akarasz/yahtzee/service"
-	"github.com/akarasz/yahtzee/store"
+	store "github.com/akarasz/yahtzee/store/redis"
 )
 
 func main() {
-	log.SetFormatter(&log.JSONFormatter{})
-
 	rand.Seed(time.Now().UnixNano())
 
+	// redis
 	rdb := redis.NewClient(&redis.Options{
 		Addr: os.Getenv("REDIS"),
 	})
 	defer rdb.Close()
+	s := store.New(rdb, 48*time.Hour)
 
-	e, err := events.NewRabbit(os.Getenv("RABBIT"))
+	// rabbit
+	rabbitConn, err := amqp.Dial(os.Getenv("RABBIT"))
 	if err != nil {
 		panic(err)
 	}
-	defer e.Close()
-
-	sp := service.NewProvider()
-	s := store.NewRedis(rdb, 48*time.Hour)
-
-	c := controller.New(s, sp, e, redislock.New(rdb))
-	h := handler.New(c, c)
-
-	r := mux.NewRouter()
-	r.Use(
-		handler.CorsMiddleware,
-		handler.ContextLoggerMiddleware)
-	r.HandleFunc("/", h.CreateHandler).
-		Methods("POST", "OPTIONS")
-	r.HandleFunc("/score", h.ScoresHandler).
-		Methods("GET", "OPTIONS").
-		Queries("dices", "{dices:[1-6],[1-6],[1-6],[1-6],[1-6]}")
-	r.HandleFunc("/{gameID}", h.GetHandler).
-		Methods("GET", "OPTIONS")
-	r.HandleFunc("/{gameID}/join", h.AddPlayerHandler).
-		Methods("POST", "OPTIONS")
-	r.HandleFunc("/{gameID}/roll", h.RollHandler).
-		Methods("POST", "OPTIONS")
-	r.HandleFunc("/{gameID}/lock/{dice}", h.LockHandler).
-		Methods("POST", "OPTIONS")
-	r.HandleFunc("/{gameID}/score", h.ScoreHandler).
-		Methods("POST", "OPTIONS")
-	r.Handle("/{gameID}/ws", handler.EventsWSHandler(e, s))
+	defer rabbitConn.Close()
+	rabbitChan, err := rabbitConn.Channel()
+	if err != nil {
+		panic(err)
+	}
+	defer rabbitChan.Close()
+	e, err := event.New(rabbitChan)
+	if err != nil {
+		panic(err)
+	}
 
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
@@ -73,5 +53,5 @@ func main() {
 	}
 
 	listenAddress := ":" + port
-	log.Fatal(http.ListenAndServe(listenAddress, r))
+	log.Fatal(http.ListenAndServe(listenAddress, handler.New(s, e, e)))
 }
