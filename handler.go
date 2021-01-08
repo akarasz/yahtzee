@@ -404,9 +404,9 @@ func (h *handler) Score(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.emitter.Emit(gameID, &user, event.Score, g)
+	h.emitter.Emit(gameID, &user, event.Score, &g)
 
-	if ok := writeJSON(w, r, g); !ok {
+	if ok := writeJSON(w, r, &g); !ok {
 		return
 	}
 
@@ -523,6 +523,10 @@ func readDices(w http.ResponseWriter, r *http.Request) ([]int, bool) {
 }
 
 func readCategory(w http.ResponseWriter, r *http.Request) (model.Category, bool) {
+	if r.Body == nil {
+		writeError(w, r, nil, "no category", http.StatusBadRequest)
+		return "", false
+	}
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		writeError(w, r, err, "extract category from body", http.StatusInternalServerError)

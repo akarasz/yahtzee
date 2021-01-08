@@ -3,6 +3,7 @@ package yahtzee_test
 import (
 	"encoding/base64"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -434,6 +435,267 @@ func (ts *testSuite) TestLock() {
 	}
 }
 
+func (ts *testSuite) TestScore() {
+	// missing user
+	rr := ts.record(request("POST", "/scoreID/score", "chance"))
+	ts.Exactly(http.StatusUnauthorized, rr.Code)
+
+	// game not exists
+	rr = ts.record(request("POST", "/scoreID/score", "chance"), asUser("Alice"))
+	ts.Exactly(http.StatusNotFound, rr.Code)
+
+	// no players
+	g := model.NewGame()
+	ts.Require().NoError(ts.store.Save("scoreID", *g))
+
+	rr = ts.record(request("POST", "/scoreID/score", "chance"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// another player's turn
+	g.Players = []*model.Player{
+		model.NewPlayer("Alice"),
+		model.NewPlayer("Bob"),
+	}
+	g.CurrentPlayer = 1
+	ts.Require().NoError(ts.store.Save("scoreID", *g))
+
+	rr = ts.record(request("POST", "/scoreID/score", "chance"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// game is over
+	g.CurrentPlayer = 0
+	g.Round = 13
+	ts.Require().NoError(ts.store.Save("scoreID", *g))
+
+	rr = ts.record(request("POST", "/scoreID/score", "chance"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// roll first
+	g.Round = 0
+	ts.Require().NoError(ts.store.Save("scoreID", *g))
+
+	rr = ts.record(request("POST", "/scoreID/score", "chance"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// invalid category
+	g.RollCount = 1
+	ts.Require().NoError(ts.store.Save("scoreID", *g))
+
+	rr = ts.record(request("POST", "/scoreID/score"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+	rr = ts.record(request("POST", "/scoreID/score", "wat"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// category is already scored
+	g.Players[0].ScoreSheet[model.FullHouse] = 25
+	ts.Require().NoError(ts.store.Save("scoreID", *g))
+
+	rr = ts.record(request("POST", "/scoreID/score", "full-house"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// successful request
+	eChan := ts.receiveEvents("scoreID")
+
+	rr = ts.record(request("POST", "/scoreID/score", "chance"), asUser("Alice"))
+	ts.Exactly(http.StatusOK, rr.Code)
+	ts.JSONEq(`{
+		"Players": [
+			{
+				"User": "Alice",
+				"ScoreSheet": {
+					"chance": 5,
+					"full-house": 25
+				}
+			},
+			{
+				"User": "Bob",
+				"ScoreSheet": {}
+			}
+		],
+		"Dices": [
+			{
+				"Value": 1,
+				"Locked": false
+			},
+			{
+				"Value": 1,
+				"Locked": false
+			},
+			{
+				"Value": 1,
+				"Locked": false
+			},
+			{
+				"Value": 1,
+				"Locked": false
+			},
+			{
+				"Value": 1,
+				"Locked": false
+			}
+		],
+		"Round": 0,
+		"CurrentPlayer": 1,
+		"RollCount": 0
+	}`, rr.Body.String())
+
+	saved := ts.fromStore("scoreID")
+	if got := <-eChan; ts.NotNil(got) {
+		ts.Exactly(event.Score, got.Action)
+		ts.Exactly(saved, got.Data.(*model.Game))
+	}
+
+	// scoring
+	scoringCases := []struct {
+		dices    []int
+		category model.Category
+		value    int
+	}{
+		{[]int{1, 2, 3, 1, 1}, model.Ones, 3},
+		{[]int{2, 3, 4, 2, 3}, model.Twos, 4},
+		{[]int{6, 4, 2, 2, 3}, model.Threes, 3},
+		{[]int{1, 6, 3, 3, 5}, model.Fours, 0},
+		{[]int{4, 4, 1, 2, 4}, model.Fours, 12},
+		{[]int{6, 6, 3, 5, 2}, model.Fives, 5},
+		{[]int{5, 3, 6, 6, 6}, model.Sixes, 18},
+		{[]int{2, 4, 3, 6, 4}, model.ThreeOfAKind, 0},
+		{[]int{3, 1, 3, 1, 3}, model.ThreeOfAKind, 9},
+		{[]int{5, 2, 5, 5, 5}, model.ThreeOfAKind, 15},
+		{[]int{2, 6, 3, 2, 2}, model.FourOfAKind, 0},
+		{[]int{1, 6, 6, 6, 6}, model.FourOfAKind, 24},
+		{[]int{4, 4, 4, 4, 4}, model.FourOfAKind, 16},
+		{[]int{5, 5, 2, 5, 5}, model.FullHouse, 0},
+		{[]int{2, 5, 3, 6, 5}, model.FullHouse, 0},
+		{[]int{5, 5, 2, 5, 2}, model.FullHouse, 25},
+		{[]int{3, 1, 3, 1, 3}, model.FullHouse, 25},
+		{[]int{6, 2, 5, 1, 3}, model.SmallStraight, 0},
+		{[]int{6, 2, 4, 1, 3}, model.SmallStraight, 30},
+		{[]int{4, 2, 3, 5, 3}, model.SmallStraight, 30},
+		{[]int{1, 6, 3, 5, 4}, model.SmallStraight, 30},
+		{[]int{3, 5, 2, 3, 4}, model.LargeStraight, 0},
+		{[]int{3, 5, 2, 1, 4}, model.LargeStraight, 40},
+		{[]int{5, 2, 6, 3, 4}, model.LargeStraight, 40},
+		{[]int{3, 3, 3, 3, 3}, model.Yahtzee, 50},
+		{[]int{1, 1, 1, 1, 1}, model.Yahtzee, 50},
+		{[]int{6, 2, 4, 1, 3}, model.Chance, 16},
+		{[]int{1, 6, 3, 3, 5}, model.Chance, 18},
+		{[]int{2, 3, 4, 2, 3}, model.Chance, 14},
+	}
+
+	for _, tc := range scoringCases {
+		g := model.NewGame()
+		g.Players = append(g.Players, model.NewPlayer("Alice"))
+		g.RollCount = 1
+		for d := 0; d < 5; d++ {
+			g.Dices[d].Value = tc.dices[d]
+		}
+		ts.Require().NoError(ts.store.Save("score_scoringID", *g))
+
+		ts.record(request("POST", "/score_scoringID/score", string(tc.category)), asUser("Alice"))
+
+		got := ts.fromStore("score_scoringID")
+		ts.Exactly(tc.value, got.Players[0].ScoreSheet[tc.category],
+			"should return %d for %q on %v", tc.value, tc.category, tc.dices)
+	}
+
+	// bonus
+	bonusCases := []struct {
+		dices         []int
+		upperSection  []int
+		scoring       model.Category
+		givesBonus    bool
+		mustHaveValue bool
+	}{
+		{[]int{1, 3, 6, 2, 4}, []int{3, 6, -1, 16, 25, -1}, model.Sixes, false, false},
+		{[]int{1, 3, 6, 2, 4}, []int{-1, -1, 12, -1, 20, 36}, model.Fours, true, false},
+		{[]int{1, 3, 6, 2, 4}, []int{3, 6, 9, 16, 25, -1}, model.Sixes, true, true},
+		{[]int{1, 1, 3, 3, 3}, []int{-1, 2, 3, 4, 15, 36}, model.Ones, false, true},
+		{[]int{1, 1, 1, 3, 3}, []int{-1, 2, 3, 4, 15, 36}, model.Ones, true, true},
+		{[]int{1, 1, 1, 1, 3}, []int{-1, 2, 3, 4, 15, 36}, model.Ones, true, true},
+	}
+
+	for _, tc := range bonusCases {
+		g := model.NewGame()
+		g.Players = append(g.Players, model.NewPlayer("Alice"))
+		g.RollCount = 1
+		for d := 0; d < 5; d++ {
+			g.Dices[d].Value = tc.dices[d]
+		}
+		if tc.upperSection[0] > 0 {
+			g.Players[0].ScoreSheet["ones"] = tc.upperSection[0]
+		}
+		if tc.upperSection[1] > 0 {
+			g.Players[0].ScoreSheet["twos"] = tc.upperSection[1]
+		}
+		if tc.upperSection[2] > 0 {
+			g.Players[0].ScoreSheet["threes"] = tc.upperSection[2]
+		}
+		if tc.upperSection[3] > 0 {
+			g.Players[0].ScoreSheet["fours"] = tc.upperSection[3]
+		}
+		if tc.upperSection[4] > 0 {
+			g.Players[0].ScoreSheet["fives"] = tc.upperSection[4]
+		}
+		if tc.upperSection[5] > 0 {
+			g.Players[0].ScoreSheet["sixes"] = tc.upperSection[5]
+		}
+		ts.Require().NoError(ts.store.Save("score_bonusID", *g))
+
+		rr := ts.record(request("POST", "/score_bonusID/score", string(tc.scoring)), asUser("Alice"))
+
+		got := ts.fromStore("score_bonusID")
+		bonus, hasBonus := got.Players[0].ScoreSheet["bonus"]
+		if tc.mustHaveValue {
+			ts.True(hasBonus)
+		}
+
+		if tc.givesBonus {
+			ts.Exactly(35, bonus, "should have bonus for %v when scoring %q", rr.Body.String(), tc.scoring)
+		} else {
+			ts.Exactly(0, bonus, "should not have bonus for %v when scoring %q", rr.Body.String(), tc.scoring)
+		}
+	}
+
+	// counters
+	counterCases := []struct {
+		description string
+
+		round         int
+		currentPlayer int
+		rollCount     int
+
+		nextRound         int
+		nextCurrentPlayer int
+		nextRollCount     int
+	}{
+		{"mid-round after one roll", 0, 0, 1, 0, 1, 0},
+		{"mid-round after two rolls", 0, 0, 2, 0, 1, 0},
+		{"mid-round for last player", 0, 1, 2, 1, 0, 0},
+	}
+
+	for _, tc := range counterCases {
+		g := model.NewGame()
+		g.Players = []*model.Player{
+			model.NewPlayer("Alice"),
+			model.NewPlayer("Bob"),
+		}
+		g.Round = tc.round
+		g.CurrentPlayer = tc.currentPlayer
+		g.RollCount = tc.rollCount
+
+		ts.Require().NoError(ts.store.Save("score_counterID", *g))
+
+		ts.record(
+			request("POST", "/score_counterID/score", "chance"),
+			asUser(string(g.Players[tc.currentPlayer].User)))
+
+		got := ts.fromStore("score_counterID")
+		ts.Exactly(tc.nextRound, got.Round, "for %s", tc.description)
+		ts.Exactly(tc.nextCurrentPlayer, got.CurrentPlayer, "for %s", tc.description)
+		ts.Exactly(tc.nextRollCount, got.RollCount, "for %s", tc.description)
+	}
+}
+
 func (ts *testSuite) record(
 	req *http.Request,
 	modifiers ...func(*http.Request) *http.Request) *httptest.ResponseRecorder {
@@ -475,8 +737,17 @@ func (ts *testSuite) receiveEvents(id string) chan *event.Event {
 	return res
 }
 
-func request(method string, url string) *http.Request {
-	req, err := http.NewRequest(method, url, nil)
+func request(method string, url string, body ...interface{}) *http.Request {
+	var bodyReader io.Reader
+
+	if len(body) == 1 {
+		switch body[0].(type) {
+		case string:
+			bodyReader = strings.NewReader(body[0].(string))
+		}
+	}
+
+	req, err := http.NewRequest(method, url, bodyReader)
 	if err != nil {
 		panic(err)
 	}
