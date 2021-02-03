@@ -89,9 +89,27 @@ type Game struct {
 	RollCount int
 }
 
+// Feature represents the features available for the game.
+type Feature string
+
+// Available features
+const (
+	SixDice Feature = "six-dice"
+)
+
+func Features() []Feature {
+	return []Feature{
+		SixDice,
+	}
+}
+
 // NewGame initializes an empty Game.
-func NewGame() *Game {
-	dd := make([]*Dice, NumberOfDices)
+func NewGame(features []Feature) *Game {
+	dices := NumberOfDices
+	if contains(features, SixDice) {
+		dices = 6
+	}
+	dd := make([]*Dice, dices)
 	for i := 0; i < NumberOfDices; i++ {
 		dd[i] = &Dice{
 			Value: 1,
@@ -110,4 +128,13 @@ func NewUser(name string) *User {
 	var u User
 	u = User(name)
 	return &u
+}
+
+func contains(s []Feature, e Feature) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }

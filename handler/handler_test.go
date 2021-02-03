@@ -45,7 +45,16 @@ func (ts *testSuite) TestCreate() {
 	ts.Exactly(http.StatusCreated, rr.Code)
 	if ts.Contains(rr.HeaderMap, "Location") && ts.Len(rr.HeaderMap["Location"], 1) {
 		created := ts.fromStore(strings.TrimLeft(rr.HeaderMap["Location"][0], "/"))
-		ts.Exactly(yahtzee.NewGame(), created)
+		ts.Exactly(yahtzee.NewGame([]yahtzee.Feature{}), created)
+	}
+}
+
+func (ts *testSuite) TestCreateSixDice() {
+	rr := ts.record(request("POST", "/", "[\"six-dice\"]"))
+	ts.Exactly(http.StatusCreated, rr.Code)
+	if ts.Contains(rr.HeaderMap, "Location") && ts.Len(rr.HeaderMap["Location"], 1) {
+		created := ts.fromStore(strings.TrimLeft(rr.HeaderMap["Location"][0], "/"))
+		ts.Exactly(yahtzee.NewGame([]yahtzee.Feature{yahtzee.SixDice}), created)
 	}
 }
 
@@ -71,6 +80,43 @@ func (ts *testSuite) TestHints() {
 	ts.Exactly(http.StatusOK, rr.Code)
 	ts.JSONEq(`{
 			"ones":0,
+			"twos":2,
+			"threes":3,
+			"fours":4,
+			"fives":5,
+			"sixes":6,
+			"three-of-a-kind":0,
+			"four-of-a-kind":0,
+			"full-house":0,
+			"small-straight":30,
+			"large-straight":40,
+			"yahtzee":0,
+			"chance":20
+		}`, rr.Body.String())
+}
+
+func (ts *testSuite) TestHintsSixeDice() {
+	badInputs := []struct {
+		description string
+		key         string
+		value       string
+	}{
+		{"no query", "noop", "true"},
+		{"empty dices", "dices", "1,2,3,4"},
+		{"too few dices", "dices", "1,2,3,4,5"},
+		{"too many dices", "dices", "1,2,3,4,5,6,6"},
+		{"has low face value", "dices", "1,1,1,0,1,1"},
+		{"has high face value", "dices", "7,6,6,6,6,6"},
+	}
+	for _, tc := range badInputs {
+		rr := ts.record(request("GET", "/score"), withQuery(tc.key, tc.value), withQuery("features", "six-dice"))
+		ts.Exactly(http.StatusBadRequest, rr.Code, "when %s", tc.description)
+	}
+
+	rr := ts.record(request("GET", "/score"), withQuery("dices", "3,2,6,4,5,1"))
+	ts.Exactly(http.StatusOK, rr.Code)
+	ts.JSONEq(`{
+			"ones":1,
 			"twos":2,
 			"threes":3,
 			"fours":4,
@@ -192,7 +238,7 @@ func (ts *testSuite) TestAddPlayer() {
 	ts.Exactly(http.StatusNotFound, rr.Code)
 
 	// game already started
-	advanced := yahtzee.NewGame()
+	advanced := yahtzee.NewGame([]yahtzee.Feature{})
 	advanced.Round = 8
 	ts.Require().NoError(ts.store.Save("addPlayer-advancedID", *advanced))
 
@@ -200,7 +246,7 @@ func (ts *testSuite) TestAddPlayer() {
 	ts.Exactly(http.StatusBadRequest, rr.Code)
 
 	// request successful (200)
-	game := yahtzee.NewGame()
+	game := yahtzee.NewGame([]yahtzee.Feature{})
 	ts.Require().NoError(ts.store.Save("addPlayerID", *game))
 
 	eChan := ts.receiveEvents("addPlayerID")
@@ -242,7 +288,7 @@ func (ts *testSuite) TestRoll() {
 	ts.Exactly(http.StatusNotFound, rr.Code)
 
 	// no players yet
-	g := yahtzee.NewGame()
+	g := yahtzee.NewGame([]yahtzee.Feature{})
 	ts.Require().NoError(ts.store.Save("rollID", *g))
 
 	rr = ts.record(request("POST", "/rollID/roll"), asUser("Alice"))
@@ -300,7 +346,7 @@ func (ts *testSuite) TestRoll() {
 }
 
 func (ts *testSuite) TestRollingALot() {
-	g := yahtzee.NewGame()
+	g := yahtzee.NewGame([]yahtzee.Feature{})
 	g.Players = []*yahtzee.Player{
 		yahtzee.NewPlayer("Alice"),
 	}
@@ -338,7 +384,7 @@ func (ts *testSuite) TestLock() {
 	ts.Exactly(http.StatusNotFound, rr.Code)
 
 	// no players yet
-	g := yahtzee.NewGame()
+	g := yahtzee.NewGame([]yahtzee.Feature{})
 	g.RollCount = 1
 	ts.Require().NoError(ts.store.Save("lockID", *g))
 
@@ -446,7 +492,7 @@ func (ts *testSuite) TestScore() {
 	ts.Exactly(http.StatusNotFound, rr.Code)
 
 	// no players
-	g := yahtzee.NewGame()
+	g := yahtzee.NewGame([]yahtzee.Feature{})
 	ts.Require().NoError(ts.store.Save("scoreID", *g))
 
 	rr = ts.record(request("POST", "/scoreID/score", "chance"), asUser("Alice"))
@@ -584,7 +630,7 @@ func (ts *testSuite) TestScore() {
 	}
 
 	for _, tc := range scoringCases {
-		g := yahtzee.NewGame()
+		g := yahtzee.NewGame([]yahtzee.Feature{})
 		g.Players = append(g.Players, yahtzee.NewPlayer("Alice"))
 		g.RollCount = 1
 		for d := 0; d < 5; d++ {
@@ -616,7 +662,7 @@ func (ts *testSuite) TestScore() {
 	}
 
 	for _, tc := range bonusCases {
-		g := yahtzee.NewGame()
+		g := yahtzee.NewGame([]yahtzee.Feature{})
 		g.Players = append(g.Players, yahtzee.NewPlayer("Alice"))
 		g.RollCount = 1
 		for d := 0; d < 5; d++ {
@@ -675,7 +721,7 @@ func (ts *testSuite) TestScore() {
 	}
 
 	for _, tc := range counterCases {
-		g := yahtzee.NewGame()
+		g := yahtzee.NewGame([]yahtzee.Feature{})
 		g.Players = []*yahtzee.Player{
 			yahtzee.NewPlayer("Alice"),
 			yahtzee.NewPlayer("Bob"),
@@ -702,7 +748,7 @@ func (ts *testSuite) TestWS() {
 	defer server.Close()
 	baseUrl := "ws" + strings.TrimPrefix(server.URL, "http")
 
-	ts.Require().NoError(ts.store.Save("wsID", *yahtzee.NewGame()))
+	ts.Require().NoError(ts.store.Save("wsID", *yahtzee.NewGame([]yahtzee.Feature{})))
 
 	ws, _, err := websocket.DefaultDialer.Dial(baseUrl+"/wsID/ws", nil)
 	if !ts.NoError(err) {

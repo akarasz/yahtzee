@@ -78,7 +78,14 @@ func generateID() string {
 
 func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	gameID := generateID()
-	if err := h.store.Save(gameID, *yahtzee.NewGame()); err != nil {
+	var features []yahtzee.Feature
+	if r.Body != nil {
+		err := json.NewDecoder(r.Body).Decode(&features)
+		if err != nil {
+			log.Print(err)
+		}
+	}
+	if err := h.store.Save(gameID, *yahtzee.NewGame(features)); err != nil {
 		writeError(w, r, err, "create game", http.StatusInternalServerError)
 		return
 	}
@@ -91,6 +98,11 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) Hints(w http.ResponseWriter, r *http.Request) {
 	dices, ok := readDices(w, r)
+	if !ok {
+		return
+	}
+
+	features, ok := readFeatures(w, r)
 	if !ok {
 		return
 	}
@@ -547,6 +559,25 @@ func readDiceIndex(w http.ResponseWriter, r *http.Request) (int, bool) {
 
 func readDices(w http.ResponseWriter, r *http.Request) ([]int, bool) {
 	raw := r.URL.Query().Get("dices")
+	rawDices := strings.Split(raw, ",")
+	if len(rawDices) != 5 {
+		writeError(w, r, nil, "wrong number of dices", http.StatusBadRequest)
+		return nil, false
+	}
+	dices := make([]int, 5)
+	for i, d := range rawDices {
+		v, err := strconv.Atoi(d)
+		if err != nil || v < 1 || 6 < v {
+			writeError(w, r, err, "invalid dice", http.StatusBadRequest)
+			return nil, false
+		}
+		dices[i] = v
+	}
+	return dices, true
+}
+
+func readFeatures(w http.ResponseWriter, r *http.Request) ([]int, bool) {
+	raw := r.URL.Query().Get("features")
 	rawDices := strings.Split(raw, ",")
 	if len(rawDices) != 5 {
 		writeError(w, r, nil, "wrong number of dices", http.StatusBadRequest)

@@ -50,7 +50,7 @@ func (ts *TestSuite) TestLoad() {
 func (ts *TestSuite) TestSave() {
 	s := ts.Subject
 
-	empty := *yahtzee.NewGame()
+	empty := *yahtzee.NewGame([]yahtzee.Feature{})
 	ts.NoError(s.Save("bbbbb", empty))
 
 	if got, err := s.Load("bbbbb"); ts.NoError(err) {
