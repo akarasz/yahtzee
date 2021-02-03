@@ -95,7 +95,27 @@ func (ts *testSuite) TestHints() {
 		}`, rr.Body.String())
 }
 
-func (ts *testSuite) TestHintsSixeDice() {
+func (ts *testSuite) TestHintsYahtzee() {
+	rr := ts.record(request("GET", "/score"), withQuery("dices", "5,5,5,5,5"))
+	ts.Exactly(http.StatusOK, rr.Code)
+	ts.JSONEq(`{
+			"ones":0,
+			"twos":0,
+			"threes":0,
+			"fours":0,
+			"fives":25,
+			"sixes":0,
+			"three-of-a-kind":15,
+			"four-of-a-kind":20,
+			"full-house":0,
+			"small-straight":0,
+			"large-straight":0,
+			"yahtzee":50,
+			"chance":25
+		}`, rr.Body.String())
+}
+
+func (ts *testSuite) TestHintsSixDice() {
 	badInputs := []struct {
 		description string
 		key         string
@@ -113,7 +133,7 @@ func (ts *testSuite) TestHintsSixeDice() {
 		ts.Exactly(http.StatusBadRequest, rr.Code, "when %s", tc.description)
 	}
 
-	rr := ts.record(request("GET", "/score"), withQuery("dices", "3,2,6,4,5,1"))
+	rr := ts.record(request("GET", "/score"), withQuery("dices", "3,2,6,4,5,1"), withQuery("features", "six-dice"))
 	ts.Exactly(http.StatusOK, rr.Code)
 	ts.JSONEq(`{
 			"ones":1,
@@ -129,6 +149,26 @@ func (ts *testSuite) TestHintsSixeDice() {
 			"large-straight":40,
 			"yahtzee":0,
 			"chance":20
+		}`, rr.Body.String())
+}
+
+func (ts *testSuite) TestHintsSixDiceYahtzee() {
+	rr := ts.record(request("GET", "/score"), withQuery("dices", "5,5,5,5,5,1"), withQuery("features", "six-dice"))
+	ts.Exactly(http.StatusOK, rr.Code)
+	ts.JSONEq(`{
+			"ones":1,
+			"twos":0,
+			"threes":0,
+			"fours":0,
+			"fives":25,
+			"sixes":0,
+			"three-of-a-kind":15,
+			"four-of-a-kind":20,
+			"full-house":0,
+			"small-straight":0,
+			"large-straight":0,
+			"yahtzee":50,
+			"chance":25
 		}`, rr.Body.String())
 }
 

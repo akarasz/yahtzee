@@ -97,12 +97,17 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) Hints(w http.ResponseWriter, r *http.Request) {
-	dices, ok := readDices(w, r)
+	features, ok := readFeatures(w, r)
 	if !ok {
 		return
 	}
 
-	features, ok := readFeatures(w, r)
+	diceNum := 5
+	if yahtzee.ContainsFeature(features, yahtzee.SixDice) {
+		diceNum = 6
+	}
+
+	dices, ok := readDices(w, r, diceNum)
 	if !ok {
 		return
 	}
@@ -557,14 +562,14 @@ func readDiceIndex(w http.ResponseWriter, r *http.Request) (int, bool) {
 	return index, true
 }
 
-func readDices(w http.ResponseWriter, r *http.Request) ([]int, bool) {
+func readDices(w http.ResponseWriter, r *http.Request, diceNum int) ([]int, bool) {
 	raw := r.URL.Query().Get("dices")
 	rawDices := strings.Split(raw, ",")
-	if len(rawDices) != 5 {
+	if len(rawDices) != diceNum {
 		writeError(w, r, nil, "wrong number of dices", http.StatusBadRequest)
 		return nil, false
 	}
-	dices := make([]int, 5)
+	dices := make([]int, diceNum)
 	for i, d := range rawDices {
 		v, err := strconv.Atoi(d)
 		if err != nil || v < 1 || 6 < v {
@@ -576,23 +581,15 @@ func readDices(w http.ResponseWriter, r *http.Request) ([]int, bool) {
 	return dices, true
 }
 
-func readFeatures(w http.ResponseWriter, r *http.Request) ([]int, bool) {
+func readFeatures(w http.ResponseWriter, r *http.Request) ([]yahtzee.Feature, bool) {
 	raw := r.URL.Query().Get("features")
-	rawDices := strings.Split(raw, ",")
-	if len(rawDices) != 5 {
-		writeError(w, r, nil, "wrong number of dices", http.StatusBadRequest)
-		return nil, false
+	rawFeatures := strings.Split(raw, ",")
+
+	var features []yahtzee.Feature
+	for _, f := range rawFeatures {
+		features = append(features, yahtzee.Feature(f))
 	}
-	dices := make([]int, 5)
-	for i, d := range rawDices {
-		v, err := strconv.Atoi(d)
-		if err != nil || v < 1 || 6 < v {
-			writeError(w, r, err, "invalid dice", http.StatusBadRequest)
-			return nil, false
-		}
-		dices[i] = v
-	}
-	return dices, true
+	return features, true
 }
 
 func readCategory(w http.ResponseWriter, r *http.Request) (yahtzee.Category, bool) {
@@ -654,39 +651,69 @@ func score(category yahtzee.Category, dices []int) (int, error) {
 	s := 0
 	switch category {
 	case yahtzee.Ones:
+		dicesConsidered := 0
 		for _, d := range dices {
+			if dicesConsidered == 5 {
+				break
+			}
 			if d == 1 {
 				s++
+				dicesConsidered++
 			}
 		}
 	case yahtzee.Twos:
+		dicesConsidered := 0
 		for _, d := range dices {
+			if dicesConsidered == 5 {
+				break
+			}
 			if d == 2 {
 				s += 2
+				dicesConsidered++
 			}
 		}
 	case yahtzee.Threes:
+		dicesConsidered := 0
 		for _, d := range dices {
+			if dicesConsidered == 5 {
+				break
+			}
 			if d == 3 {
 				s += 3
+				dicesConsidered++
 			}
 		}
 	case yahtzee.Fours:
+		dicesConsidered := 0
 		for _, d := range dices {
+			if dicesConsidered == 5 {
+				break
+			}
 			if d == 4 {
 				s += 4
+				dicesConsidered++
 			}
 		}
 	case yahtzee.Fives:
+		dicesConsidered := 0
 		for _, d := range dices {
+			if dicesConsidered == 5 {
+				break
+			}
 			if d == 5 {
 				s += 5
+				dicesConsidered++
 			}
 		}
 	case yahtzee.Sixes:
+		dicesConsidered := 0
 		for _, d := range dices {
+			if dicesConsidered == 5 {
+				break
+			}
 			if d == 6 {
 				s += 6
+				dicesConsidered++
 			}
 		}
 	case yahtzee.ThreeOfAKind:
@@ -750,17 +777,26 @@ func score(category yahtzee.Category, dices []int) (int, error) {
 			s = 40
 		}
 	case yahtzee.Yahtzee:
-		same := true
-		for i := 0; i < len(dices)-1; i++ {
-			same = same && dices[i] == dices[i+1]
-		}
-
-		if same {
-			s = 50
+		for i := 1; i < 6; i++ {
+			sameCount := 0
+			for j := 0; j < len(dices); j++ {
+				if dices[j] == i {
+					sameCount++
+				}
+			}
+			if sameCount >= 5 {
+				s = 50
+				break
+			}
 		}
 	case yahtzee.Chance:
+		dicesConsidered := 0
 		for _, d := range dices {
+			if dicesConsidered == 5 {
+				break
+			}
 			s += d
+			dicesConsidered++
 		}
 	default:
 		return 0, errors.New("invalid category")

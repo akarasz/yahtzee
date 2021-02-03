@@ -106,7 +106,7 @@ func Features() []Feature {
 // NewGame initializes an empty Game.
 func NewGame(features []Feature) *Game {
 	dices := NumberOfDices
-	if contains(features, SixDice) {
+	if ContainsFeature(features, SixDice) {
 		dices = 6
 	}
 	dd := make([]*Dice, dices)
@@ -130,7 +130,7 @@ func NewUser(name string) *User {
 	return &u
 }
 
-func contains(s []Feature, e Feature) bool {
+func ContainsFeature(s []Feature, e Feature) bool {
 	for _, a := range s {
 		if a == e {
 			return true
