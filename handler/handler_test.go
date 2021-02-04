@@ -518,6 +518,30 @@ func (ts *testSuite) TestRoll() {
 			ts.JSONEq(string(eventJSON), rr.Body.String())
 		}
 	}
+
+	// six-dice
+	g.Round = 0
+	g.RollCount = 0
+	g.Features = []yahtzee.Feature{yahtzee.SixDice}
+	ts.Require().NoError(ts.store.Save("rollID", *g))
+
+	eChan = ts.receiveEvents("rollID")
+
+	rr = ts.record(request("POST", "/rollID/roll"), asUser("Alice"))
+	ts.Exactly(http.StatusOK, rr.Code)
+
+	saved = ts.fromStore("rollID")
+	ts.Exactly(g.RollCount+1, saved.RollCount)
+	if got := <-eChan; ts.NotNil(got) {
+		ts.Exactly(event.Roll, got.Action)
+
+		ts.Exactly(saved.RollCount, got.Data.(*handler.RollResponse).RollCount)
+		ts.Exactly(saved.Dices, got.Data.(*handler.RollResponse).Dices)
+
+		if eventJSON, err := json.Marshal(got.Data.(*handler.RollResponse)); ts.NoError(err) {
+			ts.JSONEq(string(eventJSON), rr.Body.String())
+		}
+	}
 }
 
 func (ts *testSuite) TestRollingALot() {
@@ -645,6 +669,49 @@ func (ts *testSuite) TestLock() {
 			{
 				"Value": 1,
 				"Locked": false
+			}
+		]
+	}`, rr.Body.String())
+
+	saved = ts.fromStore("lockID")
+	if got := <-eChan; ts.NotNil(got) {
+		ts.Exactly(event.Lock, got.Action)
+
+		ts.Exactly(saved.Dices, got.Data.(*handler.LockResponse).Dices)
+	}
+
+	// six-dice
+	g = yahtzee.NewGame(yahtzee.SixDice)
+	ts.Require().NoError(ts.store.Save("lockID", *g))
+	eChan = ts.receiveEvents("lockID")
+
+	rr = ts.record(request("POST", "/lockID/lock/5"), asUser("Alice"))
+	ts.Exactly(http.StatusOK, rr.Code)
+	ts.JSONEq(`{
+		"Dices": [
+			{
+				"Value": 1,
+				"Locked": false
+			},
+			{
+				"Value": 1,
+				"Locked": false
+			},
+			{
+				"Value": 1,
+				"Locked": false
+			},
+			{
+				"Value": 1,
+				"Locked": false
+			},
+			{
+				"Value": 1,
+				"Locked": false
+			},
+			{
+				"Value": 1,
+				"Locked": true
 			}
 		]
 	}`, rr.Body.String())

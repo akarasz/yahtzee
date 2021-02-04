@@ -302,10 +302,6 @@ func (h *handler) Lock(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	diceIndex, ok := readDiceIndex(w, r)
-	if !ok {
-		return
-	}
 
 	unlocker, err := h.store.Lock(gameID)
 	if err != nil {
@@ -317,6 +313,11 @@ func (h *handler) Lock(w http.ResponseWriter, r *http.Request) {
 	g, err := h.store.Load(gameID)
 	if err != nil {
 		writeStoreError(w, r, err)
+		return
+	}
+
+	diceIndex, ok := readDiceIndex(w, r, len(g.Dices))
+	if !ok {
 		return
 	}
 
@@ -548,14 +549,14 @@ func (h *handler) WS(w http.ResponseWriter, r *http.Request) {
 	wsReader(ws, h.subscriber, gameID)
 }
 
-func readDiceIndex(w http.ResponseWriter, r *http.Request) (int, bool) {
+func readDiceIndex(w http.ResponseWriter, r *http.Request, diceNum int) (int, bool) {
 	raw, ok := mux.Vars(r)["dice"]
 	if !ok {
 		writeError(w, r, nil, "no dice index in request", http.StatusInternalServerError)
 		return 0, false
 	}
 	index, err := strconv.Atoi(raw)
-	if err != nil || index < 0 || index > 4 {
+	if err != nil || index < 0 || index > diceNum-1 {
 		writeError(w, r, err, "invalid dice index", http.StatusBadRequest)
 		return index, false
 	}
