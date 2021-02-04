@@ -10,12 +10,14 @@ backend; the `username` part of the header will be used as the player's name.
 ### Create New Game
 
 ```
-POST /
+POST / < application/json [features...]
 ```
+
+Available features are [here](https://github.com/nagymarci/yahtzee/blob/feature/six-dice/model.go#L100).
 
 eg.
 ```
-> POST /
+> POST / < ["six-dice"]
 < 201 Created
 < Location: /{gameID}
 ```
@@ -82,7 +84,8 @@ eg.
 <   ],
 <   "Round":2,
 <   "Current":0,
-<   "RollCount":0
+<   "RollCount":0,
+<   "Features":[]
 < }
 ```
 
