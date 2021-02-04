@@ -188,6 +188,24 @@ func (ts *testSuite) TestHintsSixDiceYahtzee() {
 			"yahtzee":50,
 			"chance":25
 		}`, rr.Body.String())
+
+	rr = ts.record(request("GET", "/score"), withQuery("dices", "5,5,5,5,5,5"), withQuery("features", "six-dice"))
+	ts.Exactly(http.StatusOK, rr.Code)
+	ts.JSONEq(`{
+			"ones":0,
+			"twos":0,
+			"threes":0,
+			"fours":0,
+			"fives":25,
+			"sixes":0,
+			"three-of-a-kind":15,
+			"four-of-a-kind":20,
+			"full-house":0,
+			"small-straight":0,
+			"large-straight":0,
+			"yahtzee":50,
+			"chance":25
+		}`, rr.Body.String())
 }
 
 func (ts *testSuite) TestGet() {
