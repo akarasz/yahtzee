@@ -216,8 +216,10 @@ eg.
 ### Score suggestions
 
 ```
-GET /score?dices=[1-6],[1-6],[1-6],[1-6],[1-6]
+GET /score?dices=[1-6],[1-6],[1-6],[1-6],[1-6]?features=feat1[,feat2,...]
 ```
+
+Available features are [here](https://github.com/nagymarci/yahtzee/blob/feature/six-dice/model.go#L100).
 
 eg.
 ```
