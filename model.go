@@ -79,6 +79,9 @@ type Game struct {
 	// Dices has the dices the game played with
 	Dices []*Dice
 
+	// Features has the features to play the game with
+	Features []Feature
+
 	// Round shows how many rounds were passed already.
 	Round int
 
@@ -104,8 +107,11 @@ func Features() []Feature {
 }
 
 // NewGame initializes an empty Game.
-func NewGame(features []Feature) *Game {
+func NewGame(features ...Feature) *Game {
 	dices := NumberOfDices
+	if features == nil {
+		features = []Feature{}
+	}
 	if ContainsFeature(features, SixDice) {
 		dices = 6
 	}
@@ -117,8 +123,9 @@ func NewGame(features []Feature) *Game {
 	}
 
 	return &Game{
-		Players: []*Player{},
-		Dices:   dd,
+		Players:  []*Player{},
+		Dices:    dd,
+		Features: features,
 	}
 }
 

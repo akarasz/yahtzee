@@ -78,14 +78,14 @@ func generateID() string {
 
 func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	gameID := generateID()
-	var features []yahtzee.Feature
+	features := []yahtzee.Feature{}
 	if r.Body != nil {
 		err := json.NewDecoder(r.Body).Decode(&features)
 		if err != nil {
-			log.Print(err)
+			writeError(w, r, err, "create game", http.StatusBadRequest)
 		}
 	}
-	if err := h.store.Save(gameID, *yahtzee.NewGame(features)); err != nil {
+	if err := h.store.Save(gameID, *yahtzee.NewGame(features...)); err != nil {
 		writeError(w, r, err, "create game", http.StatusInternalServerError)
 		return
 	}
@@ -651,71 +651,47 @@ func score(category yahtzee.Category, dices []int) (int, error) {
 	s := 0
 	switch category {
 	case yahtzee.Ones:
-		dicesConsidered := 0
 		for _, d := range dices {
-			if dicesConsidered == 5 {
-				break
-			}
 			if d == 1 {
 				s++
-				dicesConsidered++
 			}
 		}
+		s = min(s, 5*1)
 	case yahtzee.Twos:
-		dicesConsidered := 0
 		for _, d := range dices {
-			if dicesConsidered == 5 {
-				break
-			}
 			if d == 2 {
 				s += 2
-				dicesConsidered++
 			}
 		}
+		s = min(s, 5*2)
 	case yahtzee.Threes:
-		dicesConsidered := 0
 		for _, d := range dices {
-			if dicesConsidered == 5 {
-				break
-			}
 			if d == 3 {
 				s += 3
-				dicesConsidered++
 			}
 		}
+		s = min(s, 5*3)
 	case yahtzee.Fours:
-		dicesConsidered := 0
 		for _, d := range dices {
-			if dicesConsidered == 5 {
-				break
-			}
 			if d == 4 {
 				s += 4
-				dicesConsidered++
 			}
 		}
+		s = min(s, 5*4)
 	case yahtzee.Fives:
-		dicesConsidered := 0
 		for _, d := range dices {
-			if dicesConsidered == 5 {
-				break
-			}
 			if d == 5 {
 				s += 5
-				dicesConsidered++
 			}
 		}
+		s = min(s, 5*5)
 	case yahtzee.Sixes:
-		dicesConsidered := 0
 		for _, d := range dices {
-			if dicesConsidered == 5 {
-				break
-			}
 			if d == 6 {
 				s += 6
-				dicesConsidered++
 			}
 		}
+		s = min(s, 5*6)
 	case yahtzee.ThreeOfAKind:
 		occurrences := map[int]int{}
 		for _, d := range dices {
@@ -790,17 +766,33 @@ func score(category yahtzee.Category, dices []int) (int, error) {
 			}
 		}
 	case yahtzee.Chance:
-		dicesConsidered := 0
-		for _, d := range dices {
-			if dicesConsidered == 5 {
-				break
+		for i := 0; i < len(dices); i++ {
+			sum := 0
+			for j, d := range dices {
+				if len(dices) > 5 && j == i {
+					continue
+				}
+				sum += d
 			}
-			s += d
-			dicesConsidered++
+			s = max(s, sum)
 		}
 	default:
 		return 0, errors.New("invalid category")
 	}
 
 	return s, nil
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
