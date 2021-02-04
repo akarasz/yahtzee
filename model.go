@@ -116,7 +116,7 @@ func NewGame(features ...Feature) *Game {
 		dices = 6
 	}
 	dd := make([]*Dice, dices)
-	for i := 0; i < NumberOfDices; i++ {
+	for i := 0; i < dices; i++ {
 		dd[i] = &Dice{
 			Value: 1,
 		}

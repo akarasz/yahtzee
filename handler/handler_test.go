@@ -682,6 +682,12 @@ func (ts *testSuite) TestLock() {
 
 	// six-dice
 	g = yahtzee.NewGame(yahtzee.SixDice)
+	g.Players = []*yahtzee.Player{
+		yahtzee.NewPlayer("Alice"),
+		yahtzee.NewPlayer("Bob"),
+	}
+	g.CurrentPlayer = 0
+	g.RollCount = 1
 	ts.Require().NoError(ts.store.Save("lockID", *g))
 	eChan = ts.receiveEvents("lockID")
 
@@ -983,6 +989,225 @@ func (ts *testSuite) TestScore() {
 		ts.Exactly(tc.nextRound, got.Round, "for %s", tc.description)
 		ts.Exactly(tc.nextCurrentPlayer, got.CurrentPlayer, "for %s", tc.description)
 		ts.Exactly(tc.nextRollCount, got.RollCount, "for %s", tc.description)
+	}
+}
+
+func (ts *testSuite) TestScoreSixDice() {
+	// no players
+	g := yahtzee.NewGame(yahtzee.SixDice)
+	ts.Require().NoError(ts.store.Save("scoreID", *g))
+
+	rr := ts.record(request("POST", "/scoreID/score", "chance"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// another player's turn
+	g.Players = []*yahtzee.Player{
+		yahtzee.NewPlayer("Alice"),
+		yahtzee.NewPlayer("Bob"),
+	}
+	g.CurrentPlayer = 1
+	ts.Require().NoError(ts.store.Save("scoreID", *g))
+
+	rr = ts.record(request("POST", "/scoreID/score", "chance"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// game is over
+	g.CurrentPlayer = 0
+	g.Round = 13
+	ts.Require().NoError(ts.store.Save("scoreID", *g))
+
+	rr = ts.record(request("POST", "/scoreID/score", "chance"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// roll first
+	g.Round = 0
+	ts.Require().NoError(ts.store.Save("scoreID", *g))
+
+	rr = ts.record(request("POST", "/scoreID/score", "chance"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// invalid category
+	g.RollCount = 1
+	ts.Require().NoError(ts.store.Save("scoreID", *g))
+
+	rr = ts.record(request("POST", "/scoreID/score"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+	rr = ts.record(request("POST", "/scoreID/score", "wat"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// category is already scored
+	g.Players[0].ScoreSheet[yahtzee.FullHouse] = 25
+	ts.Require().NoError(ts.store.Save("scoreID", *g))
+
+	rr = ts.record(request("POST", "/scoreID/score", "full-house"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// successful request
+	eChan := ts.receiveEvents("scoreID")
+
+	rr = ts.record(request("POST", "/scoreID/score", "chance"), asUser("Alice"))
+	ts.Exactly(http.StatusOK, rr.Code)
+	ts.JSONEq(`{
+			"Players": [
+				{
+					"User": "Alice",
+					"ScoreSheet": {
+						"chance": 5,
+						"full-house": 25
+					}
+				},
+				{
+					"User": "Bob",
+					"ScoreSheet": {}
+				}
+			],
+			"Dices": [
+				{
+					"Value": 1,
+					"Locked": false
+				},
+				{
+					"Value": 1,
+					"Locked": false
+				},
+				{
+					"Value": 1,
+					"Locked": false
+				},
+				{
+					"Value": 1,
+					"Locked": false
+				},
+				{
+					"Value": 1,
+					"Locked": false
+				},
+				{
+					"Value": 1,
+					"Locked": false
+				}
+			],
+			"Round": 0,
+			"CurrentPlayer": 1,
+			"RollCount": 0,
+			"Features": ["six-dice"]
+		}`, rr.Body.String())
+
+	saved := ts.fromStore("scoreID")
+	if got := <-eChan; ts.NotNil(got) {
+		ts.Exactly(event.Score, got.Action)
+		ts.Exactly(saved, got.Data.(*yahtzee.Game))
+	}
+
+	// scoring
+	scoringCases := []struct {
+		dices    []int
+		category yahtzee.Category
+		value    int
+	}{
+		{[]int{1, 2, 3, 1, 1, 4}, yahtzee.Ones, 3},
+		{[]int{2, 3, 4, 2, 3, 5}, yahtzee.Twos, 4},
+		{[]int{6, 4, 2, 2, 3, 5}, yahtzee.Threes, 3},
+		{[]int{1, 6, 3, 3, 5, 2}, yahtzee.Fours, 0},
+		{[]int{4, 4, 1, 2, 4, 5}, yahtzee.Fours, 12},
+		{[]int{6, 6, 3, 5, 2, 1}, yahtzee.Fives, 5},
+		{[]int{5, 3, 6, 6, 6, 3}, yahtzee.Sixes, 18},
+		{[]int{2, 4, 3, 6, 4, 1}, yahtzee.ThreeOfAKind, 0},
+		{[]int{3, 1, 3, 1, 3, 1}, yahtzee.ThreeOfAKind, 9},
+		{[]int{5, 2, 5, 5, 5, 2}, yahtzee.ThreeOfAKind, 15},
+		{[]int{2, 6, 3, 2, 2, 1}, yahtzee.FourOfAKind, 0},
+		{[]int{1, 6, 6, 6, 6, 2}, yahtzee.FourOfAKind, 24},
+		{[]int{4, 4, 4, 4, 4, 3}, yahtzee.FourOfAKind, 16},
+		{[]int{5, 5, 2, 5, 5, 3}, yahtzee.FullHouse, 0},
+		{[]int{2, 5, 3, 6, 5, 3}, yahtzee.FullHouse, 0},
+		{[]int{5, 5, 2, 5, 2, 2}, yahtzee.FullHouse, 25},
+		{[]int{3, 1, 3, 1, 3, 3}, yahtzee.FullHouse, 25},
+		{[]int{6, 2, 5, 1, 3, 2}, yahtzee.SmallStraight, 0},
+		{[]int{6, 2, 4, 1, 3, 4}, yahtzee.SmallStraight, 30},
+		{[]int{4, 2, 3, 5, 3, 3}, yahtzee.SmallStraight, 30},
+		{[]int{1, 6, 3, 5, 4, 2}, yahtzee.SmallStraight, 30},
+		{[]int{3, 5, 2, 3, 4, 4}, yahtzee.LargeStraight, 0},
+		{[]int{3, 5, 2, 1, 4, 6}, yahtzee.LargeStraight, 40},
+		{[]int{5, 2, 6, 3, 4, 3}, yahtzee.LargeStraight, 40},
+		{[]int{3, 3, 3, 3, 3, 1}, yahtzee.Yahtzee, 50},
+		{[]int{1, 1, 1, 1, 1, 1}, yahtzee.Yahtzee, 50},
+		{[]int{6, 2, 4, 1, 3, 1}, yahtzee.Chance, 16},
+		{[]int{1, 6, 3, 3, 5, 1}, yahtzee.Chance, 18},
+		{[]int{2, 3, 4, 2, 3, 2}, yahtzee.Chance, 14},
+	}
+
+	for _, tc := range scoringCases {
+		g := yahtzee.NewGame(yahtzee.SixDice)
+		g.Players = append(g.Players, yahtzee.NewPlayer("Alice"))
+		g.RollCount = 1
+		for d := 0; d < 6; d++ {
+			g.Dices[d].Value = tc.dices[d]
+		}
+		ts.Require().NoError(ts.store.Save("score_scoringID", *g))
+
+		ts.record(request("POST", "/score_scoringID/score", string(tc.category)), asUser("Alice"))
+
+		got := ts.fromStore("score_scoringID")
+		ts.Exactly(tc.value, got.Players[0].ScoreSheet[tc.category],
+			"should return %d for %q on %v", tc.value, tc.category, tc.dices)
+	}
+
+	// bonus
+	bonusCases := []struct {
+		dices         []int
+		upperSection  []int
+		scoring       yahtzee.Category
+		givesBonus    bool
+		mustHaveValue bool
+	}{
+		{[]int{1, 3, 6, 2, 4, 1}, []int{3, 6, -1, 16, 25, -1}, yahtzee.Sixes, false, false},
+		{[]int{1, 3, 6, 2, 4, 3}, []int{-1, -1, 12, -1, 20, 36}, yahtzee.Fours, true, false},
+		{[]int{1, 3, 6, 2, 4, 1}, []int{3, 6, 9, 16, 25, -1}, yahtzee.Sixes, true, true},
+		{[]int{1, 1, 3, 3, 3, 2}, []int{-1, 2, 3, 4, 15, 36}, yahtzee.Ones, false, true},
+		{[]int{1, 1, 1, 3, 3, 2}, []int{-1, 2, 3, 4, 15, 36}, yahtzee.Ones, true, true},
+		{[]int{1, 1, 1, 1, 3, 2}, []int{-1, 2, 3, 4, 15, 36}, yahtzee.Ones, true, true},
+	}
+
+	for _, tc := range bonusCases {
+		g := yahtzee.NewGame()
+		g.Players = append(g.Players, yahtzee.NewPlayer("Alice"))
+		g.RollCount = 1
+		for d := 0; d < 5; d++ {
+			g.Dices[d].Value = tc.dices[d]
+		}
+		if tc.upperSection[0] > 0 {
+			g.Players[0].ScoreSheet["ones"] = tc.upperSection[0]
+		}
+		if tc.upperSection[1] > 0 {
+			g.Players[0].ScoreSheet["twos"] = tc.upperSection[1]
+		}
+		if tc.upperSection[2] > 0 {
+			g.Players[0].ScoreSheet["threes"] = tc.upperSection[2]
+		}
+		if tc.upperSection[3] > 0 {
+			g.Players[0].ScoreSheet["fours"] = tc.upperSection[3]
+		}
+		if tc.upperSection[4] > 0 {
+			g.Players[0].ScoreSheet["fives"] = tc.upperSection[4]
+		}
+		if tc.upperSection[5] > 0 {
+			g.Players[0].ScoreSheet["sixes"] = tc.upperSection[5]
+		}
+		ts.Require().NoError(ts.store.Save("score_bonusID", *g))
+
+		rr := ts.record(request("POST", "/score_bonusID/score", string(tc.scoring)), asUser("Alice"))
+
+		got := ts.fromStore("score_bonusID")
+		bonus, hasBonus := got.Players[0].ScoreSheet["bonus"]
+		if tc.mustHaveValue {
+			ts.True(hasBonus)
+		}
+
+		if tc.givesBonus {
+			ts.Exactly(35, bonus, "should have bonus for %v when scoring %q", rr.Body.String(), tc.scoring)
+		} else {
+			ts.Exactly(0, bonus, "should not have bonus for %v when scoring %q", rr.Body.String(), tc.scoring)
+		}
 	}
 }
 

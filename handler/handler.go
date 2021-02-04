@@ -412,7 +412,7 @@ func (h *handler) Score(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dices := make([]int, 5)
+	dices := make([]int, len(g.Dices))
 	for i, d := range g.Dices {
 		dices[i] = d.Value
 	}
@@ -701,7 +701,7 @@ func score(category yahtzee.Category, dices []int) (int, error) {
 
 		for k, v := range occurrences {
 			if v >= 3 {
-				s = 3 * k
+				s = max(s, 3*k)
 			}
 		}
 	case yahtzee.FourOfAKind:
@@ -716,20 +716,25 @@ func score(category yahtzee.Category, dices []int) (int, error) {
 			}
 		}
 	case yahtzee.FullHouse:
-		one, oneCount, other := dices[0], 1, 0
-		for i := 1; i < len(dices); i++ {
-			v := dices[i]
+		occurrences := map[int]int{}
+		for _, d := range dices {
+			occurrences[d]++
+		}
 
-			if one == v {
-				oneCount++
-			} else if other == 0 || other == v {
-				other = v
-			} else {
-				oneCount = 4
+		three := false
+		two := false
+		for _, v := range occurrences {
+			if !three && v >= 3 {
+				three = true
+				continue
+			}
+			if !two && v >= 2 {
+				two = true
+				continue
 			}
 		}
 
-		if oneCount == 2 || oneCount == 3 {
+		if three && two {
 			s = 25
 		}
 	case yahtzee.SmallStraight:
