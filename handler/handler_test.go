@@ -113,6 +113,42 @@ func (ts *testSuite) TestHintsYahtzee() {
 			"yahtzee":50,
 			"chance":25
 		}`, rr.Body.String())
+
+	rr = ts.record(request("GET", "/score"), withQuery("dices", "6,6,6,6,6"))
+	ts.Exactly(http.StatusOK, rr.Code)
+	ts.JSONEq(`{
+			"ones":0,
+			"twos":0,
+			"threes":0,
+			"fours":0,
+			"fives":0,
+			"sixes":30,
+			"three-of-a-kind":18,
+			"four-of-a-kind":24,
+			"full-house":0,
+			"small-straight":0,
+			"large-straight":0,
+			"yahtzee":50,
+			"chance":30
+		}`, rr.Body.String())
+
+	rr = ts.record(request("GET", "/score"), withQuery("dices", "1,1,1,1,1"))
+	ts.Exactly(http.StatusOK, rr.Code)
+	ts.JSONEq(`{
+			"ones":5,
+			"twos":0,
+			"threes":0,
+			"fours":0,
+			"fives":0,
+			"sixes":0,
+			"three-of-a-kind":3,
+			"four-of-a-kind":4,
+			"full-house":0,
+			"small-straight":0,
+			"large-straight":0,
+			"yahtzee":50,
+			"chance":5
+		}`, rr.Body.String())
 }
 
 func (ts *testSuite) TestHintsSixDice() {
@@ -1169,10 +1205,10 @@ func (ts *testSuite) TestScoreSixDice() {
 	}
 
 	for _, tc := range bonusCases {
-		g := yahtzee.NewGame()
+		g := yahtzee.NewGame(yahtzee.SixDice)
 		g.Players = append(g.Players, yahtzee.NewPlayer("Alice"))
 		g.RollCount = 1
-		for d := 0; d < 5; d++ {
+		for d := 0; d < 6; d++ {
 			g.Dices[d].Value = tc.dices[d]
 		}
 		if tc.upperSection[0] > 0 {
