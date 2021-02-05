@@ -454,6 +454,18 @@ func (h *handler) Score(w http.ResponseWriter, r *http.Request) {
 		g.Round++
 	}
 
+	if g.Round >= 13 && yahtzee.ContainsFeature(g.Features, yahtzee.TheChance) {
+		for _, p := range g.Players {
+			s := 0
+			for _, v := range p.ScoreSheet {
+				s += v
+			}
+			if s == 5 {
+				p.ScoreSheet[yahtzee.ChanceBonus] = 495
+			}
+		}
+	}
+
 	if err := h.store.Save(gameID, g); err != nil {
 		writeStoreError(w, r, err)
 		return
