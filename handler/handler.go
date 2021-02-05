@@ -461,7 +461,7 @@ func (h *handler) Score(w http.ResponseWriter, r *http.Request) {
 				s += v
 			}
 			if s == 5 {
-				p.ScoreSheet[yahtzee.TheChance] = 495
+				p.ScoreSheet[yahtzee.ChanceBonus] = 495
 			}
 		}
 	}

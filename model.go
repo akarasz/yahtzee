@@ -20,20 +20,21 @@ type Category string
 // Available categories
 const (
 	Ones   Category = "ones"
-	Twos            = "twos"
-	Threes          = "threes"
-	Fours           = "fours"
-	Fives           = "fives"
-	Sixes           = "sixes"
-	Bonus           = "bonus"
+	Twos   Category = "twos"
+	Threes Category = "threes"
+	Fours  Category = "fours"
+	Fives  Category = "fives"
+	Sixes  Category = "sixes"
+	Bonus  Category = "bonus"
 
-	ThreeOfAKind  = "three-of-a-kind"
-	FourOfAKind   = "four-of-a-kind"
-	FullHouse     = "full-house"
-	SmallStraight = "small-straight"
-	LargeStraight = "large-straight"
-	Yahtzee       = "yahtzee"
-	Chance        = "chance"
+	ThreeOfAKind  Category = "three-of-a-kind"
+	FourOfAKind   Category = "four-of-a-kind"
+	FullHouse     Category = "full-house"
+	SmallStraight Category = "small-straight"
+	LargeStraight Category = "large-straight"
+	Yahtzee       Category = "yahtzee"
+	Chance        Category = "chance"
+	ChanceBonus   Category = "chance-bonus"
 )
 
 func Categories() []Category {

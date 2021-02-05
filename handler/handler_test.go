@@ -1105,7 +1105,7 @@ func (ts *testSuite) TestScoreTheChance() {
 				"User": "Alice",
 				"ScoreSheet": {
 					"chance": 5,
-					"the-chance": 495
+					"chance-bonus": 495
 				}
 			},
 			{
