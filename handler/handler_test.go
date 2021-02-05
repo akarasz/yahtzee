@@ -1028,6 +1028,130 @@ func (ts *testSuite) TestScore() {
 	}
 }
 
+func (ts *testSuite) TestScoreTheChance() {
+	// Last round, TheChance enabled
+	g := yahtzee.NewGame(yahtzee.TheChance)
+	g.Players = []*yahtzee.Player{
+		yahtzee.NewPlayer("Alice"),
+		yahtzee.NewPlayer("Bob"),
+	}
+	g.Players[1].ScoreSheet[yahtzee.Ones] = 1
+	g.CurrentPlayer = 0
+	g.Round = 12
+	g.RollCount = 1
+
+	ts.Require().NoError(ts.store.Save("scoreID", *g))
+	eChan := ts.receiveEvents("scoreID")
+
+	rr := ts.record(request("POST", "/scoreID/score", "chance"), asUser("Alice"))
+	ts.Exactly(http.StatusOK, rr.Code)
+	ts.JSONEq(`{
+		"Players": [
+			{
+				"User": "Alice",
+				"ScoreSheet": {
+					"chance": 5
+				}
+			},
+			{
+				"User": "Bob",
+				"ScoreSheet": {
+					"ones": 1
+				}
+			}
+		],
+		"Dices": [
+			{
+				"Value": 1,
+				"Locked": false
+			},
+			{
+				"Value": 1,
+				"Locked": false
+			},
+			{
+				"Value": 1,
+				"Locked": false
+			},
+			{
+				"Value": 1,
+				"Locked": false
+			},
+			{
+				"Value": 1,
+				"Locked": false
+			}
+		],
+		"Round": 12,
+		"CurrentPlayer": 1,
+		"RollCount": 0,
+		"Features": ["the-chance"]
+	}`, rr.Body.String())
+
+	saved := ts.fromStore("scoreID")
+	if got := <-eChan; ts.NotNil(got) {
+		ts.Exactly(event.Score, got.Action)
+		ts.Exactly(saved, got.Data.(*yahtzee.Game))
+	}
+
+	saved.RollCount = 1
+	ts.Require().NoError(ts.store.Save("scoreID", *saved))
+
+	rr = ts.record(request("POST", "/scoreID/score", "chance"), asUser("Bob"))
+	ts.Exactly(http.StatusOK, rr.Code)
+	ts.JSONEq(`{
+		"Players": [
+			{
+				"User": "Alice",
+				"ScoreSheet": {
+					"chance": 5,
+					"the-chance": 495
+				}
+			},
+			{
+				"User": "Bob",
+				"ScoreSheet": {
+					"ones": 1,
+					"chance": 5
+				}
+			}
+		],
+		"Dices": [
+			{
+				"Value": 1,
+				"Locked": false
+			},
+			{
+				"Value": 1,
+				"Locked": false
+			},
+			{
+				"Value": 1,
+				"Locked": false
+			},
+			{
+				"Value": 1,
+				"Locked": false
+			},
+			{
+				"Value": 1,
+				"Locked": false
+			}
+		],
+		"Round": 13,
+		"CurrentPlayer": 0,
+		"RollCount": 0,
+		"Features": ["the-chance"]
+	}`, rr.Body.String())
+
+	saved = ts.fromStore("scoreID")
+	if got := <-eChan; ts.NotNil(got) {
+		ts.Exactly(event.Score, got.Action)
+		ts.Exactly(saved, got.Data.(*yahtzee.Game))
+	}
+
+}
+
 func (ts *testSuite) TestScoreSixDice() {
 	// no players
 	g := yahtzee.NewGame(yahtzee.SixDice)

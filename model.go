@@ -97,12 +97,14 @@ type Feature string
 
 // Available features
 const (
-	SixDice Feature = "six-dice"
+	SixDice   Feature = "six-dice"
+	TheChance         = "the-chance"
 )
 
 func Features() []Feature {
 	return []Feature{
 		SixDice,
+		TheChance,
 	}
 }
 
