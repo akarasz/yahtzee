@@ -59,7 +59,7 @@ func (ts *testSuite) TestCreateSixDice() {
 }
 
 func (ts *testSuite) TestCreateYahtzeeBonus() {
-	rr := ts.record(request("POST", "/", "[\"yahtzee-bonus\"]"))
+	rr := ts.record(request("POST", "/", `["yahtzee-bonus"]`))
 	ts.Exactly(http.StatusCreated, rr.Code)
 	if ts.Contains(rr.HeaderMap, "Location") && ts.Len(rr.HeaderMap["Location"], 1) {
 		created := ts.fromStore(strings.TrimLeft(rr.HeaderMap["Location"][0], "/"))
