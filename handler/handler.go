@@ -419,10 +419,9 @@ func (h *handler) Score(w http.ResponseWriter, r *http.Request) {
 
 	yahtzeeBonus := false
 	if yahtzee.ContainsFeature(g.Features, yahtzee.YahtzeeBonus) {
-		_, yahtzeeScored := currentPlayer.ScoreSheet[yahtzee.Yahtzee]
+		yahtzeeValue, yahtzeeScored := currentPlayer.ScoreSheet[yahtzee.Yahtzee]
 		score, _ := score(yahtzee.Yahtzee, dices, false)
-		isYahtzee := score == 50
-		yahtzeeBonus = yahtzeeScored && isYahtzee
+		yahtzeeBonus = yahtzeeScored && score == 50 && yahtzeeValue != 0
 	}
 
 	score, err := score(category, dices, yahtzee.ContainsFeature(g.Features, yahtzee.YahtzeeBonus))
