@@ -97,12 +97,14 @@ type Feature string
 
 // Available features
 const (
-	SixDice Feature = "six-dice"
+	SixDice  Feature = "six-dice"
+	Official Feature = "official"
 )
 
 func Features() []Feature {
 	return []Feature{
 		SixDice,
+		Official,
 	}
 }
 
@@ -112,7 +114,7 @@ func NewGame(features ...Feature) *Game {
 	if features == nil {
 		features = []Feature{}
 	}
-	if ContainsFeature(features, SixDice) {
+	if containsFeature(features, SixDice) {
 		dices = 6
 	}
 	dd := make([]*Dice, dices)
@@ -137,11 +139,15 @@ func NewUser(name string) *User {
 	return &u
 }
 
-func ContainsFeature(s []Feature, e Feature) bool {
+func containsFeature(s []Feature, e Feature) bool {
 	for _, a := range s {
 		if a == e {
 			return true
 		}
 	}
 	return false
+}
+
+func (g *Game) HasFeature(f Feature) bool {
+	return containsFeature(g.Features, f)
 }
