@@ -34,6 +34,8 @@ func New(s store.Store, e event.Emitter, sub event.Subscriber) http.Handler {
 		Methods("POST", "OPTIONS")
 	r.HandleFunc("/score", h.Hints).
 		Methods("GET", "OPTIONS")
+	r.HandleFunc("/features", h.Features).
+		Methods("GET", "OPTIONS")
 	r.HandleFunc("/{gameID}", h.Get).
 		Methods("GET", "OPTIONS")
 	r.HandleFunc("/{gameID}/join", h.AddPlayer).
@@ -559,6 +561,13 @@ func (h *handler) WS(w http.ResponseWriter, r *http.Request) {
 
 	go wsWriter(ws, eventChannel, h.subscriber, gameID)
 	wsReader(ws, h.subscriber, gameID)
+}
+
+func (h *handler) Features(w http.ResponseWriter, r *http.Request) {
+	features := yahtzee.Features()
+	if ok := writeJSON(w, r, &features); !ok {
+		return
+	}
 }
 
 func readDiceIndex(w http.ResponseWriter, r *http.Request, diceNum int) (int, bool) {
