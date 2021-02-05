@@ -785,7 +785,7 @@ func score(category yahtzee.Category, dices []int, yahtzeeBonus bool) (int, erro
 			s = 40
 		}
 	case yahtzee.Yahtzee:
-		for i := 1; i < 6; i++ {
+		for i := 1; i < 7; i++ {
 			sameCount := 0
 			for j := 0; j < len(dices); j++ {
 				if dices[j] == i {
