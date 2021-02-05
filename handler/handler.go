@@ -116,7 +116,7 @@ func (h *handler) Hints(w http.ResponseWriter, r *http.Request) {
 
 	res := map[yahtzee.Category]int{}
 	for _, c := range yahtzee.Categories() {
-		score, err := score(c, dices)
+		score, err := score(c, dices, yahtzee.ContainsFeature(features, yahtzee.YahtzeeBonus))
 		if err != nil {
 			writeError(w, r, err, "", http.StatusInternalServerError)
 			return
@@ -419,13 +419,24 @@ func (h *handler) Score(w http.ResponseWriter, r *http.Request) {
 		dices[i] = d.Value
 	}
 
-	score, err := score(category, dices)
+	yahtzeeBonus := false
+	if yahtzee.ContainsFeature(g.Features, yahtzee.YahtzeeBonus) {
+		yahtzeeValue, yahtzeeScored := currentPlayer.ScoreSheet[yahtzee.Yahtzee]
+		score, _ := score(yahtzee.Yahtzee, dices, false)
+		yahtzeeBonus = yahtzeeScored && score == 50 && yahtzeeValue != 0
+	}
+
+	score, err := score(category, dices, yahtzee.ContainsFeature(g.Features, yahtzee.YahtzeeBonus))
 	if err != nil {
 		writeError(w, r, err, "invalid category", http.StatusBadRequest)
 		return
 	}
 
 	currentPlayer.ScoreSheet[category] = score
+
+	if yahtzeeBonus {
+		currentPlayer.ScoreSheet[yahtzee.Yahtzee] += 100
+	}
 
 	if _, ok := currentPlayer.ScoreSheet[yahtzee.Bonus]; !ok {
 		var total, types int
@@ -669,7 +680,7 @@ func writeStoreError(w http.ResponseWriter, r *http.Request, err error) {
 	}
 }
 
-func score(category yahtzee.Category, dices []int) (int, error) {
+func score(category yahtzee.Category, dices []int, yahtzeeBonus bool) (int, error) {
 	s := 0
 	switch category {
 	case yahtzee.Ones:
@@ -737,6 +748,11 @@ func score(category yahtzee.Category, dices []int) (int, error) {
 			}
 		}
 	case yahtzee.FullHouse:
+		if score, _ := score(yahtzee.Yahtzee, dices, false); score == 50 && yahtzeeBonus {
+			s = 25
+			break
+		}
+
 		occurrences := map[int]int{}
 		for _, d := range dices {
 			occurrences[d]++
@@ -759,6 +775,11 @@ func score(category yahtzee.Category, dices []int) (int, error) {
 			s = 25
 		}
 	case yahtzee.SmallStraight:
+		if score, _ := score(yahtzee.Yahtzee, dices, false); score == 50 && yahtzeeBonus {
+			s = 30
+			break
+		}
+
 		hit := [6]bool{}
 		for _, d := range dices {
 			hit[d-1] = true
@@ -770,6 +791,10 @@ func score(category yahtzee.Category, dices []int) (int, error) {
 			s = 30
 		}
 	case yahtzee.LargeStraight:
+		if score, _ := score(yahtzee.Yahtzee, dices, false); score == 50 && yahtzeeBonus {
+			s = 40
+			break
+		}
 		hit := [6]bool{}
 		for _, d := range dices {
 			hit[d-1] = true
