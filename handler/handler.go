@@ -134,12 +134,8 @@ func (h *handler) HintsForGame(w http.ResponseWriter, r *http.Request) {
 
 func hints(game *yahtzee.Game) (map[yahtzee.Category]int, error) {
 	res := map[yahtzee.Category]int{}
-	for _, c := range yahtzee.Categories() {
-		score, err := score(c, dices, yahtzee.ContainsFeature(features, yahtzee.YahtzeeBonus))
-		if err != nil {
-			return nil, err
-		}
-		res[c] = score
+	for c, scorer := range game.Scorer {
+		res[c] = scorer.Score(game)
 	}
 
 	return res, nil
@@ -151,23 +147,24 @@ func (h *handler) Hints(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	game := yahtzee.NewGame(features...)
+	diceNum := 5
+	if yahtzee.ContainsFeature(features, yahtzee.SixDice) {
+		diceNum = 6
+	}
 
-	dices, ok := readDices(w, r, len(game.Dices))
+	dices, ok := readDices(w, r, diceNum)
 	if !ok {
 		return
 	}
-	for i, d := range dices {
-		game.Dices[i] = &yahtzee.Dice{
-			Value:  d,
-			Locked: false,
-		}
-	}
 
-	res, err := hints(game)
-	if err != nil {
-		writeError(w, r, err, "", http.StatusInternalServerError)
-		return
+	res := map[yahtzee.Category]int{}
+	for _, c := range yahtzee.Categories() {
+		score, err := score(c, dices, yahtzee.ContainsFeature(features, yahtzee.YahtzeeBonus))
+		if err != nil {
+			writeError(w, r, err, "", http.StatusInternalServerError)
+			return
+		}
+		res[c] = score
 	}
 
 	if ok := writeJSON(w, r, res); !ok {
@@ -728,10 +725,6 @@ func writeStoreError(w http.ResponseWriter, r *http.Request, err error) {
 
 func score(category yahtzee.Category, dices []int, yahtzeeBonus bool) (int, error) {
 	s := 0
-	dices := make([]int, len(g.Dices))
-	for i, d := range g.Dices {
-		dices[i] = d.Value
-	}
 	switch category {
 	case yahtzee.Ones:
 		for _, d := range dices {

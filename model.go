@@ -91,6 +91,8 @@ type Game struct {
 
 	// RollCount shows how many times the dices were rolled for the current user in this round.
 	RollCount int
+
+	Scorer Scorers `json:"-"`
 }
 
 // Feature represents the features available for the game.
@@ -119,7 +121,7 @@ func NewGame(features ...Feature) *Game {
 	if features == nil {
 		features = []Feature{}
 	}
-	if containsFeature(features, SixDice) {
+	if ContainsFeature(features, SixDice) {
 		dices = 6
 	}
 	dd := make([]*Dice, dices)
@@ -129,10 +131,16 @@ func NewGame(features ...Feature) *Game {
 		}
 	}
 
+	scorer := DefaultScorer
+	if ContainsFeature(features, TheChance) {
+		scorer[ChanceBonus] = &DefaultChanceBonus{}
+	}
+
 	return &Game{
 		Players:  []*Player{},
 		Dices:    dd,
 		Features: features,
+		Scorer:   scorer,
 	}
 }
 
@@ -144,15 +152,11 @@ func NewUser(name string) *User {
 	return &u
 }
 
-func containsFeature(s []Feature, e Feature) bool {
+func ContainsFeature(s []Feature, e Feature) bool {
 	for _, a := range s {
 		if a == e {
 			return true
 		}
 	}
 	return false
-}
-
-func (g *Game) HasFeature(f Feature) bool {
-	return containsFeature(g.Features, f)
 }
