@@ -98,7 +98,7 @@ type Feature string
 // Available features
 const (
 	SixDice   Feature = "six-dice"
-	TheChance         = "the-chance"
+	TheChance Feature = "the-chance"
 )
 
 func Features() []Feature {
