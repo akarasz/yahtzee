@@ -7,13 +7,25 @@ This piece of software provides a basic backend service for playing yahtzee.
 **Every call** requires BASIC authentication. Users are not stored on the
 backend; the `username` part of the header will be used as the player's name.
 
+### List available features
+
+```
+GET /features
+```
+
+eg.
+```
+> GET /features
+< 200 OK
+< ["six-dice","yahtzee-bonus"]
+```
 ### Create New Game
 
 ```
 POST / < application/json [features...]
 ```
 
-Available features are [here](https://github.com/nagymarci/yahtzee/blob/feature/six-dice/model.go#L100).
+Available features are [here](https://github.com/akarasz/yahtzee/blob/master/model.go#L100).
 
 eg.
 ```
@@ -168,7 +180,7 @@ eg.
 POST /{gameID}/score < text/plain `category`
 ```
 
-Available categories are [here](https://github.com/akarasz/yahtzee/blob/master/pkg/game/game.go#L22).
+Available categories are [here](https://github.com/akarasz/yahtzee/blob/master/model.go#L22).
 
 eg.
 ```
@@ -219,7 +231,7 @@ eg.
 GET /score?dices=[1-6],[1-6],[1-6],[1-6],[1-6]&features=feat1[,feat2,...]
 ```
 
-Available features are [here](https://github.com/nagymarci/yahtzee/blob/feature/six-dice/model.go#L100).
+Available features are [here](https://github.com/akarasz/yahtzee/blob/master/model.go#L100).
 
 eg.
 ```

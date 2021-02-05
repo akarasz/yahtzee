@@ -1272,6 +1272,13 @@ func (ts *testSuite) TestWS() {
 	}
 }
 
+func (ts *testSuite) TestFeatures() {
+	rr := ts.record(request("GET", "/features"))
+	ts.Exactly(http.StatusOK, rr.Code)
+	features, _ := json.Marshal(yahtzee.Features())
+	ts.JSONEq(string(features), rr.Body.String())
+}
+
 func (ts *testSuite) record(
 	req *http.Request,
 	modifiers ...func(*http.Request) *http.Request) *httptest.ResponseRecorder {
