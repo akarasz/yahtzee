@@ -135,7 +135,7 @@ func (h *handler) HintsForGame(w http.ResponseWriter, r *http.Request) {
 func hints(game *yahtzee.Game) (map[yahtzee.Category]int, error) {
 	res := map[yahtzee.Category]int{}
 	for c, scorer := range game.Scorer.ScoreActions {
-		res[c], _ = scorer.Score(game)
+		res[c], _ = scorer(game)
 	}
 
 	return res, nil
@@ -467,13 +467,13 @@ func (h *handler) Score(w http.ResponseWriter, r *http.Request) {
 		action(&g)
 	}
 
-	score, err := score(category, dices, yahtzee.ContainsFeature(g.Features, yahtzee.YahtzeeBonus))
-	if err != nil {
-		writeError(w, r, err, "invalid category", http.StatusBadRequest)
+	var scorer func(game *yahtzee.Game) (int, []yahtzee.PostScoreAction)
+	if scorer, ok = g.Scorer.ScoreActions[category]; !ok {
+		writeError(w, r, nil, "invalid category", http.StatusBadRequest)
 		return
 	}
 
-	currentPlayer.ScoreSheet[category] = score
+	currentPlayer.ScoreSheet[category], _ = scorer(&g)
 
 	//postscore actions
 	for _, action := range g.Scorer.PostScoreActions {

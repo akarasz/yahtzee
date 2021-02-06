@@ -1,7 +1,5 @@
 package yahtzee
 
-import "log"
-
 type Score struct {
 	PreScoreActions  map[PreScoreAction]func(game *Game)
 	ScoreActions     Scorers
@@ -25,67 +23,49 @@ const (
 	YahtzeeBonusPostScore PostScoreAction = "yahtzeeBonusPostScoreAction"
 )
 
-type Scorer interface {
-	Score(game *Game) (int, []PostScoreAction)
-}
-
-type Scorers map[Category]Scorer
+type Scorers map[Category]func(game *Game) (int, []PostScoreAction)
 
 var DefaultScorer = Scorers{
-	Ones:          &DefaultOnes{},
-	Twos:          &DefaultTwos{},
-	Threes:        &DefaultThrees{},
-	Fours:         &DefaultFours{},
-	Fives:         &DefaultFives{},
-	Sixes:         &DefaultSixes{},
-	ThreeOfAKind:  &DefaultThreeOfAKind{},
-	FourOfAKind:   &DefaultFourOfAKind{},
-	FullHouse:     &DefaultFullHouse{},
-	SmallStraight: &DefaultSmallStraight{},
-	LargeStraight: &DefaultLargeStraight{},
-	Yahtzee:       &DefaultYahtzee{},
-	Chance:        &DefaultChance{},
+	Ones:          DefaultOnes,
+	Twos:          DefaultTwos,
+	Threes:        DefaultThrees,
+	Fours:         DefaultFours,
+	Fives:         DefaultFives,
+	Sixes:         DefaultSixes,
+	ThreeOfAKind:  DefaultThreeOfAKind,
+	FourOfAKind:   DefaultFourOfAKind,
+	FullHouse:     DefaultFullHouse,
+	SmallStraight: DefaultSmallStraight,
+	LargeStraight: DefaultLargeStraight,
+	Yahtzee:       DefaultYahtzee,
+	Chance:        DefaultChance,
 }
 
-type DefaultOnes struct{}
-
-func (d *DefaultOnes) Score(game *Game) (int, []PostScoreAction) {
+func DefaultOnes(game *Game) (int, []PostScoreAction) {
 	return min(countDice(1, game.Dices), 5*1), nil
 }
 
-type DefaultTwos struct{}
-
-func (d *DefaultTwos) Score(game *Game) (int, []PostScoreAction) {
+func DefaultTwos(game *Game) (int, []PostScoreAction) {
 	return min(countDice(2, game.Dices)*2, 5*2), nil
 }
 
-type DefaultThrees struct{}
-
-func (d *DefaultThrees) Score(game *Game) (int, []PostScoreAction) {
+func DefaultThrees(game *Game) (int, []PostScoreAction) {
 	return min(countDice(3, game.Dices)*3, 5*3), nil
 }
 
-type DefaultFours struct{}
-
-func (d *DefaultFours) Score(game *Game) (int, []PostScoreAction) {
+func DefaultFours(game *Game) (int, []PostScoreAction) {
 	return min(countDice(4, game.Dices)*4, 5*4), nil
 }
 
-type DefaultFives struct{}
-
-func (d *DefaultFives) Score(game *Game) (int, []PostScoreAction) {
+func DefaultFives(game *Game) (int, []PostScoreAction) {
 	return min(countDice(5, game.Dices)*5, 5*5), nil
 }
 
-type DefaultSixes struct{}
-
-func (d *DefaultSixes) Score(game *Game) (int, []PostScoreAction) {
+func DefaultSixes(game *Game) (int, []PostScoreAction) {
 	return min(countDice(6, game.Dices)*6, 5*6), nil
 }
 
-type DefaultThreeOfAKind struct{}
-
-func (d *DefaultThreeOfAKind) Score(game *Game) (int, []PostScoreAction) {
+func DefaultThreeOfAKind(game *Game) (int, []PostScoreAction) {
 	occurrences := map[int]int{}
 	for _, d := range game.Dices {
 		occurrences[d.Value]++
@@ -99,9 +79,7 @@ func (d *DefaultThreeOfAKind) Score(game *Game) (int, []PostScoreAction) {
 	return s, nil
 }
 
-type DefaultFourOfAKind struct{}
-
-func (d *DefaultFourOfAKind) Score(game *Game) (int, []PostScoreAction) {
+func DefaultFourOfAKind(game *Game) (int, []PostScoreAction) {
 	occurrences := map[int]int{}
 	for _, d := range game.Dices {
 		occurrences[d.Value]++
@@ -115,9 +93,7 @@ func (d *DefaultFourOfAKind) Score(game *Game) (int, []PostScoreAction) {
 	return s, nil
 }
 
-type DefaultFullHouse struct{}
-
-func (d *DefaultFullHouse) Score(game *Game) (int, []PostScoreAction) {
+func DefaultFullHouse(game *Game) (int, []PostScoreAction) {
 	occurrences := map[int]int{}
 	for _, d := range game.Dices {
 		occurrences[d.Value]++
@@ -142,9 +118,7 @@ func (d *DefaultFullHouse) Score(game *Game) (int, []PostScoreAction) {
 	return s, nil
 }
 
-type DefaultSmallStraight struct{}
-
-func (d *DefaultSmallStraight) Score(game *Game) (int, []PostScoreAction) {
+func DefaultSmallStraight(game *Game) (int, []PostScoreAction) {
 	s := 0
 	hit := [6]bool{}
 	for _, d := range game.Dices {
@@ -159,9 +133,7 @@ func (d *DefaultSmallStraight) Score(game *Game) (int, []PostScoreAction) {
 	return s, nil
 }
 
-type DefaultLargeStraight struct{}
-
-func (d *DefaultLargeStraight) Score(game *Game) (int, []PostScoreAction) {
+func DefaultLargeStraight(game *Game) (int, []PostScoreAction) {
 	s := 0
 	hit := [6]bool{}
 	for _, d := range game.Dices {
@@ -175,9 +147,7 @@ func (d *DefaultLargeStraight) Score(game *Game) (int, []PostScoreAction) {
 	return s, nil
 }
 
-type DefaultYahtzee struct{}
-
-func (d *DefaultYahtzee) Score(game *Game) (int, []PostScoreAction) {
+func DefaultYahtzee(game *Game) (int, []PostScoreAction) {
 	s := 0
 	for i := 1; i < 7; i++ {
 		sameCount := 0
@@ -194,9 +164,7 @@ func (d *DefaultYahtzee) Score(game *Game) (int, []PostScoreAction) {
 	return s, nil
 }
 
-type DefaultChance struct{}
-
-func (d *DefaultChance) Score(game *Game) (int, []PostScoreAction) {
+func DefaultChance(game *Game) (int, []PostScoreAction) {
 	s := 0
 	for i := 0; i < len(game.Dices); i++ {
 		sum := 0
@@ -211,12 +179,33 @@ func (d *DefaultChance) Score(game *Game) (int, []PostScoreAction) {
 	return s, nil
 }
 
+//Yahtzee-bonus
+
+func YahtzeeBonusFullHouse(game *Game) (int, []PostScoreAction) {
+	if _, yahtzeeScored := game.Players[game.CurrentPlayer].ScoreSheet[Yahtzee]; yahtzeeScored && isYahtzee(game.Dices) {
+		return 25, nil
+	}
+	return DefaultFullHouse(game)
+}
+
+func YahtzeeBonusSmallStraight(game *Game) (int, []PostScoreAction) {
+	if _, yahtzeeScored := game.Players[game.CurrentPlayer].ScoreSheet[Yahtzee]; yahtzeeScored && isYahtzee(game.Dices) {
+		return 30, nil
+	}
+	return DefaultSmallStraight(game)
+}
+
+func YahtzeeBonusLargeStraight(game *Game) (int, []PostScoreAction) {
+	if _, yahtzeeScored := game.Players[game.CurrentPlayer].ScoreSheet[Yahtzee]; yahtzeeScored && isYahtzee(game.Dices) {
+		return 40, nil
+	}
+	return DefaultLargeStraight(game)
+}
+
 func YahtzeeBonusPreScoreAction(g *Game) {
 	yahtzeeValue, yahtzeeScored := g.Players[g.CurrentPlayer].ScoreSheet[Yahtzee]
 	yahtzee := isYahtzee(g.Dices)
 	g.Context["yahtzeeBonusEligible"] = yahtzeeScored && yahtzee && yahtzeeValue != 0
-	log.Print(g.Context)
-	log.Print("yahtzeebonus prescore action return")
 }
 
 func YahtzeeBonusPostScoreAction(g *Game) {

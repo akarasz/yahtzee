@@ -147,6 +147,10 @@ func NewGame(features ...Feature) *Game {
 	if ContainsFeature(features, YahtzeeBonus) {
 		scorer.PreScoreActions[YahtzeeBonusPreScore] = YahtzeeBonusPreScoreAction
 		scorer.PostScoreActions[YahtzeeBonusPostScore] = YahtzeeBonusPostScoreAction
+
+		scorer.ScoreActions[FullHouse] = YahtzeeBonusFullHouse
+		scorer.ScoreActions[SmallStraight] = YahtzeeBonusSmallStraight
+		scorer.ScoreActions[LargeStraight] = YahtzeeBonusLargeStraight
 	}
 
 	return &Game{
