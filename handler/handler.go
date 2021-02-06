@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -83,8 +84,9 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	features := []yahtzee.Feature{}
 	if r.Body != nil {
 		err := json.NewDecoder(r.Body).Decode(&features)
-		if err != nil {
+		if err != nil && err != io.EOF {
 			writeError(w, r, err, "create game", http.StatusBadRequest)
+			return
 		}
 	}
 	if err := h.store.Save(gameID, *yahtzee.NewGame(features...)); err != nil {
