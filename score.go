@@ -212,6 +212,7 @@ func YahtzeeBonusPostScoreAction(g *Game) {
 	if val, ok := g.Context["yahtzeeBonusEligible"]; ok && val.(bool) {
 		g.Players[g.CurrentPlayer].ScoreSheet[Yahtzee] += 100
 	}
+	delete(g.Context, "yahtzeeBonusEligible")
 }
 
 func TheChanceAction(g *Game) {
