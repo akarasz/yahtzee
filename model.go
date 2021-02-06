@@ -105,7 +105,6 @@ const (
 	SixDice      Feature = "six-dice"
 	TheChance    Feature = "the-chance"
 	YahtzeeBonus Feature = "yahtzee-bonus"
-	Official     Feature = "official"
 )
 
 func Features() []Feature {
@@ -113,7 +112,6 @@ func Features() []Feature {
 		SixDice,
 		YahtzeeBonus,
 		TheChance,
-		Official,
 	}
 }
 
