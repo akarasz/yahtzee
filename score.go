@@ -25,7 +25,7 @@ const (
 
 type Scorers map[Category]func(game *Game) (int, []PostScoreAction)
 
-var DefaultScorer = Scorers{
+var defaultScorer = Scorers{
 	Ones:          DefaultOnes,
 	Twos:          DefaultTwos,
 	Threes:        DefaultThrees,
@@ -39,6 +39,14 @@ var DefaultScorer = Scorers{
 	LargeStraight: DefaultLargeStraight,
 	Yahtzee:       DefaultYahtzee,
 	Chance:        DefaultChance,
+}
+
+func NewDefaultScorer() Scorers {
+	scorer := Scorers{}
+	for key, value := range defaultScorer {
+		scorer[key] = value
+	}
+	return scorer
 }
 
 func DefaultOnes(game *Game) (int, []PostScoreAction) {

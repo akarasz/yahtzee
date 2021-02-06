@@ -54,14 +54,24 @@ func (ts *TestSuite) TestSave() {
 	ts.NoError(s.Save("bbbbb", empty))
 
 	if got, err := s.Load("bbbbb"); ts.NoError(err) {
-		ts.Exactly(empty, got)
+		ts.Exactly(empty.CurrentPlayer, got.CurrentPlayer)
+		ts.Exactly(empty.Players, got.Players)
+		ts.Exactly(empty.Dices, got.Dices)
+		ts.Exactly(empty.Features, got.Features)
+		ts.Exactly(empty.RollCount, got.RollCount)
+		ts.Exactly(empty.Round, got.Round)
 	}
 
 	advanced := *ts.newAdvancedGame()
 	ts.NoError(s.Save("bbbbb", advanced))
 
 	if got, err := s.Load("bbbbb"); ts.NoError(err) {
-		ts.Exactly(advanced, got)
+		ts.Exactly(advanced.CurrentPlayer, got.CurrentPlayer)
+		ts.Exactly(advanced.Players, got.Players)
+		ts.Exactly(advanced.Dices, got.Dices)
+		ts.Exactly(advanced.Features, got.Features)
+		ts.Exactly(advanced.RollCount, got.RollCount)
+		ts.Exactly(advanced.Round, got.Round)
 	}
 }
 

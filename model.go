@@ -135,7 +135,7 @@ func NewGame(features ...Feature) *Game {
 
 	scorer := &Score{
 		PreScoreActions:  map[PreScoreAction]func(game *Game){},
-		ScoreActions:     DefaultScorer,
+		ScoreActions:     NewDefaultScorer(),
 		PostScoreActions: map[PostScoreAction]func(game *Game){},
 		PostGameActions:  map[PostGameAction]func(game *Game){},
 	}
