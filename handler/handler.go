@@ -134,8 +134,8 @@ func (h *handler) HintsForGame(w http.ResponseWriter, r *http.Request) {
 
 func hints(game *yahtzee.Game) (map[yahtzee.Category]int, error) {
 	res := map[yahtzee.Category]int{}
-	for c, scorer := range game.Scorer {
-		res[c] = scorer.Score(game)
+	for c, scorer := range game.Scorer.ScoreActions {
+		res[c], _ = scorer.Score(game)
 	}
 
 	return res, nil
@@ -508,15 +508,9 @@ func (h *handler) Score(w http.ResponseWriter, r *http.Request) {
 		g.Round++
 	}
 
-	if g.Round >= 13 && yahtzee.ContainsFeature(g.Features, yahtzee.TheChance) {
-		for _, p := range g.Players {
-			s := 0
-			for _, v := range p.ScoreSheet {
-				s += v
-			}
-			if s == 5 {
-				p.ScoreSheet[yahtzee.ChanceBonus] = 495
-			}
+	if g.Round >= 13 { //End of game, running postgame actions
+		for _, action := range g.Scorer.PostGameActions {
+			action(&g)
 		}
 	}
 

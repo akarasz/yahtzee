@@ -1,7 +1,20 @@
 package yahtzee
 
+type Score struct {
+	ScoreActions     Scorers
+	PostScoreActions map[PostScoreAction]func(game *Game)
+	PostGameActions  map[PostGameAction]func(game *Game)
+}
+
+type PostScoreAction string
+type PostGameAction string
+
+const (
+	ChanceBonusAction PostGameAction = "chanceBonusAction"
+)
+
 type Scorer interface {
-	Score(game *Game) int
+	Score(game *Game) (int, []PostScoreAction)
 }
 
 type Scorers map[Category]Scorer
@@ -24,43 +37,43 @@ var DefaultScorer = Scorers{
 
 type DefaultOnes struct{}
 
-func (d *DefaultOnes) Score(game *Game) int {
-	return min(countDice(1, game.Dices), 5*1)
+func (d *DefaultOnes) Score(game *Game) (int, []PostScoreAction) {
+	return min(countDice(1, game.Dices), 5*1), nil
 }
 
 type DefaultTwos struct{}
 
-func (d *DefaultTwos) Score(game *Game) int {
-	return min(countDice(2, game.Dices)*2, 5*2)
+func (d *DefaultTwos) Score(game *Game) (int, []PostScoreAction) {
+	return min(countDice(2, game.Dices)*2, 5*2), nil
 }
 
 type DefaultThrees struct{}
 
-func (d *DefaultThrees) Score(game *Game) int {
-	return min(countDice(3, game.Dices)*3, 5*3)
+func (d *DefaultThrees) Score(game *Game) (int, []PostScoreAction) {
+	return min(countDice(3, game.Dices)*3, 5*3), nil
 }
 
 type DefaultFours struct{}
 
-func (d *DefaultFours) Score(game *Game) int {
-	return min(countDice(4, game.Dices)*4, 5*4)
+func (d *DefaultFours) Score(game *Game) (int, []PostScoreAction) {
+	return min(countDice(4, game.Dices)*4, 5*4), nil
 }
 
 type DefaultFives struct{}
 
-func (d *DefaultFives) Score(game *Game) int {
-	return min(countDice(5, game.Dices)*5, 5*5)
+func (d *DefaultFives) Score(game *Game) (int, []PostScoreAction) {
+	return min(countDice(5, game.Dices)*5, 5*5), nil
 }
 
 type DefaultSixes struct{}
 
-func (d *DefaultSixes) Score(game *Game) int {
-	return min(countDice(6, game.Dices)*6, 5*6)
+func (d *DefaultSixes) Score(game *Game) (int, []PostScoreAction) {
+	return min(countDice(6, game.Dices)*6, 5*6), nil
 }
 
 type DefaultThreeOfAKind struct{}
 
-func (d *DefaultThreeOfAKind) Score(game *Game) int {
+func (d *DefaultThreeOfAKind) Score(game *Game) (int, []PostScoreAction) {
 	occurrences := map[int]int{}
 	for _, d := range game.Dices {
 		occurrences[d.Value]++
@@ -71,12 +84,12 @@ func (d *DefaultThreeOfAKind) Score(game *Game) int {
 			s = max(s, 3*k)
 		}
 	}
-	return s
+	return s, nil
 }
 
 type DefaultFourOfAKind struct{}
 
-func (d *DefaultFourOfAKind) Score(game *Game) int {
+func (d *DefaultFourOfAKind) Score(game *Game) (int, []PostScoreAction) {
 	occurrences := map[int]int{}
 	for _, d := range game.Dices {
 		occurrences[d.Value]++
@@ -87,12 +100,12 @@ func (d *DefaultFourOfAKind) Score(game *Game) int {
 			s = 4 * k
 		}
 	}
-	return s
+	return s, nil
 }
 
 type DefaultFullHouse struct{}
 
-func (d *DefaultFullHouse) Score(game *Game) int {
+func (d *DefaultFullHouse) Score(game *Game) (int, []PostScoreAction) {
 	occurrences := map[int]int{}
 	for _, d := range game.Dices {
 		occurrences[d.Value]++
@@ -114,12 +127,12 @@ func (d *DefaultFullHouse) Score(game *Game) int {
 	if three && two {
 		s = 25
 	}
-	return s
+	return s, nil
 }
 
 type DefaultSmallStraight struct{}
 
-func (d *DefaultSmallStraight) Score(game *Game) int {
+func (d *DefaultSmallStraight) Score(game *Game) (int, []PostScoreAction) {
 	s := 0
 	hit := [6]bool{}
 	for _, d := range game.Dices {
@@ -131,12 +144,12 @@ func (d *DefaultSmallStraight) Score(game *Game) int {
 		(hit[2] && hit[3] && hit[4] && hit[5]) {
 		s = 30
 	}
-	return s
+	return s, nil
 }
 
 type DefaultLargeStraight struct{}
 
-func (d *DefaultLargeStraight) Score(game *Game) int {
+func (d *DefaultLargeStraight) Score(game *Game) (int, []PostScoreAction) {
 	s := 0
 	hit := [6]bool{}
 	for _, d := range game.Dices {
@@ -147,12 +160,12 @@ func (d *DefaultLargeStraight) Score(game *Game) int {
 		(hit[1] && hit[2] && hit[3] && hit[4] && hit[5]) {
 		s = 40
 	}
-	return s
+	return s, nil
 }
 
 type DefaultYahtzee struct{}
 
-func (d *DefaultYahtzee) Score(game *Game) int {
+func (d *DefaultYahtzee) Score(game *Game) (int, []PostScoreAction) {
 	s := 0
 	for i := 1; i < 7; i++ {
 		sameCount := 0
@@ -166,12 +179,12 @@ func (d *DefaultYahtzee) Score(game *Game) int {
 			break
 		}
 	}
-	return s
+	return s, nil
 }
 
 type DefaultChance struct{}
 
-func (d *DefaultChance) Score(game *Game) int {
+func (d *DefaultChance) Score(game *Game) (int, []PostScoreAction) {
 	s := 0
 	for i := 0; i < len(game.Dices); i++ {
 		sum := 0
@@ -183,22 +196,21 @@ func (d *DefaultChance) Score(game *Game) int {
 		}
 		s = max(s, sum)
 	}
-	return s
+	return s, nil
 }
 
-type DefaultChanceBonus struct{}
+//type TheChanceAction struct{}
 
-func (d *DefaultChanceBonus) Score(game *Game) int {
-	if len(game.Players[game.CurrentPlayer].ScoreSheet) >= len(game.Scorer)-1 {
+func TheChanceAction(g *Game) {
+	for _, p := range g.Players {
 		s := 0
-		for _, v := range game.Players[game.CurrentPlayer].ScoreSheet {
+		for _, v := range p.ScoreSheet {
 			s += v
 		}
 		if s == 5 {
-			return 495
+			p.ScoreSheet[ChanceBonus] = 495
 		}
 	}
-	return 0
 }
 
 func countDice(value int, dices []*Dice) int {

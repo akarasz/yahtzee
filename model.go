@@ -92,7 +92,7 @@ type Game struct {
 	// RollCount shows how many times the dices were rolled for the current user in this round.
 	RollCount int
 
-	Scorer Scorers `json:"-"`
+	Scorer Score `json:"-"`
 }
 
 // Feature represents the features available for the game.
@@ -131,9 +131,14 @@ func NewGame(features ...Feature) *Game {
 		}
 	}
 
-	scorer := DefaultScorer
+	scorer := Score{
+		ScoreActions:     DefaultScorer,
+		PostScoreActions: map[PostScoreAction]func(game *Game){},
+		PostGameActions:  map[PostGameAction]func(game *Game){},
+	}
+
 	if ContainsFeature(features, TheChance) {
-		scorer[ChanceBonus] = &DefaultChanceBonus{}
+		scorer.PostGameActions[ChanceBonusAction] = TheChanceAction
 	}
 
 	return &Game{
