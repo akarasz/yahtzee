@@ -467,13 +467,6 @@ func (h *handler) Score(w http.ResponseWriter, r *http.Request) {
 		action(&g)
 	}
 
-	/*yahtzeeBonus := false
-	if yahtzee.ContainsFeature(g.Features, yahtzee.YahtzeeBonus) {
-		yahtzeeValue, yahtzeeScored := currentPlayer.ScoreSheet[yahtzee.Yahtzee]
-		score, _ := score(yahtzee.Yahtzee, dices, false)
-		yahtzeeBonus = yahtzeeScored && score == 50 && yahtzeeValue != 0
-	}*/
-
 	score, err := score(category, dices, yahtzee.ContainsFeature(g.Features, yahtzee.YahtzeeBonus))
 	if err != nil {
 		writeError(w, r, err, "invalid category", http.StatusBadRequest)
@@ -482,8 +475,9 @@ func (h *handler) Score(w http.ResponseWriter, r *http.Request) {
 
 	currentPlayer.ScoreSheet[category] = score
 
-	if val, ok := g.Context["yahtzeeBonusEligible"]; ok && val.(bool) {
-		currentPlayer.ScoreSheet[yahtzee.Yahtzee] += 100
+	//postscore actions
+	for _, action := range g.Scorer.PostScoreActions {
+		action(&g)
 	}
 
 	if _, ok := currentPlayer.ScoreSheet[yahtzee.Bonus]; !ok {

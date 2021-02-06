@@ -21,6 +21,10 @@ const (
 	YahtzeeBonusPreScore PreScoreAction = "yahtzeeBonusPreScoreAction"
 )
 
+const (
+	YahtzeeBonusPostScore PostScoreAction = "yahtzeeBonusPostScoreAction"
+)
+
 type Scorer interface {
 	Score(game *Game) (int, []PostScoreAction)
 }
@@ -213,6 +217,12 @@ func YahtzeeBonusPreScoreAction(g *Game) {
 	g.Context["yahtzeeBonusEligible"] = yahtzeeScored && yahtzee && yahtzeeValue != 0
 	log.Print(g.Context)
 	log.Print("yahtzeebonus prescore action return")
+}
+
+func YahtzeeBonusPostScoreAction(g *Game) {
+	if val, ok := g.Context["yahtzeeBonusEligible"]; ok && val.(bool) {
+		g.Players[g.CurrentPlayer].ScoreSheet[Yahtzee] += 100
+	}
 }
 
 func TheChanceAction(g *Game) {
