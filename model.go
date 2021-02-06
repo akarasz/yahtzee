@@ -105,6 +105,7 @@ const (
 	SixDice      Feature = "six-dice"
 	TheChance    Feature = "the-chance"
 	YahtzeeBonus Feature = "yahtzee-bonus"
+	Official     Feature = "official"
 )
 
 func Features() []Feature {
@@ -112,6 +113,7 @@ func Features() []Feature {
 		SixDice,
 		YahtzeeBonus,
 		TheChance,
+		Official,
 	}
 }
 
@@ -132,25 +134,36 @@ func NewGame(features ...Feature) *Game {
 	}
 
 	scorer := &Score{
-		PreScoreActions: map[PreScoreAction]func(game *Game){},
+		PreScoreActions: []func(game *Game){},
 		ScoreActions:    NewDefaultScorer(),
-		PostScoreActions: map[PostScoreAction]func(game *Game){
-			DefaultUpperSeciontBonus: DefaultUpperSectionBonusAction,
+		PostScoreActions: []func(game *Game){
+			DefaultUpperSectionBonusAction,
 		},
-		PostGameActions: map[PostGameAction]func(game *Game){},
+		PostGameActions: []func(game *Game){},
 	}
 
 	if ContainsFeature(features, TheChance) {
-		scorer.PostGameActions[ChanceBonusAction] = TheChanceAction
+		scorer.PostGameActions = append(scorer.PostGameActions, TheChanceAction)
 	}
 
 	if ContainsFeature(features, YahtzeeBonus) {
-		scorer.PreScoreActions[YahtzeeBonusPreScore] = YahtzeeBonusPreScoreAction
-		scorer.PostScoreActions[YahtzeeBonusPostScore] = YahtzeeBonusPostScoreAction
+		scorer.PreScoreActions = append(scorer.PreScoreActions, YahtzeeBonusPreScoreAction)
+		scorer.PostScoreActions = append(scorer.PostScoreActions, YahtzeeBonusPostScoreAction)
 
 		scorer.ScoreActions[FullHouse] = YahtzeeBonusFullHouse
 		scorer.ScoreActions[SmallStraight] = YahtzeeBonusSmallStraight
 		scorer.ScoreActions[LargeStraight] = YahtzeeBonusLargeStraight
+	}
+
+	if ContainsFeature(features, Official) {
+		scorer.PreScoreActions = append(scorer.PreScoreActions, OfficialYahtzeeBonusPreScoreAction)
+		scorer.PostScoreActions = append(scorer.PostScoreActions, OfficialYahtzeeBonusPostScoreAction)
+
+		scorer.ScoreActions[ThreeOfAKind] = OfficialThreeOfAKind
+		scorer.ScoreActions[FourOfAKind] = OfficialFourOfAKind
+		scorer.ScoreActions[FullHouse] = OfficialFullHouse
+		scorer.ScoreActions[SmallStraight] = OfficialSmallStraight
+		scorer.ScoreActions[LargeStraight] = OfficialLargeStraight
 	}
 
 	return &Game{
