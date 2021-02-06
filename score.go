@@ -1,16 +1,24 @@
 package yahtzee
 
+import "log"
+
 type Score struct {
+	PreScoreActions  map[PreScoreAction]func(game *Game)
 	ScoreActions     Scorers
 	PostScoreActions map[PostScoreAction]func(game *Game)
 	PostGameActions  map[PostGameAction]func(game *Game)
 }
 
+type PreScoreAction string
 type PostScoreAction string
 type PostGameAction string
 
 const (
 	ChanceBonusAction PostGameAction = "chanceBonusAction"
+)
+
+const (
+	YahtzeeBonusPreScore PreScoreAction = "yahtzeeBonusPreScoreAction"
 )
 
 type Scorer interface {
@@ -199,7 +207,13 @@ func (d *DefaultChance) Score(game *Game) (int, []PostScoreAction) {
 	return s, nil
 }
 
-//type TheChanceAction struct{}
+func YahtzeeBonusPreScoreAction(g *Game) {
+	yahtzeeValue, yahtzeeScored := g.Players[g.CurrentPlayer].ScoreSheet[Yahtzee]
+	yahtzee := isYahtzee(g.Dices)
+	g.Context["yahtzeeBonusEligible"] = yahtzeeScored && yahtzee && yahtzeeValue != 0
+	log.Print(g.Context)
+	log.Print("yahtzeebonus prescore action return")
+}
 
 func TheChanceAction(g *Game) {
 	for _, p := range g.Players {
@@ -235,4 +249,19 @@ func max(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func isYahtzee(dices []*Dice) bool {
+	for i := 1; i < 7; i++ {
+		sameCount := 0
+		for j := 0; j < len(dices); j++ {
+			if dices[j].Value == i {
+				sameCount++
+			}
+		}
+		if sameCount >= 5 {
+			return true
+		}
+	}
+	return false
 }

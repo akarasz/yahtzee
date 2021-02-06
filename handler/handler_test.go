@@ -67,6 +67,15 @@ func (ts *testSuite) TestCreateYahtzeeBonus() {
 	}
 }
 
+func (ts *testSuite) TestCreateTheChance() {
+	rr := ts.record(request("POST", "/", `["the-chance"]`))
+	ts.Exactly(http.StatusCreated, rr.Code)
+	if ts.Contains(rr.HeaderMap, "Location") && ts.Len(rr.HeaderMap["Location"], 1) {
+		created := ts.fromStore(strings.TrimLeft(rr.HeaderMap["Location"][0], "/"))
+		ts.Exactly(yahtzee.NewGame(yahtzee.TheChance), created)
+	}
+}
+
 func (ts *testSuite) TestHints() {
 	badInputs := []struct {
 		description string
