@@ -63,7 +63,13 @@ func (ts *testSuite) TestCreateYahtzeeBonus() {
 	ts.Exactly(http.StatusCreated, rr.Code)
 	if ts.Contains(rr.HeaderMap, "Location") && ts.Len(rr.HeaderMap["Location"], 1) {
 		created := ts.fromStore(strings.TrimLeft(rr.HeaderMap["Location"][0], "/"))
-		ts.Exactly(yahtzee.NewGame(yahtzee.YahtzeeBonus), created)
+		expected := yahtzee.NewGame(yahtzee.YahtzeeBonus)
+		ts.Exactly(expected.CurrentPlayer, created.CurrentPlayer)
+		ts.Exactly(expected.Players, created.Players)
+		ts.Exactly(expected.Dices, created.Dices)
+		ts.Exactly(expected.Features, created.Features)
+		ts.Exactly(expected.RollCount, created.RollCount)
+		ts.Exactly(expected.Round, created.Round)
 	}
 }
 
@@ -72,7 +78,13 @@ func (ts *testSuite) TestCreateTheChance() {
 	ts.Exactly(http.StatusCreated, rr.Code)
 	if ts.Contains(rr.HeaderMap, "Location") && ts.Len(rr.HeaderMap["Location"], 1) {
 		created := ts.fromStore(strings.TrimLeft(rr.HeaderMap["Location"][0], "/"))
-		ts.Exactly(yahtzee.NewGame(yahtzee.TheChance), created)
+		expected := yahtzee.NewGame(yahtzee.TheChance)
+		ts.Exactly(expected.CurrentPlayer, created.CurrentPlayer)
+		ts.Exactly(expected.Players, created.Players)
+		ts.Exactly(expected.Dices, created.Dices)
+		ts.Exactly(expected.Features, created.Features)
+		ts.Exactly(expected.RollCount, created.RollCount)
+		ts.Exactly(expected.Round, created.Round)
 	}
 }
 
