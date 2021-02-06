@@ -137,7 +137,7 @@ func (h *handler) HintsForGame(w http.ResponseWriter, r *http.Request) {
 func hints(game *yahtzee.Game) (map[yahtzee.Category]int, error) {
 	res := map[yahtzee.Category]int{}
 	for c, scorer := range game.Scorer.ScoreActions {
-		res[c], _ = scorer(game)
+		res[c] = scorer(game)
 	}
 
 	return res, nil
@@ -469,34 +469,17 @@ func (h *handler) Score(w http.ResponseWriter, r *http.Request) {
 		action(&g)
 	}
 
-	var scorer func(game *yahtzee.Game) (int, []yahtzee.PostScoreAction)
+	var scorer func(game *yahtzee.Game) int
 	if scorer, ok = g.Scorer.ScoreActions[category]; !ok {
 		writeError(w, r, nil, "invalid category", http.StatusBadRequest)
 		return
 	}
 
-	currentPlayer.ScoreSheet[category], _ = scorer(&g)
+	currentPlayer.ScoreSheet[category] = scorer(&g)
 
 	//postscore actions
 	for _, action := range g.Scorer.PostScoreActions {
 		action(&g)
-	}
-
-	if _, ok := currentPlayer.ScoreSheet[yahtzee.Bonus]; !ok {
-		var total, types int
-		for k, v := range currentPlayer.ScoreSheet {
-			if k == yahtzee.Ones || k == yahtzee.Twos || k == yahtzee.Threes ||
-				k == yahtzee.Fours || k == yahtzee.Fives || k == yahtzee.Sixes {
-				types++
-				total += v
-			}
-		}
-
-		if total >= 63 {
-			currentPlayer.ScoreSheet[yahtzee.Bonus] = 35
-		} else if types == 6 {
-			currentPlayer.ScoreSheet[yahtzee.Bonus] = 0
-		}
 	}
 
 	for _, d := range g.Dices {

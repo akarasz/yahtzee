@@ -132,10 +132,12 @@ func NewGame(features ...Feature) *Game {
 	}
 
 	scorer := &Score{
-		PreScoreActions:  map[PreScoreAction]func(game *Game){},
-		ScoreActions:     NewDefaultScorer(),
-		PostScoreActions: map[PostScoreAction]func(game *Game){},
-		PostGameActions:  map[PostGameAction]func(game *Game){},
+		PreScoreActions: map[PreScoreAction]func(game *Game){},
+		ScoreActions:    NewDefaultScorer(),
+		PostScoreActions: map[PostScoreAction]func(game *Game){
+			DefaultUpperSeciontBonus: DefaultUpperSectionBonusAction,
+		},
+		PostGameActions: map[PostGameAction]func(game *Game){},
 	}
 
 	if ContainsFeature(features, TheChance) {

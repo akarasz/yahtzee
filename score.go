@@ -20,10 +20,11 @@ const (
 )
 
 const (
-	YahtzeeBonusPostScore PostScoreAction = "yahtzeeBonusPostScoreAction"
+	DefaultUpperSeciontBonus PostScoreAction = "defaultUpperSectionBonus"
+	YahtzeeBonusPostScore    PostScoreAction = "yahtzeeBonusPostScoreAction"
 )
 
-type Scorers map[Category]func(game *Game) (int, []PostScoreAction)
+type Scorers map[Category]func(game *Game) int
 
 var defaultScorer = Scorers{
 	Ones:          DefaultOnes,
@@ -49,31 +50,31 @@ func NewDefaultScorer() Scorers {
 	return scorer
 }
 
-func DefaultOnes(game *Game) (int, []PostScoreAction) {
-	return min(countDice(1, game.Dices), 5*1), nil
+func DefaultOnes(game *Game) int {
+	return min(countDice(1, game.Dices), 5*1)
 }
 
-func DefaultTwos(game *Game) (int, []PostScoreAction) {
-	return min(countDice(2, game.Dices)*2, 5*2), nil
+func DefaultTwos(game *Game) int {
+	return min(countDice(2, game.Dices)*2, 5*2)
 }
 
-func DefaultThrees(game *Game) (int, []PostScoreAction) {
-	return min(countDice(3, game.Dices)*3, 5*3), nil
+func DefaultThrees(game *Game) int {
+	return min(countDice(3, game.Dices)*3, 5*3)
 }
 
-func DefaultFours(game *Game) (int, []PostScoreAction) {
-	return min(countDice(4, game.Dices)*4, 5*4), nil
+func DefaultFours(game *Game) int {
+	return min(countDice(4, game.Dices)*4, 5*4)
 }
 
-func DefaultFives(game *Game) (int, []PostScoreAction) {
-	return min(countDice(5, game.Dices)*5, 5*5), nil
+func DefaultFives(game *Game) int {
+	return min(countDice(5, game.Dices)*5, 5*5)
 }
 
-func DefaultSixes(game *Game) (int, []PostScoreAction) {
-	return min(countDice(6, game.Dices)*6, 5*6), nil
+func DefaultSixes(game *Game) int {
+	return min(countDice(6, game.Dices)*6, 5*6)
 }
 
-func DefaultThreeOfAKind(game *Game) (int, []PostScoreAction) {
+func DefaultThreeOfAKind(game *Game) int {
 	occurrences := map[int]int{}
 	for _, d := range game.Dices {
 		occurrences[d.Value]++
@@ -84,10 +85,10 @@ func DefaultThreeOfAKind(game *Game) (int, []PostScoreAction) {
 			s = max(s, 3*k)
 		}
 	}
-	return s, nil
+	return s
 }
 
-func DefaultFourOfAKind(game *Game) (int, []PostScoreAction) {
+func DefaultFourOfAKind(game *Game) int {
 	occurrences := map[int]int{}
 	for _, d := range game.Dices {
 		occurrences[d.Value]++
@@ -98,10 +99,10 @@ func DefaultFourOfAKind(game *Game) (int, []PostScoreAction) {
 			s = 4 * k
 		}
 	}
-	return s, nil
+	return s
 }
 
-func DefaultFullHouse(game *Game) (int, []PostScoreAction) {
+func DefaultFullHouse(game *Game) int {
 	occurrences := map[int]int{}
 	for _, d := range game.Dices {
 		occurrences[d.Value]++
@@ -123,10 +124,10 @@ func DefaultFullHouse(game *Game) (int, []PostScoreAction) {
 	if three && two {
 		s = 25
 	}
-	return s, nil
+	return s
 }
 
-func DefaultSmallStraight(game *Game) (int, []PostScoreAction) {
+func DefaultSmallStraight(game *Game) int {
 	s := 0
 	hit := [6]bool{}
 	for _, d := range game.Dices {
@@ -138,10 +139,10 @@ func DefaultSmallStraight(game *Game) (int, []PostScoreAction) {
 		(hit[2] && hit[3] && hit[4] && hit[5]) {
 		s = 30
 	}
-	return s, nil
+	return s
 }
 
-func DefaultLargeStraight(game *Game) (int, []PostScoreAction) {
+func DefaultLargeStraight(game *Game) int {
 	s := 0
 	hit := [6]bool{}
 	for _, d := range game.Dices {
@@ -152,27 +153,17 @@ func DefaultLargeStraight(game *Game) (int, []PostScoreAction) {
 		(hit[1] && hit[2] && hit[3] && hit[4] && hit[5]) {
 		s = 40
 	}
-	return s, nil
+	return s
 }
 
-func DefaultYahtzee(game *Game) (int, []PostScoreAction) {
-	s := 0
-	for i := 1; i < 7; i++ {
-		sameCount := 0
-		for j := 0; j < len(game.Dices); j++ {
-			if game.Dices[j].Value == i {
-				sameCount++
-			}
-		}
-		if sameCount >= 5 {
-			s = 50
-			break
-		}
+func DefaultYahtzee(game *Game) int {
+	if isYahtzee(game.Dices) {
+		return 50
 	}
-	return s, nil
+	return 0
 }
 
-func DefaultChance(game *Game) (int, []PostScoreAction) {
+func DefaultChance(game *Game) int {
 	s := 0
 	for i := 0; i < len(game.Dices); i++ {
 		sum := 0
@@ -184,28 +175,47 @@ func DefaultChance(game *Game) (int, []PostScoreAction) {
 		}
 		s = max(s, sum)
 	}
-	return s, nil
+	return s
+}
+
+func DefaultUpperSectionBonusAction(game *Game) {
+	if _, ok := game.Players[game.CurrentPlayer].ScoreSheet[Bonus]; !ok {
+		var total, types int
+		for k, v := range game.Players[game.CurrentPlayer].ScoreSheet {
+			if k == Ones || k == Twos || k == Threes ||
+				k == Fours || k == Fives || k == Sixes {
+				types++
+				total += v
+			}
+		}
+
+		if total >= 63 {
+			game.Players[game.CurrentPlayer].ScoreSheet[Bonus] = 35
+		} else if types == 6 {
+			game.Players[game.CurrentPlayer].ScoreSheet[Bonus] = 0
+		}
+	}
 }
 
 //Yahtzee-bonus
 
-func YahtzeeBonusFullHouse(game *Game) (int, []PostScoreAction) {
+func YahtzeeBonusFullHouse(game *Game) int {
 	if _, yahtzeeScored := game.Players[game.CurrentPlayer].ScoreSheet[Yahtzee]; yahtzeeScored && isYahtzee(game.Dices) {
-		return 25, nil
+		return 25
 	}
 	return DefaultFullHouse(game)
 }
 
-func YahtzeeBonusSmallStraight(game *Game) (int, []PostScoreAction) {
+func YahtzeeBonusSmallStraight(game *Game) int {
 	if _, yahtzeeScored := game.Players[game.CurrentPlayer].ScoreSheet[Yahtzee]; yahtzeeScored && isYahtzee(game.Dices) {
-		return 30, nil
+		return 30
 	}
 	return DefaultSmallStraight(game)
 }
 
-func YahtzeeBonusLargeStraight(game *Game) (int, []PostScoreAction) {
+func YahtzeeBonusLargeStraight(game *Game) int {
 	if _, yahtzeeScored := game.Players[game.CurrentPlayer].ScoreSheet[Yahtzee]; yahtzeeScored && isYahtzee(game.Dices) {
-		return 40, nil
+		return 40
 	}
 	return DefaultLargeStraight(game)
 }
