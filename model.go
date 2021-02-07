@@ -132,21 +132,21 @@ func NewGame(features ...Feature) *Game {
 	}
 
 	scorer := &Score{
-		PreScoreActions: map[PreScoreAction]func(game *Game){},
+		PreScoreActions: []func(game *Game){},
 		ScoreActions:    NewDefaultScorer(),
-		PostScoreActions: map[PostScoreAction]func(game *Game){
-			DefaultUpperSeciontBonus: DefaultUpperSectionBonusAction,
+		PostScoreActions: []func(game *Game){
+			DefaultUpperSectionBonusAction,
 		},
-		PostGameActions: map[PostGameAction]func(game *Game){},
+		PostGameActions: []func(game *Game){},
 	}
 
 	if ContainsFeature(features, TheChance) {
-		scorer.PostGameActions[ChanceBonusAction] = TheChanceAction
+		scorer.PostGameActions = append(scorer.PostGameActions, TheChanceAction)
 	}
 
 	if ContainsFeature(features, YahtzeeBonus) {
-		scorer.PreScoreActions[YahtzeeBonusPreScore] = YahtzeeBonusPreScoreAction
-		scorer.PostScoreActions[YahtzeeBonusPostScore] = YahtzeeBonusPostScoreAction
+		scorer.PreScoreActions = append(scorer.PreScoreActions, YahtzeeBonusPreScoreAction)
+		scorer.PostScoreActions = append(scorer.PostScoreActions, YahtzeeBonusPostScoreAction)
 
 		scorer.ScoreActions[FullHouse] = YahtzeeBonusFullHouse
 		scorer.ScoreActions[SmallStraight] = YahtzeeBonusSmallStraight

@@ -1,28 +1,11 @@
 package yahtzee
 
 type Score struct {
-	PreScoreActions  map[PreScoreAction]func(game *Game)
+	PreScoreActions  []func(game *Game)
 	ScoreActions     Scorers
-	PostScoreActions map[PostScoreAction]func(game *Game)
-	PostGameActions  map[PostGameAction]func(game *Game)
+	PostScoreActions []func(game *Game)
+	PostGameActions  []func(game *Game)
 }
-
-type PreScoreAction string
-type PostScoreAction string
-type PostGameAction string
-
-const (
-	ChanceBonusAction PostGameAction = "chanceBonusAction"
-)
-
-const (
-	YahtzeeBonusPreScore PreScoreAction = "yahtzeeBonusPreScoreAction"
-)
-
-const (
-	DefaultUpperSeciontBonus PostScoreAction = "defaultUpperSectionBonus"
-	YahtzeeBonusPostScore    PostScoreAction = "yahtzeeBonusPostScoreAction"
-)
 
 type Scorers map[Category]func(game *Game) int
 
