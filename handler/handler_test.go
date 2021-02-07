@@ -311,6 +311,90 @@ func (ts *testSuite) TestHintsForGame() {
 	}
 }
 
+func (ts *testSuite) TestHintsForGameOrdered() {
+	inputs := []struct {
+		dices    []int
+		round    int
+		response string
+	}{
+		{[]int{3, 2, 6, 4, 5}, 0, `{
+			"ones":0,
+			"twos":0,
+			"threes":0,
+			"fours":0,
+			"fives":0,
+			"sixes":0,
+			"three-of-a-kind":0,
+			"four-of-a-kind":0,
+			"full-house":0,
+			"small-straight":0,
+			"large-straight":0,
+			"yahtzee":0,
+			"chance":0
+		}`},
+		{[]int{5, 5, 5, 5, 5}, 12, `{
+			"ones":0,
+			"twos":0,
+			"threes":0,
+			"fours":0,
+			"fives":0,
+			"sixes":0,
+			"three-of-a-kind":0,
+			"four-of-a-kind":0,
+			"full-house":0,
+			"small-straight":0,
+			"large-straight":0,
+			"yahtzee":0,
+			"chance":25
+		}`},
+		{[]int{6, 6, 6, 6, 6}, 13, `{
+			"ones":0,
+			"twos":0,
+			"threes":0,
+			"fours":0,
+			"fives":0,
+			"sixes":30,
+			"three-of-a-kind":18,
+			"four-of-a-kind":24,
+			"full-house":0,
+			"small-straight":0,
+			"large-straight":0,
+			"yahtzee":50,
+			"chance":30
+		}`},
+		{[]int{6, 6, 6, 6, 6}, 5, `{
+			"ones":0,
+			"twos":0,
+			"threes":0,
+			"fours":0,
+			"fives":0,
+			"sixes":30,
+			"three-of-a-kind":0,
+			"four-of-a-kind":0,
+			"full-house":0,
+			"small-straight":0,
+			"large-straight":0,
+			"yahtzee":0,
+			"chance":0
+		}`},
+	}
+	for _, tc := range inputs {
+		g := yahtzee.NewGame(yahtzee.Ordered)
+		for i, d := range tc.dices {
+			g.Dices[i].Value = d
+		}
+		g.Players = []*yahtzee.Player{
+			yahtzee.NewPlayer("Alice"),
+		}
+		g.CurrentPlayer = 0
+		g.Round = tc.round
+		ts.Require().NoError(ts.store.Save("hintsID", *g))
+		rr := ts.record(request("GET", "/hintsID/score"))
+		ts.Exactly(http.StatusOK, rr.Code)
+		ts.JSONEq(tc.response, rr.Body.String(), "when %v on round %d", tc.dices, tc.round)
+	}
+}
+
 func (ts *testSuite) TestHintsYahtzee() {
 	rr := ts.record(request("GET", "/score"), withQuery("dices", "5,5,5,5,5"))
 	ts.Exactly(http.StatusOK, rr.Code)
