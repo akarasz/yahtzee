@@ -216,6 +216,8 @@ func YahtzeeBonusPostScoreAction(g *Game) {
 	delete(g.Context, "yahtzeeBonusEligible")
 }
 
+// The Chance
+
 func TheChanceAction(g *Game) {
 	for _, p := range g.Players {
 		s := 0
@@ -224,6 +226,39 @@ func TheChanceAction(g *Game) {
 		}
 		if s == 5 {
 			p.ScoreSheet[ChanceBonus] = 495
+		}
+	}
+}
+
+// Equilizer
+
+func EquilizerPreScoreAction(g *Game) {
+	notScoredCategories := []Category{}
+	for _, c := range Categories() {
+		if _, ok := g.Players[g.CurrentPlayer].ScoreSheet[c]; !ok {
+			notScoredCategories = append(notScoredCategories, c)
+		}
+	}
+
+	g.Context["equilizerNotScoredCategories"] = notScoredCategories
+}
+
+func EquilizerPostScoreAction(g *Game) {
+	defer delete(g.Context, "equilizerNotScoredCategories")
+
+	if val, ok := g.Context["equilizerNotScoredCategories"]; ok {
+		for _, c := range val.([]Category) {
+			if s, ok := g.Players[g.CurrentPlayer].ScoreSheet[c]; ok {
+				if s > 0 {
+					return
+				}
+				for _, p := range g.Players {
+					if _, ok := p.ScoreSheet[c]; ok {
+						p.ScoreSheet[c] = 0
+					}
+				}
+				return
+			}
 		}
 	}
 }

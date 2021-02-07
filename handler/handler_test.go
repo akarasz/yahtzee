@@ -1984,6 +1984,78 @@ func (ts *testSuite) TestScoreYahtzeeBonusWhenYahtzeeAlreadyZeroed() {
 	}
 }
 
+func (ts *testSuite) TestScoreEquilizer() {
+	// scoring
+	scoringCases := []struct {
+		dices     []int
+		equilized bool
+		category  yahtzee.Category
+		value     int
+	}{
+		{[]int{4, 2, 3, 2, 6}, true, yahtzee.Ones, 0},
+		{[]int{4, 2, 3, 2, 6}, false, yahtzee.Ones, 0},
+		{[]int{1, 2, 3, 1, 1}, false, yahtzee.Ones, 3},
+		{[]int{5, 3, 4, 1, 3}, true, yahtzee.Twos, 0},
+		{[]int{5, 3, 4, 1, 3}, false, yahtzee.Twos, 0},
+		{[]int{2, 2, 2, 2, 2}, false, yahtzee.Twos, 10},
+		{[]int{6, 4, 2, 2, 1}, true, yahtzee.Threes, 0},
+		{[]int{6, 4, 2, 2, 1}, false, yahtzee.Threes, 0},
+		{[]int{3, 3, 3, 3, 3}, false, yahtzee.Threes, 15},
+		{[]int{1, 6, 3, 3, 5}, true, yahtzee.Fours, 0},
+		{[]int{5, 5, 1, 2, 1}, false, yahtzee.Fours, 0},
+		{[]int{4, 4, 4, 4, 4}, false, yahtzee.Fours, 20},
+		{[]int{6, 6, 3, 1, 2}, true, yahtzee.Fives, 0},
+		{[]int{6, 6, 3, 1, 2}, false, yahtzee.Fives, 0},
+		{[]int{5, 5, 5, 5, 5}, false, yahtzee.Fives, 25},
+		{[]int{5, 3, 1, 4, 1}, true, yahtzee.Sixes, 0},
+		{[]int{5, 3, 1, 4, 1}, false, yahtzee.Sixes, 0},
+		{[]int{6, 6, 6, 6, 6}, false, yahtzee.Sixes, 30},
+		{[]int{2, 4, 3, 6, 4}, true, yahtzee.ThreeOfAKind, 0},
+		{[]int{2, 4, 3, 6, 4}, false, yahtzee.ThreeOfAKind, 0},
+		{[]int{3, 1, 3, 1, 3}, false, yahtzee.ThreeOfAKind, 9},
+		{[]int{2, 6, 3, 2, 2}, true, yahtzee.FourOfAKind, 0},
+		{[]int{2, 6, 3, 2, 2}, false, yahtzee.FourOfAKind, 0},
+		{[]int{1, 6, 6, 6, 6}, false, yahtzee.FourOfAKind, 24},
+		{[]int{5, 5, 2, 5, 5}, true, yahtzee.FullHouse, 0},
+		{[]int{2, 5, 3, 6, 5}, false, yahtzee.FullHouse, 0},
+		{[]int{5, 5, 2, 5, 2}, false, yahtzee.FullHouse, 25},
+		{[]int{6, 2, 5, 1, 3}, true, yahtzee.SmallStraight, 0},
+		{[]int{6, 2, 5, 1, 3}, false, yahtzee.SmallStraight, 0},
+		{[]int{6, 2, 4, 1, 3}, false, yahtzee.SmallStraight, 30},
+		{[]int{3, 5, 2, 3, 4}, false, yahtzee.LargeStraight, 0},
+		{[]int{3, 5, 2, 1, 4}, false, yahtzee.LargeStraight, 40},
+		{[]int{3, 4, 3, 3, 3}, true, yahtzee.Yahtzee, 0},
+		{[]int{3, 4, 3, 3, 3}, false, yahtzee.Yahtzee, 0},
+		{[]int{3, 3, 3, 3, 3}, false, yahtzee.Yahtzee, 50},
+	}
+
+	for _, tc := range scoringCases {
+		g := yahtzee.NewGame(yahtzee.Equilizer)
+		g.Players = append(g.Players, yahtzee.NewPlayer("Alice"))
+		g.Players = append(g.Players, yahtzee.NewPlayer("Bob"))
+		g.RollCount = 1
+		if tc.equilized {
+			g.Players[1].ScoreSheet[tc.category] = 5
+		}
+		for d := 0; d < 5; d++ {
+			g.Dices[d].Value = tc.dices[d]
+		}
+		ts.Require().NoError(ts.store.Save("score_scoringID", *g))
+
+		ts.record(request("POST", "/score_scoringID/score", string(tc.category)), asUser("Alice"))
+
+		got := ts.fromStore("score_scoringID")
+		if tc.equilized {
+			ts.Exactly(0, got.Players[1].ScoreSheet[tc.category],
+				"should return 0 for other player for %q on %v", tc.category, tc.dices)
+		} else {
+			_, ok := got.Players[1].ScoreSheet[tc.category]
+			ts.Exactly(false, ok,
+				"should not return for other player for %q on %v", tc.category, tc.dices)
+		}
+	}
+}
+
 func (ts *testSuite) TestWS() {
 	server := httptest.NewServer(ts.handler)
 	defer server.Close()
