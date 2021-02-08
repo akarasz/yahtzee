@@ -45,7 +45,13 @@ func (ts *testSuite) TestCreate() {
 	ts.Exactly(http.StatusCreated, rr.Code)
 	if ts.Contains(rr.HeaderMap, "Location") && ts.Len(rr.HeaderMap["Location"], 1) {
 		created := ts.fromStore(strings.TrimLeft(rr.HeaderMap["Location"][0], "/"))
-		ts.Exactly(yahtzee.NewGame(), created)
+		expected := yahtzee.NewGame()
+		ts.Exactly(expected.CurrentPlayer, created.CurrentPlayer)
+		ts.Exactly(expected.Players, created.Players)
+		ts.Exactly(expected.Dices, created.Dices)
+		ts.Exactly(expected.Features, created.Features)
+		ts.Exactly(expected.RollCount, created.RollCount)
+		ts.Exactly(expected.Round, created.Round)
 	}
 }
 
@@ -54,7 +60,13 @@ func (ts *testSuite) TestCreateSixDice() {
 	ts.Exactly(http.StatusCreated, rr.Code)
 	if ts.Contains(rr.HeaderMap, "Location") && ts.Len(rr.HeaderMap["Location"], 1) {
 		created := ts.fromStore(strings.TrimLeft(rr.HeaderMap["Location"][0], "/"))
-		ts.Exactly(yahtzee.NewGame(yahtzee.SixDice), created)
+		expected := yahtzee.NewGame(yahtzee.SixDice)
+		ts.Exactly(expected.CurrentPlayer, created.CurrentPlayer)
+		ts.Exactly(expected.Players, created.Players)
+		ts.Exactly(expected.Dices, created.Dices)
+		ts.Exactly(expected.Features, created.Features)
+		ts.Exactly(expected.RollCount, created.RollCount)
+		ts.Exactly(expected.Round, created.Round)
 	}
 }
 
@@ -63,7 +75,28 @@ func (ts *testSuite) TestCreateYahtzeeBonus() {
 	ts.Exactly(http.StatusCreated, rr.Code)
 	if ts.Contains(rr.HeaderMap, "Location") && ts.Len(rr.HeaderMap["Location"], 1) {
 		created := ts.fromStore(strings.TrimLeft(rr.HeaderMap["Location"][0], "/"))
-		ts.Exactly(yahtzee.NewGame(yahtzee.YahtzeeBonus), created)
+		expected := yahtzee.NewGame(yahtzee.YahtzeeBonus)
+		ts.Exactly(expected.CurrentPlayer, created.CurrentPlayer)
+		ts.Exactly(expected.Players, created.Players)
+		ts.Exactly(expected.Dices, created.Dices)
+		ts.Exactly(expected.Features, created.Features)
+		ts.Exactly(expected.RollCount, created.RollCount)
+		ts.Exactly(expected.Round, created.Round)
+	}
+}
+
+func (ts *testSuite) TestCreateTheChance() {
+	rr := ts.record(request("POST", "/", `["the-chance"]`))
+	ts.Exactly(http.StatusCreated, rr.Code)
+	if ts.Contains(rr.HeaderMap, "Location") && ts.Len(rr.HeaderMap["Location"], 1) {
+		created := ts.fromStore(strings.TrimLeft(rr.HeaderMap["Location"][0], "/"))
+		expected := yahtzee.NewGame(yahtzee.TheChance)
+		ts.Exactly(expected.CurrentPlayer, created.CurrentPlayer)
+		ts.Exactly(expected.Players, created.Players)
+		ts.Exactly(expected.Dices, created.Dices)
+		ts.Exactly(expected.Features, created.Features)
+		ts.Exactly(expected.RollCount, created.RollCount)
+		ts.Exactly(expected.Round, created.Round)
 	}
 }
 
@@ -102,6 +135,180 @@ func (ts *testSuite) TestHints() {
 			"yahtzee":0,
 			"chance":20
 		}`, rr.Body.String())
+}
+
+func (ts *testSuite) TestHintsForGame() {
+	inputs := []struct {
+		features []yahtzee.Feature
+		dices    []int
+		response string
+	}{
+		{[]yahtzee.Feature{}, []int{3, 2, 6, 4, 5}, `{
+			"ones":0,
+			"twos":2,
+			"threes":3,
+			"fours":4,
+			"fives":5,
+			"sixes":6,
+			"three-of-a-kind":0,
+			"four-of-a-kind":0,
+			"full-house":0,
+			"small-straight":30,
+			"large-straight":40,
+			"yahtzee":0,
+			"chance":20
+		}`},
+		{[]yahtzee.Feature{}, []int{5, 5, 5, 5, 5}, `{
+			"ones":0,
+			"twos":0,
+			"threes":0,
+			"fours":0,
+			"fives":25,
+			"sixes":0,
+			"three-of-a-kind":15,
+			"four-of-a-kind":20,
+			"full-house":0,
+			"small-straight":0,
+			"large-straight":0,
+			"yahtzee":50,
+			"chance":25
+		}`},
+		{[]yahtzee.Feature{}, []int{6, 6, 6, 6, 6}, `{
+			"ones":0,
+			"twos":0,
+			"threes":0,
+			"fours":0,
+			"fives":0,
+			"sixes":30,
+			"three-of-a-kind":18,
+			"four-of-a-kind":24,
+			"full-house":0,
+			"small-straight":0,
+			"large-straight":0,
+			"yahtzee":50,
+			"chance":30
+		}`},
+		{[]yahtzee.Feature{}, []int{1, 1, 1, 1, 1}, `{
+			"ones":5,
+			"twos":0,
+			"threes":0,
+			"fours":0,
+			"fives":0,
+			"sixes":0,
+			"three-of-a-kind":3,
+			"four-of-a-kind":4,
+			"full-house":0,
+			"small-straight":0,
+			"large-straight":0,
+			"yahtzee":50,
+			"chance":5
+		}`},
+		{[]yahtzee.Feature{yahtzee.SixDice}, []int{3, 2, 6, 4, 5, 1}, `{
+			"ones":1,
+			"twos":2,
+			"threes":3,
+			"fours":4,
+			"fives":5,
+			"sixes":6,
+			"three-of-a-kind":0,
+			"four-of-a-kind":0,
+			"full-house":0,
+			"small-straight":30,
+			"large-straight":40,
+			"yahtzee":0,
+			"chance":20
+		}`},
+		{[]yahtzee.Feature{yahtzee.SixDice}, []int{1, 3, 2, 6, 4, 5}, `{
+			"ones":1,
+			"twos":2,
+			"threes":3,
+			"fours":4,
+			"fives":5,
+			"sixes":6,
+			"three-of-a-kind":0,
+			"four-of-a-kind":0,
+			"full-house":0,
+			"small-straight":30,
+			"large-straight":40,
+			"yahtzee":0,
+			"chance":20
+		}`},
+		{[]yahtzee.Feature{yahtzee.SixDice}, []int{5, 5, 5, 5, 5, 1}, `{
+			"ones":1,
+			"twos":0,
+			"threes":0,
+			"fours":0,
+			"fives":25,
+			"sixes":0,
+			"three-of-a-kind":15,
+			"four-of-a-kind":20,
+			"full-house":0,
+			"small-straight":0,
+			"large-straight":0,
+			"yahtzee":50,
+			"chance":25
+		}`},
+		{[]yahtzee.Feature{yahtzee.SixDice}, []int{5, 5, 5, 5, 5, 5}, `{
+			"ones":0,
+			"twos":0,
+			"threes":0,
+			"fours":0,
+			"fives":25,
+			"sixes":0,
+			"three-of-a-kind":15,
+			"four-of-a-kind":20,
+			"full-house":0,
+			"small-straight":0,
+			"large-straight":0,
+			"yahtzee":50,
+			"chance":25
+		}`},
+		{[]yahtzee.Feature{yahtzee.YahtzeeBonus}, []int{5, 5, 5, 5, 5}, `{
+			"ones":0,
+			"twos":0,
+			"threes":0,
+			"fours":0,
+			"fives":25,
+			"sixes":0,
+			"three-of-a-kind":15,
+			"four-of-a-kind":20,
+			"full-house":25,
+			"small-straight":30,
+			"large-straight":40,
+			"yahtzee":50,
+			"chance":25
+		}`},
+		{[]yahtzee.Feature{yahtzee.YahtzeeBonus, yahtzee.SixDice}, []int{5, 5, 5, 5, 5, 1}, `{
+			"ones":1,
+			"twos":0,
+			"threes":0,
+			"fours":0,
+			"fives":25,
+			"sixes":0,
+			"three-of-a-kind":15,
+			"four-of-a-kind":20,
+			"full-house":25,
+			"small-straight":30,
+			"large-straight":40,
+			"yahtzee":50,
+			"chance":25
+		}`},
+	}
+	for _, tc := range inputs {
+		g := yahtzee.NewGame(tc.features...)
+		for i, d := range tc.dices {
+			g.Dices[i].Value = d
+		}
+		g.Players = []*yahtzee.Player{
+			yahtzee.NewPlayer("Alice"),
+		}
+		g.CurrentPlayer = 0
+		g.Players[0].ScoreSheet[yahtzee.Yahtzee] = 50
+		ts.Require().NoError(ts.store.Save("hintsID", *g))
+		rr := ts.record(request("GET", "/hintsID/hints"))
+		ts.Exactly(http.StatusOK, rr.Code)
+		ts.JSONEq(tc.response, rr.Body.String(), "when %v features for %v", tc.features, tc.dices)
+	}
 }
 
 func (ts *testSuite) TestHintsYahtzee() {

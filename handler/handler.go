@@ -39,6 +39,8 @@ func New(s store.Store, e event.Emitter, sub event.Subscriber) http.Handler {
 		Methods("GET", "OPTIONS")
 	r.HandleFunc("/{gameID}", h.Get).
 		Methods("GET", "OPTIONS")
+	r.HandleFunc("/{gameID}/hints", h.HintsForGame).
+		Methods("GET", "OPTIONS")
 	r.HandleFunc("/{gameID}/join", h.AddPlayer).
 		Methods("POST", "OPTIONS")
 	r.HandleFunc("/{gameID}/roll", h.Roll).
@@ -98,6 +100,47 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 
 	log.Print("game created")
+}
+
+func (h *handler) HintsForGame(w http.ResponseWriter, r *http.Request) {
+	gameID, ok := readGameID(w, r)
+	if !ok {
+		return
+	}
+
+	unlocker, err := h.store.Lock(gameID)
+	if err != nil {
+		writeError(w, r, err, "locking issue", http.StatusInternalServerError)
+		return
+	}
+	defer unlocker()
+
+	g, err := h.store.Load(gameID)
+	if err != nil {
+		writeStoreError(w, r, err)
+		return
+	}
+
+	res, err := hints(&g)
+	if err != nil {
+		writeError(w, r, err, "", http.StatusInternalServerError)
+		return
+	}
+
+	if ok := writeJSON(w, r, res); !ok {
+		return
+	}
+
+	log.Print("hints for game returned")
+}
+
+func hints(game *yahtzee.Game) (map[yahtzee.Category]int, error) {
+	res := map[yahtzee.Category]int{}
+	for c, scorer := range game.Scorer.ScoreActions {
+		res[c] = scorer(game)
+	}
+
+	return res, nil
 }
 
 func (h *handler) Hints(w http.ResponseWriter, r *http.Request) {
@@ -416,45 +459,27 @@ func (h *handler) Score(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var scorer func(game *yahtzee.Game) int
+	if scorer, ok = g.Scorer.ScoreActions[category]; !ok {
+		writeError(w, r, nil, "invalid category", http.StatusBadRequest)
+		return
+	}
+
 	dices := make([]int, len(g.Dices))
 	for i, d := range g.Dices {
 		dices[i] = d.Value
 	}
 
-	yahtzeeBonus := false
-	if yahtzee.ContainsFeature(g.Features, yahtzee.YahtzeeBonus) {
-		yahtzeeValue, yahtzeeScored := currentPlayer.ScoreSheet[yahtzee.Yahtzee]
-		score, _ := score(yahtzee.Yahtzee, dices, false)
-		yahtzeeBonus = yahtzeeScored && score == 50 && yahtzeeValue != 0
+	//prescore actions
+	for _, action := range g.Scorer.PreScoreActions {
+		action(&g)
 	}
 
-	score, err := score(category, dices, yahtzee.ContainsFeature(g.Features, yahtzee.YahtzeeBonus))
-	if err != nil {
-		writeError(w, r, err, "invalid category", http.StatusBadRequest)
-		return
-	}
+	currentPlayer.ScoreSheet[category] = scorer(&g)
 
-	currentPlayer.ScoreSheet[category] = score
-
-	if yahtzeeBonus {
-		currentPlayer.ScoreSheet[yahtzee.Yahtzee] += 100
-	}
-
-	if _, ok := currentPlayer.ScoreSheet[yahtzee.Bonus]; !ok {
-		var total, types int
-		for k, v := range currentPlayer.ScoreSheet {
-			if k == yahtzee.Ones || k == yahtzee.Twos || k == yahtzee.Threes ||
-				k == yahtzee.Fours || k == yahtzee.Fives || k == yahtzee.Sixes {
-				types++
-				total += v
-			}
-		}
-
-		if total >= 63 {
-			currentPlayer.ScoreSheet[yahtzee.Bonus] = 35
-		} else if types == 6 {
-			currentPlayer.ScoreSheet[yahtzee.Bonus] = 0
-		}
+	//postscore actions
+	for _, action := range g.Scorer.PostScoreActions {
+		action(&g)
 	}
 
 	for _, d := range g.Dices {
@@ -467,15 +492,9 @@ func (h *handler) Score(w http.ResponseWriter, r *http.Request) {
 		g.Round++
 	}
 
-	if g.Round >= 13 && yahtzee.ContainsFeature(g.Features, yahtzee.TheChance) {
-		for _, p := range g.Players {
-			s := 0
-			for _, v := range p.ScoreSheet {
-				s += v
-			}
-			if s == 5 {
-				p.ScoreSheet[yahtzee.ChanceBonus] = 495
-			}
+	if g.Round >= 13 { //End of game, running postgame actions
+		for _, action := range g.Scorer.PostGameActions {
+			action(&g)
 		}
 	}
 

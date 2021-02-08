@@ -91,6 +91,10 @@ type Game struct {
 
 	// RollCount shows how many times the dices were rolled for the current user in this round.
 	RollCount int
+
+	Scorer *Score `json:"-"`
+
+	Context map[string]interface{} `json:"-"`
 }
 
 // Feature represents the features available for the game.
@@ -127,10 +131,34 @@ func NewGame(features ...Feature) *Game {
 		}
 	}
 
+	scorer := &Score{
+		PreScoreActions: []func(game *Game){},
+		ScoreActions:    NewDefaultScorer(),
+		PostScoreActions: []func(game *Game){
+			DefaultUpperSectionBonusAction,
+		},
+		PostGameActions: []func(game *Game){},
+	}
+
+	if ContainsFeature(features, TheChance) {
+		scorer.PostGameActions = append(scorer.PostGameActions, TheChanceAction)
+	}
+
+	if ContainsFeature(features, YahtzeeBonus) {
+		scorer.PreScoreActions = append(scorer.PreScoreActions, YahtzeeBonusPreScoreAction)
+		scorer.PostScoreActions = append(scorer.PostScoreActions, YahtzeeBonusPostScoreAction)
+
+		scorer.ScoreActions[FullHouse] = YahtzeeBonusFullHouse
+		scorer.ScoreActions[SmallStraight] = YahtzeeBonusSmallStraight
+		scorer.ScoreActions[LargeStraight] = YahtzeeBonusLargeStraight
+	}
+
 	return &Game{
 		Players:  []*Player{},
 		Dices:    dd,
 		Features: features,
+		Scorer:   scorer,
+		Context:  map[string]interface{}{},
 	}
 }
 
