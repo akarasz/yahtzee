@@ -228,12 +228,12 @@ eg.
 ### Score suggestions
 
 ```
-GET /{gameID}/score
+GET /{gameID}/hints
 ```
 
 eg.
 ```
-> GET /gcxog/score
+> GET /gcxog/hints
 < 200 OK
 < {
 <   "ones": 1,
