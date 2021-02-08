@@ -2068,6 +2068,56 @@ func (ts *testSuite) TestScoreYahtzeeBonusWhenYahtzeeAlreadyZeroed() {
 	}
 }
 
+func (ts *testSuite) TestScoreOrdered() {
+	// scoring
+	scoringCases := []struct {
+		category yahtzee.Category
+		round    int
+		code     int
+	}{
+		{yahtzee.Ones, 0, 200},
+		{yahtzee.Ones, 2, 400},
+		{yahtzee.Twos, 1, 200},
+		{yahtzee.Twos, 2, 400},
+		{yahtzee.Threes, 2, 200},
+		{yahtzee.Threes, 5, 400},
+		{yahtzee.Fours, 3, 200},
+		{yahtzee.Fours, 0, 400},
+		{yahtzee.Fives, 4, 200},
+		{yahtzee.Fives, 3, 400},
+		{yahtzee.Sixes, 5, 200},
+		{yahtzee.Sixes, 2, 400},
+		{yahtzee.ThreeOfAKind, 6, 200},
+		{yahtzee.ThreeOfAKind, 5, 400},
+		{yahtzee.FourOfAKind, 7, 200},
+		{yahtzee.FourOfAKind, 6, 400},
+		{yahtzee.FullHouse, 8, 200},
+		{yahtzee.FullHouse, 7, 400},
+		{yahtzee.FullHouse, 9, 400},
+		{yahtzee.SmallStraight, 9, 200},
+		{yahtzee.SmallStraight, 8, 400},
+		{yahtzee.LargeStraight, 10, 200},
+		{yahtzee.LargeStraight, 11, 400},
+		{yahtzee.LargeStraight, 9, 400},
+		{yahtzee.Yahtzee, 11, 200},
+		{yahtzee.Yahtzee, 10, 400},
+		{yahtzee.Chance, 12, 200},
+		{yahtzee.Chance, 11, 400},
+	}
+
+	for _, tc := range scoringCases {
+		g := yahtzee.NewGame(yahtzee.Ordered)
+		g.Players = append(g.Players, yahtzee.NewPlayer("Alice"))
+		g.RollCount = 1
+		g.Round = tc.round
+		ts.Require().NoError(ts.store.Save("score_scoringID", *g))
+
+		rr := ts.record(request("POST", "/score_scoringID/score", string(tc.category)), asUser("Alice"))
+		ts.Exactly(tc.code, rr.Code,
+			"should return %d for %q on round %v", tc.code, tc.category, tc.round)
+	}
+}
+
 func (ts *testSuite) TestWS() {
 	server := httptest.NewServer(ts.handler)
 	defer server.Close()
