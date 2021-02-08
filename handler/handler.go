@@ -39,7 +39,7 @@ func New(s store.Store, e event.Emitter, sub event.Subscriber) http.Handler {
 		Methods("GET", "OPTIONS")
 	r.HandleFunc("/{gameID}", h.Get).
 		Methods("GET", "OPTIONS")
-	r.HandleFunc("/{gameID}/score", h.HintsForGame).
+	r.HandleFunc("/{gameID}/hints", h.HintsForGame).
 		Methods("GET", "OPTIONS")
 	r.HandleFunc("/{gameID}/join", h.AddPlayer).
 		Methods("POST", "OPTIONS")
@@ -459,6 +459,12 @@ func (h *handler) Score(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var scorer func(game *yahtzee.Game) int
+	if scorer, ok = g.Scorer.ScoreActions[category]; !ok {
+		writeError(w, r, nil, "invalid category", http.StatusBadRequest)
+		return
+	}
+
 	dices := make([]int, len(g.Dices))
 	for i, d := range g.Dices {
 		dices[i] = d.Value
@@ -467,12 +473,6 @@ func (h *handler) Score(w http.ResponseWriter, r *http.Request) {
 	//prescore actions
 	for _, action := range g.Scorer.PreScoreActions {
 		action(&g)
-	}
-
-	var scorer func(game *yahtzee.Game) int
-	if scorer, ok = g.Scorer.ScoreActions[category]; !ok {
-		writeError(w, r, nil, "invalid category", http.StatusBadRequest)
-		return
 	}
 
 	currentPlayer.ScoreSheet[category] = scorer(&g)
