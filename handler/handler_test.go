@@ -305,7 +305,7 @@ func (ts *testSuite) TestHintsForGame() {
 		g.CurrentPlayer = 0
 		g.Players[0].ScoreSheet[yahtzee.Yahtzee] = 50
 		ts.Require().NoError(ts.store.Save("hintsID", *g))
-		rr := ts.record(request("GET", "/hintsID/score"))
+		rr := ts.record(request("GET", "/hintsID/hints"))
 		ts.Exactly(http.StatusOK, rr.Code)
 		ts.JSONEq(tc.response, rr.Body.String(), "when %v features for %v", tc.features, tc.dices)
 	}

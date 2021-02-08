@@ -39,7 +39,7 @@ func New(s store.Store, e event.Emitter, sub event.Subscriber) http.Handler {
 		Methods("GET", "OPTIONS")
 	r.HandleFunc("/{gameID}", h.Get).
 		Methods("GET", "OPTIONS")
-	r.HandleFunc("/{gameID}/score", h.HintsForGame).
+	r.HandleFunc("/{gameID}/hints", h.HintsForGame).
 		Methods("GET", "OPTIONS")
 	r.HandleFunc("/{gameID}/join", h.AddPlayer).
 		Methods("POST", "OPTIONS")
