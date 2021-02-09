@@ -106,6 +106,7 @@ const (
 	TheChance    Feature = "the-chance"
 	YahtzeeBonus Feature = "yahtzee-bonus"
 	Equilizer    Feature = "equilizer"
+	Official     Feature = "official"
 )
 
 func Features() []Feature {
@@ -114,6 +115,7 @@ func Features() []Feature {
 		YahtzeeBonus,
 		TheChance,
 		Equilizer,
+		Official,
 	}
 }
 
@@ -158,6 +160,17 @@ func NewGame(features ...Feature) *Game {
 	if ContainsFeature(features, Equilizer) {
 		scorer.PreScoreActions = append(scorer.PreScoreActions, EquilizerPreScoreAction)
 		scorer.PostScoreActions = append(scorer.PostScoreActions, EquilizerPostScoreAction)
+	}
+
+	if ContainsFeature(features, Official) {
+		scorer.PreScoreActions = append(scorer.PreScoreActions, OfficialYahtzeeBonusPreScoreAction)
+		scorer.PostScoreActions = append(scorer.PostScoreActions, OfficialYahtzeeBonusPostScoreAction)
+
+		scorer.ScoreActions[ThreeOfAKind] = OfficialThreeOfAKind
+		scorer.ScoreActions[FourOfAKind] = OfficialFourOfAKind
+		scorer.ScoreActions[FullHouse] = OfficialFullHouse
+		scorer.ScoreActions[SmallStraight] = OfficialSmallStraight
+		scorer.ScoreActions[LargeStraight] = OfficialLargeStraight
 	}
 
 	return &Game{
