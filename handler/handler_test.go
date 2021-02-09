@@ -1732,45 +1732,131 @@ func (ts *testSuite) TestScoreYahtzeeBonus() {
 
 	// scoring
 	scoringCases := []struct {
-		dices    []int
-		category yahtzee.Category
-		value    int
+		dices         []int
+		yahtzeeScored bool
+		yahtzeeValue  int
+		category      yahtzee.Category
+		value         int
+		yahtzee       int
 	}{
-		{[]int{1, 2, 3, 1, 1}, yahtzee.Ones, 3},
-		{[]int{2, 3, 4, 2, 3}, yahtzee.Twos, 4},
-		{[]int{6, 4, 2, 2, 3}, yahtzee.Threes, 3},
-		{[]int{1, 6, 3, 3, 5}, yahtzee.Fours, 0},
-		{[]int{4, 4, 1, 2, 4}, yahtzee.Fours, 12},
-		{[]int{6, 6, 3, 5, 2}, yahtzee.Fives, 5},
-		{[]int{5, 3, 6, 6, 6}, yahtzee.Sixes, 18},
-		{[]int{2, 4, 3, 6, 4}, yahtzee.ThreeOfAKind, 0},
-		{[]int{3, 1, 3, 1, 3}, yahtzee.ThreeOfAKind, 9},
-		{[]int{5, 2, 5, 5, 5}, yahtzee.ThreeOfAKind, 15},
-		{[]int{2, 6, 3, 2, 2}, yahtzee.FourOfAKind, 0},
-		{[]int{1, 6, 6, 6, 6}, yahtzee.FourOfAKind, 24},
-		{[]int{4, 4, 4, 4, 4}, yahtzee.FourOfAKind, 16},
-		{[]int{5, 5, 2, 5, 5}, yahtzee.FullHouse, 0},
-		{[]int{2, 5, 3, 6, 5}, yahtzee.FullHouse, 0},
-		{[]int{5, 5, 2, 5, 2}, yahtzee.FullHouse, 25},
-		{[]int{3, 1, 3, 1, 3}, yahtzee.FullHouse, 25},
-		{[]int{6, 2, 5, 1, 3}, yahtzee.SmallStraight, 0},
-		{[]int{6, 2, 4, 1, 3}, yahtzee.SmallStraight, 30},
-		{[]int{4, 2, 3, 5, 3}, yahtzee.SmallStraight, 30},
-		{[]int{1, 6, 3, 5, 4}, yahtzee.SmallStraight, 30},
-		{[]int{3, 5, 2, 3, 4}, yahtzee.LargeStraight, 0},
-		{[]int{3, 5, 2, 1, 4}, yahtzee.LargeStraight, 40},
-		{[]int{5, 2, 6, 3, 4}, yahtzee.LargeStraight, 40},
-		{[]int{3, 3, 3, 3, 3}, yahtzee.Yahtzee, 50},
-		{[]int{1, 1, 1, 1, 1}, yahtzee.Yahtzee, 50},
-		{[]int{6, 2, 4, 1, 3}, yahtzee.Chance, 16},
-		{[]int{1, 6, 3, 3, 5}, yahtzee.Chance, 18},
-		{[]int{2, 3, 4, 2, 3}, yahtzee.Chance, 14},
+		{[]int{1, 2, 3, 1, 1}, false, 0, yahtzee.Ones, 3, 0},
+		{[]int{2, 3, 4, 2, 3}, false, 0, yahtzee.Twos, 4, 0},
+		{[]int{6, 4, 2, 2, 3}, false, 0, yahtzee.Threes, 3, 0},
+		{[]int{1, 6, 3, 3, 5}, false, 0, yahtzee.Fours, 0, 0},
+		{[]int{4, 4, 1, 2, 4}, false, 0, yahtzee.Fours, 12, 0},
+		{[]int{6, 6, 3, 5, 2}, false, 0, yahtzee.Fives, 5, 0},
+		{[]int{5, 3, 6, 6, 6}, false, 0, yahtzee.Sixes, 18, 0},
+		{[]int{2, 4, 3, 6, 4}, false, 0, yahtzee.ThreeOfAKind, 0, 0},
+		{[]int{3, 1, 3, 1, 3}, false, 0, yahtzee.ThreeOfAKind, 9, 0},
+		{[]int{5, 2, 5, 5, 5}, false, 0, yahtzee.ThreeOfAKind, 15, 0},
+		{[]int{2, 6, 3, 2, 2}, false, 0, yahtzee.FourOfAKind, 0, 0},
+		{[]int{1, 6, 6, 6, 6}, false, 0, yahtzee.FourOfAKind, 24, 0},
+		{[]int{4, 4, 4, 4, 4}, false, 0, yahtzee.FourOfAKind, 16, 0},
+		{[]int{5, 5, 2, 5, 5}, false, 0, yahtzee.FullHouse, 0, 0},
+		{[]int{2, 5, 3, 6, 5}, false, 0, yahtzee.FullHouse, 0, 0},
+		{[]int{5, 5, 2, 5, 2}, false, 0, yahtzee.FullHouse, 25, 0},
+		{[]int{3, 1, 3, 1, 3}, false, 0, yahtzee.FullHouse, 25, 0},
+		{[]int{6, 2, 5, 1, 3}, false, 0, yahtzee.SmallStraight, 0, 0},
+		{[]int{6, 2, 4, 1, 3}, false, 0, yahtzee.SmallStraight, 30, 0},
+		{[]int{4, 2, 3, 5, 3}, false, 0, yahtzee.SmallStraight, 30, 0},
+		{[]int{1, 6, 3, 5, 4}, false, 0, yahtzee.SmallStraight, 30, 0},
+		{[]int{3, 5, 2, 3, 4}, false, 0, yahtzee.LargeStraight, 0, 0},
+		{[]int{3, 5, 2, 1, 4}, false, 0, yahtzee.LargeStraight, 40, 0},
+		{[]int{5, 2, 6, 3, 4}, false, 0, yahtzee.LargeStraight, 40, 0},
+		{[]int{3, 3, 3, 3, 3}, false, 0, yahtzee.Yahtzee, 50, 50},
+		{[]int{1, 1, 1, 1, 1}, false, 0, yahtzee.Yahtzee, 50, 50},
+		{[]int{6, 2, 4, 1, 3}, false, 0, yahtzee.Chance, 16, 0},
+		{[]int{1, 6, 3, 3, 5}, false, 0, yahtzee.Chance, 18, 0},
+		{[]int{2, 3, 4, 2, 3}, false, 0, yahtzee.Chance, 14, 0},
+		{[]int{1, 2, 3, 1, 1}, true, 50, yahtzee.Ones, 3, 50},
+		{[]int{1, 1, 1, 1, 1}, true, 50, yahtzee.Ones, 5, 150},
+		{[]int{2, 3, 4, 2, 3}, true, 50, yahtzee.Twos, 4, 50},
+		{[]int{2, 2, 2, 2, 2}, true, 50, yahtzee.Twos, 10, 150},
+		{[]int{6, 4, 2, 2, 3}, true, 50, yahtzee.Threes, 3, 50},
+		{[]int{3, 3, 3, 3, 3}, true, 50, yahtzee.Threes, 15, 150},
+		{[]int{1, 6, 3, 3, 5}, true, 50, yahtzee.Fours, 0, 50},
+		{[]int{4, 4, 1, 2, 4}, true, 50, yahtzee.Fours, 12, 50},
+		{[]int{4, 4, 4, 4, 4}, true, 50, yahtzee.Fours, 20, 150},
+		{[]int{6, 6, 3, 5, 2}, true, 50, yahtzee.Fives, 5, 50},
+		{[]int{5, 5, 5, 5, 5}, true, 50, yahtzee.Fives, 25, 150},
+		{[]int{5, 3, 6, 6, 6}, true, 50, yahtzee.Sixes, 18, 50},
+		{[]int{6, 6, 6, 6, 6}, true, 50, yahtzee.Sixes, 30, 150},
+		{[]int{2, 4, 3, 6, 4}, true, 50, yahtzee.ThreeOfAKind, 0, 50},
+		{[]int{3, 1, 3, 1, 3}, true, 50, yahtzee.ThreeOfAKind, 9, 50},
+		{[]int{5, 2, 5, 5, 5}, true, 50, yahtzee.ThreeOfAKind, 15, 50},
+		{[]int{5, 5, 5, 5, 5}, true, 50, yahtzee.ThreeOfAKind, 15, 150},
+		{[]int{2, 6, 3, 2, 2}, true, 50, yahtzee.FourOfAKind, 0, 50},
+		{[]int{1, 6, 6, 6, 6}, true, 50, yahtzee.FourOfAKind, 24, 50},
+		{[]int{4, 4, 4, 4, 4}, true, 50, yahtzee.FourOfAKind, 16, 150},
+		{[]int{5, 5, 2, 5, 5}, true, 50, yahtzee.FullHouse, 0, 50},
+		{[]int{2, 5, 3, 6, 5}, true, 50, yahtzee.FullHouse, 0, 50},
+		{[]int{5, 5, 2, 5, 2}, true, 50, yahtzee.FullHouse, 25, 50},
+		{[]int{3, 1, 3, 1, 3}, true, 50, yahtzee.FullHouse, 25, 50},
+		{[]int{3, 3, 3, 3, 3}, true, 50, yahtzee.FullHouse, 25, 150},
+		{[]int{6, 2, 5, 1, 3}, true, 50, yahtzee.SmallStraight, 0, 50},
+		{[]int{6, 2, 4, 1, 3}, true, 50, yahtzee.SmallStraight, 30, 50},
+		{[]int{4, 2, 3, 5, 3}, true, 50, yahtzee.SmallStraight, 30, 50},
+		{[]int{1, 6, 3, 5, 4}, true, 50, yahtzee.SmallStraight, 30, 50},
+		{[]int{5, 5, 5, 5, 5}, true, 50, yahtzee.SmallStraight, 30, 150},
+		{[]int{3, 5, 2, 3, 4}, true, 50, yahtzee.LargeStraight, 0, 50},
+		{[]int{3, 5, 2, 1, 4}, true, 50, yahtzee.LargeStraight, 40, 50},
+		{[]int{5, 2, 6, 3, 4}, true, 50, yahtzee.LargeStraight, 40, 50},
+		{[]int{5, 5, 5, 5, 5}, true, 50, yahtzee.LargeStraight, 40, 150},
+		{[]int{3, 3, 3, 3, 3}, true, 50, yahtzee.Yahtzee, 50, 50},
+		{[]int{1, 1, 1, 1, 1}, true, 50, yahtzee.Yahtzee, 50, 50},
+		{[]int{6, 2, 4, 1, 3}, true, 50, yahtzee.Chance, 16, 50},
+		{[]int{1, 6, 3, 3, 5}, true, 50, yahtzee.Chance, 18, 50},
+		{[]int{2, 3, 4, 2, 3}, true, 50, yahtzee.Chance, 14, 50},
+		{[]int{2, 2, 2, 2, 2}, true, 50, yahtzee.Chance, 10, 150},
+		{[]int{1, 2, 3, 1, 1}, true, 0, yahtzee.Ones, 3, 0},
+		{[]int{1, 1, 1, 1, 1}, true, 0, yahtzee.Ones, 5, 0},
+		{[]int{2, 3, 4, 2, 3}, true, 0, yahtzee.Twos, 4, 0},
+		{[]int{2, 2, 2, 2, 2}, true, 0, yahtzee.Twos, 10, 0},
+		{[]int{6, 4, 2, 2, 3}, true, 0, yahtzee.Threes, 3, 0},
+		{[]int{3, 3, 3, 3, 3}, true, 0, yahtzee.Threes, 15, 0},
+		{[]int{1, 6, 3, 3, 5}, true, 0, yahtzee.Fours, 0, 0},
+		{[]int{4, 4, 1, 2, 4}, true, 0, yahtzee.Fours, 12, 0},
+		{[]int{4, 4, 4, 4, 4}, true, 0, yahtzee.Fours, 20, 0},
+		{[]int{6, 6, 3, 5, 2}, true, 0, yahtzee.Fives, 5, 0},
+		{[]int{5, 5, 5, 5, 5}, true, 0, yahtzee.Fives, 25, 0},
+		{[]int{5, 3, 6, 6, 6}, true, 0, yahtzee.Sixes, 18, 0},
+		{[]int{6, 6, 6, 6, 6}, true, 0, yahtzee.Sixes, 30, 0},
+		{[]int{2, 4, 3, 6, 4}, true, 0, yahtzee.ThreeOfAKind, 0, 0},
+		{[]int{3, 1, 3, 1, 3}, true, 0, yahtzee.ThreeOfAKind, 9, 0},
+		{[]int{5, 2, 5, 5, 5}, true, 0, yahtzee.ThreeOfAKind, 15, 0},
+		{[]int{5, 5, 5, 5, 5}, true, 0, yahtzee.ThreeOfAKind, 15, 0},
+		{[]int{2, 6, 3, 2, 2}, true, 0, yahtzee.FourOfAKind, 0, 0},
+		{[]int{1, 6, 6, 6, 6}, true, 0, yahtzee.FourOfAKind, 24, 0},
+		{[]int{4, 4, 4, 4, 4}, true, 0, yahtzee.FourOfAKind, 16, 0},
+		{[]int{5, 5, 2, 5, 5}, true, 0, yahtzee.FullHouse, 0, 0},
+		{[]int{2, 5, 3, 6, 5}, true, 0, yahtzee.FullHouse, 0, 0},
+		{[]int{5, 5, 2, 5, 2}, true, 0, yahtzee.FullHouse, 25, 0},
+		{[]int{3, 1, 3, 1, 3}, true, 0, yahtzee.FullHouse, 25, 0},
+		{[]int{3, 3, 3, 3, 3}, true, 0, yahtzee.FullHouse, 25, 0},
+		{[]int{6, 2, 5, 1, 3}, true, 0, yahtzee.SmallStraight, 0, 0},
+		{[]int{6, 2, 4, 1, 3}, true, 0, yahtzee.SmallStraight, 30, 0},
+		{[]int{4, 2, 3, 5, 3}, true, 0, yahtzee.SmallStraight, 30, 0},
+		{[]int{1, 6, 3, 5, 4}, true, 0, yahtzee.SmallStraight, 30, 0},
+		{[]int{5, 5, 5, 5, 5}, true, 0, yahtzee.SmallStraight, 30, 0},
+		{[]int{3, 5, 2, 3, 4}, true, 0, yahtzee.LargeStraight, 0, 0},
+		{[]int{3, 5, 2, 1, 4}, true, 0, yahtzee.LargeStraight, 40, 0},
+		{[]int{5, 2, 6, 3, 4}, true, 0, yahtzee.LargeStraight, 40, 0},
+		{[]int{5, 5, 5, 5, 5}, true, 0, yahtzee.LargeStraight, 40, 0},
+		{[]int{3, 3, 3, 3, 3}, true, 0, yahtzee.Yahtzee, 0, 0},
+		{[]int{1, 1, 1, 1, 1}, true, 0, yahtzee.Yahtzee, 0, 0},
+		{[]int{6, 2, 4, 1, 3}, true, 0, yahtzee.Chance, 16, 0},
+		{[]int{1, 6, 3, 3, 5}, true, 0, yahtzee.Chance, 18, 0},
+		{[]int{2, 3, 4, 2, 3}, true, 0, yahtzee.Chance, 14, 0},
+		{[]int{2, 2, 2, 2, 2}, true, 0, yahtzee.Chance, 10, 0},
 	}
 
 	for _, tc := range scoringCases {
 		g := yahtzee.NewGame(yahtzee.YahtzeeBonus)
 		g.Players = append(g.Players, yahtzee.NewPlayer("Alice"))
 		g.RollCount = 1
+		if tc.yahtzeeScored {
+			g.Players[0].ScoreSheet[yahtzee.Yahtzee] = tc.yahtzeeValue
+		}
 		for d := 0; d < 5; d++ {
 			g.Dices[d].Value = tc.dices[d]
 		}
@@ -1781,6 +1867,9 @@ func (ts *testSuite) TestScoreYahtzeeBonus() {
 		got := ts.fromStore("score_scoringID")
 		ts.Exactly(tc.value, got.Players[0].ScoreSheet[tc.category],
 			"should return %d for %q on %v", tc.value, tc.category, tc.dices)
+
+		ts.Exactly(tc.yahtzee, got.Players[0].ScoreSheet[yahtzee.Yahtzee],
+			"should return %d for yahtzee for %q on %v", tc.yahtzee, tc.category, tc.dices)
 	}
 
 	// bonus
@@ -1842,61 +1931,248 @@ func (ts *testSuite) TestScoreYahtzeeBonus() {
 	}
 }
 
-func (ts *testSuite) TestScoreYahtzeeBonusWhenYahtzeeAlreadyScored() {
+func (ts *testSuite) TestScoreOfficial() {
+	// no players
+	g := yahtzee.NewGame(yahtzee.Official)
+	ts.Require().NoError(ts.store.Save("scoreID", *g))
+
+	rr := ts.record(request("POST", "/scoreID/score", "chance"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// another player's turn
+	g.Players = []*yahtzee.Player{
+		yahtzee.NewPlayer("Alice"),
+		yahtzee.NewPlayer("Bob"),
+	}
+	g.CurrentPlayer = 1
+	ts.Require().NoError(ts.store.Save("scoreID", *g))
+
+	rr = ts.record(request("POST", "/scoreID/score", "chance"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// game is over
+	g.CurrentPlayer = 0
+	g.Round = 13
+	ts.Require().NoError(ts.store.Save("scoreID", *g))
+
+	rr = ts.record(request("POST", "/scoreID/score", "chance"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// roll first
+	g.Round = 0
+	ts.Require().NoError(ts.store.Save("scoreID", *g))
+
+	rr = ts.record(request("POST", "/scoreID/score", "chance"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// invalid category
+	g.RollCount = 1
+	ts.Require().NoError(ts.store.Save("scoreID", *g))
+
+	rr = ts.record(request("POST", "/scoreID/score"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+	rr = ts.record(request("POST", "/scoreID/score", "wat"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// category is already scored
+	g.Players[0].ScoreSheet[yahtzee.FullHouse] = 25
+	ts.Require().NoError(ts.store.Save("scoreID", *g))
+
+	rr = ts.record(request("POST", "/scoreID/score", "full-house"), asUser("Alice"))
+	ts.Exactly(http.StatusBadRequest, rr.Code)
+
+	// successful request
+	eChan := ts.receiveEvents("scoreID")
+
+	rr = ts.record(request("POST", "/scoreID/score", "chance"), asUser("Alice"))
+	ts.Exactly(http.StatusOK, rr.Code)
+	ts.JSONEq(`{
+			"Players": [
+				{
+					"User": "Alice",
+					"ScoreSheet": {
+						"chance": 5,
+						"full-house": 25
+					}
+				},
+				{
+					"User": "Bob",
+					"ScoreSheet": {}
+				}
+			],
+			"Dices": [
+				{
+					"Value": 1,
+					"Locked": false
+				},
+				{
+					"Value": 1,
+					"Locked": false
+				},
+				{
+					"Value": 1,
+					"Locked": false
+				},
+				{
+					"Value": 1,
+					"Locked": false
+				},
+				{
+					"Value": 1,
+					"Locked": false
+				}
+			],
+			"Round": 0,
+			"CurrentPlayer": 1,
+			"RollCount": 0,
+			"Features": ["official"]
+		}`, rr.Body.String())
+
+	saved := ts.fromStore("scoreID")
+	if got := <-eChan; ts.NotNil(got) {
+		ts.Exactly(event.Score, got.Action)
+		ts.Exactly(saved, got.Data.(*yahtzee.Game))
+	}
+
 	// scoring
 	scoringCases := []struct {
-		dices    []int
-		category yahtzee.Category
-		value    int
-		yahtzee  int
+		dices                           []int
+		yahtzeeScored                   bool
+		yahtzeeValue                    int
+		correspondingUpperSectionScored bool
+		correspondingUpperSection       yahtzee.Category
+		correspondingUpperSectionValue  int
+		category                        yahtzee.Category
+		value                           int
+		yahtzee                         int
 	}{
-		{[]int{1, 2, 3, 1, 1}, yahtzee.Ones, 3, 50},
-		{[]int{1, 1, 1, 1, 1}, yahtzee.Ones, 5, 150},
-		{[]int{2, 3, 4, 2, 3}, yahtzee.Twos, 4, 50},
-		{[]int{2, 2, 2, 2, 2}, yahtzee.Twos, 10, 150},
-		{[]int{6, 4, 2, 2, 3}, yahtzee.Threes, 3, 50},
-		{[]int{3, 3, 3, 3, 3}, yahtzee.Threes, 15, 150},
-		{[]int{1, 6, 3, 3, 5}, yahtzee.Fours, 0, 50},
-		{[]int{4, 4, 1, 2, 4}, yahtzee.Fours, 12, 50},
-		{[]int{4, 4, 4, 4, 4}, yahtzee.Fours, 20, 150},
-		{[]int{6, 6, 3, 5, 2}, yahtzee.Fives, 5, 50},
-		{[]int{5, 5, 5, 5, 5}, yahtzee.Fives, 25, 150},
-		{[]int{5, 3, 6, 6, 6}, yahtzee.Sixes, 18, 50},
-		{[]int{6, 6, 6, 6, 6}, yahtzee.Sixes, 30, 150},
-		{[]int{2, 4, 3, 6, 4}, yahtzee.ThreeOfAKind, 0, 50},
-		{[]int{3, 1, 3, 1, 3}, yahtzee.ThreeOfAKind, 9, 50},
-		{[]int{5, 2, 5, 5, 5}, yahtzee.ThreeOfAKind, 15, 50},
-		{[]int{5, 5, 5, 5, 5}, yahtzee.ThreeOfAKind, 15, 150},
-		{[]int{2, 6, 3, 2, 2}, yahtzee.FourOfAKind, 0, 50},
-		{[]int{1, 6, 6, 6, 6}, yahtzee.FourOfAKind, 24, 50},
-		{[]int{4, 4, 4, 4, 4}, yahtzee.FourOfAKind, 16, 150},
-		{[]int{5, 5, 2, 5, 5}, yahtzee.FullHouse, 0, 50},
-		{[]int{2, 5, 3, 6, 5}, yahtzee.FullHouse, 0, 50},
-		{[]int{5, 5, 2, 5, 2}, yahtzee.FullHouse, 25, 50},
-		{[]int{3, 1, 3, 1, 3}, yahtzee.FullHouse, 25, 50},
-		{[]int{3, 3, 3, 3, 3}, yahtzee.FullHouse, 25, 150},
-		{[]int{6, 2, 5, 1, 3}, yahtzee.SmallStraight, 0, 50},
-		{[]int{6, 2, 4, 1, 3}, yahtzee.SmallStraight, 30, 50},
-		{[]int{4, 2, 3, 5, 3}, yahtzee.SmallStraight, 30, 50},
-		{[]int{1, 6, 3, 5, 4}, yahtzee.SmallStraight, 30, 50},
-		{[]int{5, 5, 5, 5, 5}, yahtzee.SmallStraight, 30, 150},
-		{[]int{3, 5, 2, 3, 4}, yahtzee.LargeStraight, 0, 50},
-		{[]int{3, 5, 2, 1, 4}, yahtzee.LargeStraight, 40, 50},
-		{[]int{5, 2, 6, 3, 4}, yahtzee.LargeStraight, 40, 50},
-		{[]int{5, 5, 5, 5, 5}, yahtzee.LargeStraight, 40, 150},
-		{[]int{3, 3, 3, 3, 3}, yahtzee.Yahtzee, 50, 50},
-		{[]int{1, 1, 1, 1, 1}, yahtzee.Yahtzee, 50, 50},
-		{[]int{6, 2, 4, 1, 3}, yahtzee.Chance, 16, 50},
-		{[]int{1, 6, 3, 3, 5}, yahtzee.Chance, 18, 50},
-		{[]int{2, 3, 4, 2, 3}, yahtzee.Chance, 14, 50},
-		{[]int{2, 2, 2, 2, 2}, yahtzee.Chance, 10, 150},
+		{[]int{1, 2, 3, 1, 1}, false, 0, false, yahtzee.Twos, 2, yahtzee.Ones, 3, 0},
+		{[]int{2, 3, 4, 2, 3}, false, 0, false, yahtzee.Twos, 2, yahtzee.Twos, 4, 0},
+		{[]int{6, 4, 2, 2, 3}, false, 0, false, yahtzee.Twos, 2, yahtzee.Threes, 3, 0},
+		{[]int{1, 6, 3, 3, 5}, false, 0, false, yahtzee.Twos, 2, yahtzee.Fours, 0, 0},
+		{[]int{4, 4, 1, 2, 4}, false, 0, false, yahtzee.Twos, 2, yahtzee.Fours, 12, 0},
+		{[]int{6, 6, 3, 5, 2}, false, 0, false, yahtzee.Twos, 2, yahtzee.Fives, 5, 0},
+		{[]int{5, 3, 6, 6, 6}, false, 0, false, yahtzee.Twos, 2, yahtzee.Sixes, 18, 0},
+		{[]int{2, 4, 3, 6, 4}, false, 0, false, yahtzee.Twos, 2, yahtzee.ThreeOfAKind, 0, 0},
+		{[]int{3, 1, 3, 1, 3}, false, 0, false, yahtzee.Twos, 2, yahtzee.ThreeOfAKind, 11, 0},
+		{[]int{5, 2, 5, 5, 5}, false, 0, false, yahtzee.Twos, 2, yahtzee.ThreeOfAKind, 22, 0},
+		{[]int{2, 6, 3, 2, 2}, false, 0, false, yahtzee.Twos, 2, yahtzee.FourOfAKind, 0, 0},
+		{[]int{1, 6, 6, 6, 6}, false, 0, false, yahtzee.Twos, 2, yahtzee.FourOfAKind, 25, 0},
+		{[]int{4, 4, 4, 4, 4}, false, 0, false, yahtzee.Twos, 2, yahtzee.FourOfAKind, 20, 0},
+		{[]int{5, 5, 2, 5, 5}, false, 0, false, yahtzee.Twos, 2, yahtzee.FullHouse, 0, 0},
+		{[]int{2, 5, 3, 6, 5}, false, 0, false, yahtzee.Twos, 2, yahtzee.FullHouse, 0, 0},
+		{[]int{5, 5, 2, 5, 2}, false, 0, false, yahtzee.Twos, 2, yahtzee.FullHouse, 25, 0},
+		{[]int{3, 1, 3, 1, 3}, false, 0, false, yahtzee.Twos, 2, yahtzee.FullHouse, 25, 0},
+		{[]int{6, 2, 5, 1, 3}, false, 0, false, yahtzee.Twos, 2, yahtzee.SmallStraight, 0, 0},
+		{[]int{6, 2, 4, 1, 3}, false, 0, false, yahtzee.Twos, 2, yahtzee.SmallStraight, 30, 0},
+		{[]int{4, 2, 3, 5, 3}, false, 0, false, yahtzee.Twos, 2, yahtzee.SmallStraight, 30, 0},
+		{[]int{1, 6, 3, 5, 4}, false, 0, false, yahtzee.Twos, 2, yahtzee.SmallStraight, 30, 0},
+		{[]int{3, 5, 2, 3, 4}, false, 0, false, yahtzee.Twos, 2, yahtzee.LargeStraight, 0, 0},
+		{[]int{3, 5, 2, 1, 4}, false, 0, false, yahtzee.Twos, 2, yahtzee.LargeStraight, 40, 0},
+		{[]int{5, 2, 6, 3, 4}, false, 0, false, yahtzee.Twos, 2, yahtzee.LargeStraight, 40, 0},
+		{[]int{3, 3, 3, 3, 3}, false, 0, false, yahtzee.Twos, 2, yahtzee.Yahtzee, 50, 50},
+		{[]int{1, 1, 1, 1, 1}, false, 0, false, yahtzee.Twos, 2, yahtzee.Yahtzee, 50, 50},
+		{[]int{6, 2, 4, 1, 3}, false, 0, false, yahtzee.Twos, 2, yahtzee.Chance, 16, 0},
+		{[]int{1, 6, 3, 3, 5}, false, 0, false, yahtzee.Twos, 2, yahtzee.Chance, 18, 0},
+		{[]int{2, 3, 4, 2, 3}, false, 0, false, yahtzee.Twos, 2, yahtzee.Chance, 14, 0},
+		{[]int{1, 2, 3, 1, 1}, true, 50, false, yahtzee.Twos, 2, yahtzee.Ones, 3, 50},
+		{[]int{1, 1, 1, 1, 1}, true, 50, false, yahtzee.Twos, 2, yahtzee.Ones, 5, 150},
+		{[]int{2, 3, 4, 2, 3}, true, 50, false, yahtzee.Twos, 2, yahtzee.Twos, 4, 50},
+		{[]int{2, 2, 2, 2, 2}, true, 50, false, yahtzee.Twos, 2, yahtzee.Twos, 10, 150},
+		{[]int{6, 4, 2, 2, 3}, true, 50, false, yahtzee.Twos, 2, yahtzee.Threes, 3, 50},
+		{[]int{3, 3, 3, 3, 3}, true, 50, false, yahtzee.Twos, 2, yahtzee.Threes, 15, 150},
+		{[]int{1, 6, 3, 3, 5}, true, 50, false, yahtzee.Twos, 2, yahtzee.Fours, 0, 50},
+		{[]int{4, 4, 1, 2, 4}, true, 50, false, yahtzee.Twos, 2, yahtzee.Fours, 12, 50},
+		{[]int{4, 4, 4, 4, 4}, true, 50, false, yahtzee.Twos, 2, yahtzee.Fours, 20, 150},
+		{[]int{6, 6, 3, 5, 2}, true, 50, false, yahtzee.Twos, 2, yahtzee.Fives, 5, 50},
+		{[]int{5, 5, 5, 5, 5}, true, 50, false, yahtzee.Twos, 2, yahtzee.Fives, 25, 150},
+		{[]int{5, 3, 6, 6, 6}, true, 50, false, yahtzee.Twos, 2, yahtzee.Sixes, 18, 50},
+		{[]int{6, 6, 6, 6, 6}, true, 50, false, yahtzee.Twos, 2, yahtzee.Sixes, 30, 150},
+		{[]int{2, 4, 3, 6, 4}, true, 50, false, yahtzee.Twos, 2, yahtzee.ThreeOfAKind, 0, 50},
+		{[]int{3, 1, 3, 1, 3}, true, 50, false, yahtzee.Twos, 2, yahtzee.ThreeOfAKind, 11, 50},
+		{[]int{5, 2, 5, 5, 5}, true, 50, false, yahtzee.Twos, 2, yahtzee.ThreeOfAKind, 22, 50},
+		{[]int{5, 5, 5, 5, 5}, true, 50, false, yahtzee.Twos, 2, yahtzee.ThreeOfAKind, 25, 150},
+		{[]int{2, 6, 3, 2, 2}, true, 50, false, yahtzee.Twos, 2, yahtzee.FourOfAKind, 0, 50},
+		{[]int{1, 6, 6, 6, 6}, true, 50, false, yahtzee.Twos, 2, yahtzee.FourOfAKind, 25, 50},
+		{[]int{4, 4, 4, 4, 4}, true, 50, false, yahtzee.Twos, 2, yahtzee.FourOfAKind, 20, 150},
+		{[]int{5, 5, 2, 5, 5}, true, 50, false, yahtzee.Twos, 2, yahtzee.FullHouse, 0, 50},
+		{[]int{2, 5, 3, 6, 5}, true, 50, false, yahtzee.Twos, 2, yahtzee.FullHouse, 0, 50},
+		{[]int{5, 5, 2, 5, 2}, true, 50, false, yahtzee.Twos, 2, yahtzee.FullHouse, 25, 50},
+		{[]int{3, 1, 3, 1, 3}, true, 50, false, yahtzee.Twos, 2, yahtzee.FullHouse, 25, 50},
+		{[]int{3, 3, 3, 3, 3}, true, 50, false, yahtzee.Twos, 2, yahtzee.FullHouse, 0, 150},
+		{[]int{3, 3, 3, 3, 3}, true, 50, true, yahtzee.Threes, 3, yahtzee.FullHouse, 25, 150},
+		{[]int{6, 2, 5, 1, 3}, true, 50, false, yahtzee.Twos, 2, yahtzee.SmallStraight, 0, 50},
+		{[]int{6, 2, 4, 1, 3}, true, 50, false, yahtzee.Twos, 2, yahtzee.SmallStraight, 30, 50},
+		{[]int{4, 2, 3, 5, 3}, true, 50, false, yahtzee.Twos, 2, yahtzee.SmallStraight, 30, 50},
+		{[]int{1, 6, 3, 5, 4}, true, 50, false, yahtzee.Twos, 2, yahtzee.SmallStraight, 30, 50},
+		{[]int{5, 5, 5, 5, 5}, true, 50, false, yahtzee.Twos, 2, yahtzee.SmallStraight, 0, 150},
+		{[]int{5, 5, 5, 5, 5}, true, 50, true, yahtzee.Fives, 15, yahtzee.SmallStraight, 30, 150},
+		{[]int{3, 5, 2, 3, 4}, true, 50, false, yahtzee.Twos, 2, yahtzee.LargeStraight, 0, 50},
+		{[]int{3, 5, 2, 1, 4}, true, 50, false, yahtzee.Twos, 2, yahtzee.LargeStraight, 40, 50},
+		{[]int{5, 2, 6, 3, 4}, true, 50, false, yahtzee.Twos, 2, yahtzee.LargeStraight, 40, 50},
+		{[]int{5, 5, 5, 5, 5}, true, 50, false, yahtzee.Twos, 2, yahtzee.LargeStraight, 0, 150},
+		{[]int{5, 5, 5, 5, 5}, true, 50, true, yahtzee.Fives, 10, yahtzee.LargeStraight, 40, 150},
+		{[]int{3, 3, 3, 3, 3}, true, 50, false, yahtzee.Twos, 2, yahtzee.Yahtzee, 50, 50},
+		{[]int{1, 1, 1, 1, 1}, true, 50, false, yahtzee.Twos, 2, yahtzee.Yahtzee, 50, 50},
+		{[]int{6, 2, 4, 1, 3}, true, 50, false, yahtzee.Twos, 2, yahtzee.Chance, 16, 50},
+		{[]int{1, 6, 3, 3, 5}, true, 50, false, yahtzee.Twos, 2, yahtzee.Chance, 18, 50},
+		{[]int{2, 3, 4, 2, 3}, true, 50, false, yahtzee.Twos, 2, yahtzee.Chance, 14, 50},
+		{[]int{2, 2, 2, 2, 2}, true, 50, false, yahtzee.Twos, 2, yahtzee.Chance, 10, 150},
+		{[]int{1, 2, 3, 1, 1}, true, 0, false, yahtzee.Twos, 2, yahtzee.Ones, 3, 0},
+		{[]int{1, 1, 1, 1, 1}, true, 0, false, yahtzee.Twos, 2, yahtzee.Ones, 5, 0},
+		{[]int{2, 3, 4, 2, 3}, true, 0, false, yahtzee.Twos, 2, yahtzee.Twos, 4, 0},
+		{[]int{2, 2, 2, 2, 2}, true, 0, false, yahtzee.Twos, 2, yahtzee.Twos, 10, 0},
+		{[]int{6, 4, 2, 2, 3}, true, 0, false, yahtzee.Twos, 2, yahtzee.Threes, 3, 0},
+		{[]int{3, 3, 3, 3, 3}, true, 0, false, yahtzee.Twos, 2, yahtzee.Threes, 15, 0},
+		{[]int{1, 6, 3, 3, 5}, true, 0, false, yahtzee.Twos, 2, yahtzee.Fours, 0, 0},
+		{[]int{4, 4, 1, 2, 4}, true, 0, false, yahtzee.Twos, 2, yahtzee.Fours, 12, 0},
+		{[]int{4, 4, 4, 4, 4}, true, 0, false, yahtzee.Twos, 2, yahtzee.Fours, 20, 0},
+		{[]int{6, 6, 3, 5, 2}, true, 0, false, yahtzee.Twos, 2, yahtzee.Fives, 5, 0},
+		{[]int{5, 5, 5, 5, 5}, true, 0, false, yahtzee.Twos, 2, yahtzee.Fives, 25, 0},
+		{[]int{5, 3, 6, 6, 6}, true, 0, false, yahtzee.Twos, 2, yahtzee.Sixes, 18, 0},
+		{[]int{6, 6, 6, 6, 6}, true, 0, false, yahtzee.Twos, 2, yahtzee.Sixes, 30, 0},
+		{[]int{2, 4, 3, 6, 4}, true, 0, false, yahtzee.Twos, 2, yahtzee.ThreeOfAKind, 0, 0},
+		{[]int{3, 1, 3, 1, 3}, true, 0, false, yahtzee.Twos, 2, yahtzee.ThreeOfAKind, 11, 0},
+		{[]int{5, 2, 5, 5, 5}, true, 0, false, yahtzee.Twos, 2, yahtzee.ThreeOfAKind, 22, 0},
+		{[]int{5, 5, 5, 5, 5}, true, 0, false, yahtzee.Twos, 2, yahtzee.ThreeOfAKind, 25, 0},
+		{[]int{2, 6, 3, 2, 2}, true, 0, false, yahtzee.Twos, 2, yahtzee.FourOfAKind, 0, 0},
+		{[]int{1, 6, 6, 6, 6}, true, 0, false, yahtzee.Twos, 2, yahtzee.FourOfAKind, 25, 0},
+		{[]int{4, 4, 4, 4, 4}, true, 0, false, yahtzee.Twos, 2, yahtzee.FourOfAKind, 20, 0},
+		{[]int{5, 5, 2, 5, 5}, true, 0, false, yahtzee.Twos, 2, yahtzee.FullHouse, 0, 0},
+		{[]int{2, 5, 3, 6, 5}, true, 0, false, yahtzee.Twos, 2, yahtzee.FullHouse, 0, 0},
+		{[]int{5, 5, 2, 5, 2}, true, 0, false, yahtzee.Twos, 2, yahtzee.FullHouse, 25, 0},
+		{[]int{3, 1, 3, 1, 3}, true, 0, false, yahtzee.Twos, 2, yahtzee.FullHouse, 25, 0},
+		{[]int{3, 3, 3, 3, 3}, true, 0, false, yahtzee.Twos, 2, yahtzee.FullHouse, 0, 0},
+		{[]int{3, 3, 3, 3, 3}, true, 0, true, yahtzee.Threes, 9, yahtzee.FullHouse, 25, 0},
+		{[]int{6, 2, 5, 1, 3}, true, 0, false, yahtzee.Twos, 2, yahtzee.SmallStraight, 0, 0},
+		{[]int{6, 2, 4, 1, 3}, true, 0, false, yahtzee.Twos, 2, yahtzee.SmallStraight, 30, 0},
+		{[]int{4, 2, 3, 5, 3}, true, 0, false, yahtzee.Twos, 2, yahtzee.SmallStraight, 30, 0},
+		{[]int{1, 6, 3, 5, 4}, true, 0, false, yahtzee.Twos, 2, yahtzee.SmallStraight, 30, 0},
+		{[]int{5, 5, 5, 5, 5}, true, 0, false, yahtzee.Twos, 2, yahtzee.SmallStraight, 0, 0},
+		{[]int{5, 5, 5, 5, 5}, true, 0, true, yahtzee.Fives, 15, yahtzee.SmallStraight, 30, 0},
+		{[]int{3, 5, 2, 3, 4}, true, 0, false, yahtzee.Twos, 2, yahtzee.LargeStraight, 0, 0},
+		{[]int{3, 5, 2, 1, 4}, true, 0, false, yahtzee.Twos, 2, yahtzee.LargeStraight, 40, 0},
+		{[]int{5, 2, 6, 3, 4}, true, 0, false, yahtzee.Twos, 2, yahtzee.LargeStraight, 40, 0},
+		{[]int{5, 5, 5, 5, 5}, true, 0, false, yahtzee.Twos, 2, yahtzee.LargeStraight, 0, 0},
+		{[]int{5, 5, 5, 5, 5}, true, 0, true, yahtzee.Fives, 20, yahtzee.LargeStraight, 40, 0},
+		{[]int{3, 3, 3, 3, 3}, true, 0, false, yahtzee.Twos, 2, yahtzee.Yahtzee, 0, 0},
+		{[]int{1, 1, 1, 1, 1}, true, 0, false, yahtzee.Twos, 2, yahtzee.Yahtzee, 0, 0},
+		{[]int{6, 2, 4, 1, 3}, true, 0, false, yahtzee.Twos, 2, yahtzee.Chance, 16, 0},
+		{[]int{1, 6, 3, 3, 5}, true, 0, false, yahtzee.Twos, 2, yahtzee.Chance, 18, 0},
+		{[]int{2, 3, 4, 2, 3}, true, 0, false, yahtzee.Twos, 2, yahtzee.Chance, 14, 0},
+		{[]int{2, 2, 2, 2, 2}, true, 0, false, yahtzee.Twos, 2, yahtzee.Chance, 10, 0},
 	}
 
 	for _, tc := range scoringCases {
-		g := yahtzee.NewGame(yahtzee.YahtzeeBonus)
+		g := yahtzee.NewGame(yahtzee.Official)
 		g.Players = append(g.Players, yahtzee.NewPlayer("Alice"))
 		g.RollCount = 1
-		g.Players[0].ScoreSheet[yahtzee.Yahtzee] = 50
+		if tc.yahtzeeScored {
+			g.Players[0].ScoreSheet[yahtzee.Yahtzee] = tc.yahtzeeValue
+		}
+		if tc.correspondingUpperSectionScored {
+			g.Players[0].ScoreSheet[tc.correspondingUpperSection] = tc.correspondingUpperSectionValue
+		}
 		for d := 0; d < 5; d++ {
 			g.Dices[d].Value = tc.dices[d]
 		}
@@ -1911,76 +2187,63 @@ func (ts *testSuite) TestScoreYahtzeeBonusWhenYahtzeeAlreadyScored() {
 		ts.Exactly(tc.yahtzee, got.Players[0].ScoreSheet[yahtzee.Yahtzee],
 			"should return %d for yahtzee for %q on %v", tc.yahtzee, tc.category, tc.dices)
 	}
-}
 
-func (ts *testSuite) TestScoreYahtzeeBonusWhenYahtzeeAlreadyZeroed() {
-	// scoring
-	scoringCases := []struct {
-		dices    []int
-		category yahtzee.Category
-		value    int
-		yahtzee  int
+	// bonus
+	bonusCases := []struct {
+		dices         []int
+		upperSection  []int
+		scoring       yahtzee.Category
+		givesBonus    bool
+		mustHaveValue bool
 	}{
-		{[]int{1, 2, 3, 1, 1}, yahtzee.Ones, 3, 0},
-		{[]int{1, 1, 1, 1, 1}, yahtzee.Ones, 5, 0},
-		{[]int{2, 3, 4, 2, 3}, yahtzee.Twos, 4, 0},
-		{[]int{2, 2, 2, 2, 2}, yahtzee.Twos, 10, 0},
-		{[]int{6, 4, 2, 2, 3}, yahtzee.Threes, 3, 0},
-		{[]int{3, 3, 3, 3, 3}, yahtzee.Threes, 15, 0},
-		{[]int{1, 6, 3, 3, 5}, yahtzee.Fours, 0, 0},
-		{[]int{4, 4, 1, 2, 4}, yahtzee.Fours, 12, 0},
-		{[]int{4, 4, 4, 4, 4}, yahtzee.Fours, 20, 0},
-		{[]int{6, 6, 3, 5, 2}, yahtzee.Fives, 5, 0},
-		{[]int{5, 5, 5, 5, 5}, yahtzee.Fives, 25, 0},
-		{[]int{5, 3, 6, 6, 6}, yahtzee.Sixes, 18, 0},
-		{[]int{6, 6, 6, 6, 6}, yahtzee.Sixes, 30, 0},
-		{[]int{2, 4, 3, 6, 4}, yahtzee.ThreeOfAKind, 0, 0},
-		{[]int{3, 1, 3, 1, 3}, yahtzee.ThreeOfAKind, 9, 0},
-		{[]int{5, 2, 5, 5, 5}, yahtzee.ThreeOfAKind, 15, 0},
-		{[]int{5, 5, 5, 5, 5}, yahtzee.ThreeOfAKind, 15, 0},
-		{[]int{2, 6, 3, 2, 2}, yahtzee.FourOfAKind, 0, 0},
-		{[]int{1, 6, 6, 6, 6}, yahtzee.FourOfAKind, 24, 0},
-		{[]int{4, 4, 4, 4, 4}, yahtzee.FourOfAKind, 16, 0},
-		{[]int{5, 5, 2, 5, 5}, yahtzee.FullHouse, 0, 0},
-		{[]int{2, 5, 3, 6, 5}, yahtzee.FullHouse, 0, 0},
-		{[]int{5, 5, 2, 5, 2}, yahtzee.FullHouse, 25, 0},
-		{[]int{3, 1, 3, 1, 3}, yahtzee.FullHouse, 25, 0},
-		{[]int{3, 3, 3, 3, 3}, yahtzee.FullHouse, 25, 0},
-		{[]int{6, 2, 5, 1, 3}, yahtzee.SmallStraight, 0, 0},
-		{[]int{6, 2, 4, 1, 3}, yahtzee.SmallStraight, 30, 0},
-		{[]int{4, 2, 3, 5, 3}, yahtzee.SmallStraight, 30, 0},
-		{[]int{1, 6, 3, 5, 4}, yahtzee.SmallStraight, 30, 0},
-		{[]int{5, 5, 5, 5, 5}, yahtzee.SmallStraight, 30, 0},
-		{[]int{3, 5, 2, 3, 4}, yahtzee.LargeStraight, 0, 0},
-		{[]int{3, 5, 2, 1, 4}, yahtzee.LargeStraight, 40, 0},
-		{[]int{5, 2, 6, 3, 4}, yahtzee.LargeStraight, 40, 0},
-		{[]int{5, 5, 5, 5, 5}, yahtzee.LargeStraight, 40, 0},
-		{[]int{3, 3, 3, 3, 3}, yahtzee.Yahtzee, 0, 0},
-		{[]int{1, 1, 1, 1, 1}, yahtzee.Yahtzee, 0, 0},
-		{[]int{6, 2, 4, 1, 3}, yahtzee.Chance, 16, 0},
-		{[]int{1, 6, 3, 3, 5}, yahtzee.Chance, 18, 0},
-		{[]int{2, 3, 4, 2, 3}, yahtzee.Chance, 14, 0},
-		{[]int{2, 2, 2, 2, 2}, yahtzee.Chance, 10, 0},
+		{[]int{1, 3, 6, 2, 4}, []int{3, 6, -1, 16, 25, -1}, yahtzee.Sixes, false, false},
+		{[]int{1, 3, 6, 2, 4}, []int{-1, -1, 12, -1, 20, 36}, yahtzee.Fours, true, false},
+		{[]int{1, 3, 6, 2, 4}, []int{3, 6, 9, 16, 25, -1}, yahtzee.Sixes, true, true},
+		{[]int{1, 1, 3, 3, 3}, []int{-1, 2, 3, 4, 15, 36}, yahtzee.Ones, false, true},
+		{[]int{1, 1, 1, 3, 3}, []int{-1, 2, 3, 4, 15, 36}, yahtzee.Ones, true, true},
+		{[]int{1, 1, 1, 1, 3}, []int{-1, 2, 3, 4, 15, 36}, yahtzee.Ones, true, true},
 	}
 
-	for _, tc := range scoringCases {
+	for _, tc := range bonusCases {
 		g := yahtzee.NewGame(yahtzee.YahtzeeBonus)
 		g.Players = append(g.Players, yahtzee.NewPlayer("Alice"))
 		g.RollCount = 1
-		g.Players[0].ScoreSheet[yahtzee.Yahtzee] = 0
 		for d := 0; d < 5; d++ {
 			g.Dices[d].Value = tc.dices[d]
 		}
-		ts.Require().NoError(ts.store.Save("score_scoringID", *g))
+		if tc.upperSection[0] > 0 {
+			g.Players[0].ScoreSheet["ones"] = tc.upperSection[0]
+		}
+		if tc.upperSection[1] > 0 {
+			g.Players[0].ScoreSheet["twos"] = tc.upperSection[1]
+		}
+		if tc.upperSection[2] > 0 {
+			g.Players[0].ScoreSheet["threes"] = tc.upperSection[2]
+		}
+		if tc.upperSection[3] > 0 {
+			g.Players[0].ScoreSheet["fours"] = tc.upperSection[3]
+		}
+		if tc.upperSection[4] > 0 {
+			g.Players[0].ScoreSheet["fives"] = tc.upperSection[4]
+		}
+		if tc.upperSection[5] > 0 {
+			g.Players[0].ScoreSheet["sixes"] = tc.upperSection[5]
+		}
+		ts.Require().NoError(ts.store.Save("score_bonusID", *g))
 
-		ts.record(request("POST", "/score_scoringID/score", string(tc.category)), asUser("Alice"))
+		rr := ts.record(request("POST", "/score_bonusID/score", string(tc.scoring)), asUser("Alice"))
 
-		got := ts.fromStore("score_scoringID")
-		ts.Exactly(tc.value, got.Players[0].ScoreSheet[tc.category],
-			"should return %d for %q on %v", tc.value, tc.category, tc.dices)
+		got := ts.fromStore("score_bonusID")
+		bonus, hasBonus := got.Players[0].ScoreSheet["bonus"]
+		if tc.mustHaveValue {
+			ts.True(hasBonus)
+		}
 
-		ts.Exactly(tc.yahtzee, got.Players[0].ScoreSheet[yahtzee.Yahtzee],
-			"should return %d for yahtzee for %q on %v", tc.yahtzee, tc.category, tc.dices)
+		if tc.givesBonus {
+			ts.Exactly(35, bonus, "should have bonus for %v when scoring %q", rr.Body.String(), tc.scoring)
+		} else {
+			ts.Exactly(0, bonus, "should not have bonus for %v when scoring %q", rr.Body.String(), tc.scoring)
+		}
 	}
 }
 
