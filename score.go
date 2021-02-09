@@ -216,6 +216,8 @@ func YahtzeeBonusPostScoreAction(g *Game) {
 	delete(g.Context, "yahtzeeBonusEligible")
 }
 
+// The Chance
+
 func TheChanceAction(g *Game) {
 	for _, p := range g.Players {
 		s := 0
@@ -226,6 +228,87 @@ func TheChanceAction(g *Game) {
 			p.ScoreSheet[ChanceBonus] = 495
 		}
 	}
+}
+
+// Official
+
+func OfficialThreeOfAKind(game *Game) int {
+	occurrences := map[int]int{}
+	for _, d := range game.Dices {
+		occurrences[d.Value]++
+	}
+	for _, v := range occurrences {
+		if v >= 3 {
+			return DefaultChance(game)
+		}
+	}
+	return 0
+}
+
+func OfficialFourOfAKind(game *Game) int {
+	occurrences := map[int]int{}
+	for _, d := range game.Dices {
+		occurrences[d.Value]++
+	}
+	for _, v := range occurrences {
+		if v >= 4 {
+			return DefaultChance(game)
+		}
+	}
+	return 0
+}
+
+func OfficialFullHouse(game *Game) int {
+	if _, yahtzeeScored := game.Players[game.CurrentPlayer].ScoreSheet[Yahtzee]; yahtzeeScored && isYahtzee(game.Dices) {
+		occurrences := map[int]int{}
+		for _, d := range game.Dices {
+			occurrences[d.Value]++
+		}
+		for v, c := range occurrences {
+			if _, scored := game.Players[game.CurrentPlayer].ScoreSheet[Categories()[v-1]]; scored && c >= 5 {
+				return 25
+			}
+		}
+	}
+	return DefaultFullHouse(game)
+}
+
+func OfficialSmallStraight(game *Game) int {
+	if _, yahtzeeScored := game.Players[game.CurrentPlayer].ScoreSheet[Yahtzee]; yahtzeeScored && isYahtzee(game.Dices) {
+		occurrences := map[int]int{}
+		for _, d := range game.Dices {
+			occurrences[d.Value]++
+		}
+		for v, c := range occurrences {
+			if _, scored := game.Players[game.CurrentPlayer].ScoreSheet[Categories()[v-1]]; scored && c >= 5 {
+				return 30
+			}
+		}
+	}
+	return DefaultSmallStraight(game)
+}
+
+func OfficialLargeStraight(game *Game) int {
+	if _, yahtzeeScored := game.Players[game.CurrentPlayer].ScoreSheet[Yahtzee]; yahtzeeScored && isYahtzee(game.Dices) {
+		occurrences := map[int]int{}
+		for _, d := range game.Dices {
+			occurrences[d.Value]++
+		}
+		for v, c := range occurrences {
+			if _, scored := game.Players[game.CurrentPlayer].ScoreSheet[Categories()[v-1]]; scored && c >= 5 {
+				return 40
+			}
+		}
+	}
+	return DefaultLargeStraight(game)
+}
+
+func OfficialYahtzeeBonusPreScoreAction(game *Game) {
+	YahtzeeBonusPreScoreAction(game)
+}
+
+func OfficialYahtzeeBonusPostScoreAction(game *Game) {
+	YahtzeeBonusPostScoreAction(game)
 }
 
 func countDice(value int, dices []*Dice) int {
