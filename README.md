@@ -252,36 +252,6 @@ eg.
 < }
 ```
 
-
-### Score suggestions (deprecated)
-
-```
-GET /score?dices=[1-6],[1-6],[1-6],[1-6],[1-6]&features=feat1[,feat2,...]
-```
-
-Available features are [here](https://github.com/akarasz/yahtzee/blob/master/model.go#L100).
-
-eg.
-```
-> GET /score?dices=2,3,1,3,2
-< 200 OK
-< {
-<   "ones": 1,
-<   "twos": 4,
-<   "threes": 6,
-<   "fours": 0,
-<   "fives": 0,
-<   "sixes": 0,
-<   "three-of-a-kind": 0,
-<   "four-of-a-kind": 0,
-<   "full-house": 0,
-<   "small-straight": 0,
-<   "large-straight": 0,
-<   "yahtzee": 0,
-<   "chance": 11,
-< }
-```
-
 ## TODO
 
 * store games in redis with an expiration
