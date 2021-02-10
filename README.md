@@ -25,7 +25,7 @@ eg.
 POST / < application/json [features...]
 ```
 
-Available features are [here](https://github.com/akarasz/yahtzee/blob/master/model.go#L100).
+Available features are [here](#Features).
 
 eg.
 ```
@@ -259,7 +259,7 @@ eg.
 GET /score?dices=[1-6],[1-6],[1-6],[1-6],[1-6]&features=feat1[,feat2,...]
 ```
 
-Available features are [here](https://github.com/akarasz/yahtzee/blob/master/model.go#L100).
+Available features are [here](#Features).
 
 eg.
 ```
@@ -281,6 +281,18 @@ eg.
 <   "chance": 11,
 < }
 ```
+
+## Features
+You can combine the features in any way you want, except for the Official and Yahtzee bonus. Official will overrule the Yahtzee bonus rules.
+
+|Feature|Id|Description|
+|-------|--|-----------|
+|Official|`official`|Game with the [official yahtzee rules](https://en.wikipedia.org/wiki/Yahtzee#Rules).
+|Yahtzee bonus|`yahtzee-bonus`|The base game with the yahtzee bonus and a basic joker rule: You are eligible for the bonus 100 point if you already filled the yahtzee with 50 points. You can also use your second yahtzee to fill the full house, small straight or large straight with 25-30-40 points respectively, without any restrictions.|
+|Six dice|`six-dice`|Play the game with six dice. Points are calculated with the best 5 of them!|
+|Ordered|`ordered`|Enforce top-down filling of the categories|
+|Equilizer|`equilizer`|Everyone can score, except you? With the equilizer, when you score a zero in a category, all other players will have zero in the same category if they already filled that category. Use it wisely!|
+|The Chance|`the-chance`|This is your chance to win! Score 5 points in the entire game, and you will get a bonus 495 at the end!|
 
 ## TODO
 
