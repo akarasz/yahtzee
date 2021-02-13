@@ -105,6 +105,7 @@ const (
 	SixDice      Feature = "six-dice"
 	TheChance    Feature = "the-chance"
 	YahtzeeBonus Feature = "yahtzee-bonus"
+	Ordered      Feature = "feature"
 	Official     Feature = "official"
 )
 
@@ -113,6 +114,7 @@ func Features() []Feature {
 		SixDice,
 		YahtzeeBonus,
 		TheChance,
+		Ordered,
 		Official,
 	}
 }
@@ -190,4 +192,8 @@ func ContainsFeature(s []Feature, e Feature) bool {
 		}
 	}
 	return false
+}
+
+func (g *Game) HasFeature(f Feature) bool {
+	return ContainsFeature(g.Features, f)
 }
