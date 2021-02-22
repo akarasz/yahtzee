@@ -127,7 +127,7 @@ func NewGame(features ...Feature) *Game {
 	if features == nil {
 		features = []Feature{}
 	}
-	if ContainsFeature(features, SixDice) {
+	if containsFeature(features, SixDice) {
 		dices = 6
 	}
 	dd := make([]*Dice, dices)
@@ -146,11 +146,11 @@ func NewGame(features ...Feature) *Game {
 		PostGameActions: []func(game *Game){},
 	}
 
-	if ContainsFeature(features, TheChance) {
+	if containsFeature(features, TheChance) {
 		scorer.PostGameActions = append(scorer.PostGameActions, TheChanceAction)
 	}
 
-	if ContainsFeature(features, YahtzeeBonus) {
+	if containsFeature(features, YahtzeeBonus) {
 		scorer.PreScoreActions = append(scorer.PreScoreActions, YahtzeeBonusPreScoreAction)
 		scorer.PostScoreActions = append(scorer.PostScoreActions, YahtzeeBonusPostScoreAction)
 
@@ -159,12 +159,12 @@ func NewGame(features ...Feature) *Game {
 		scorer.ScoreActions[LargeStraight] = YahtzeeBonusLargeStraight
 	}
 
-	if ContainsFeature(features, Equilizer) {
+	if containsFeature(features, Equilizer) {
 		scorer.PreScoreActions = append(scorer.PreScoreActions, EquilizerPreScoreAction)
 		scorer.PostScoreActions = append(scorer.PostScoreActions, EquilizerPostScoreAction)
 	}
 
-	if ContainsFeature(features, Official) {
+	if containsFeature(features, Official) {
 		scorer.PreScoreActions = append(scorer.PreScoreActions, OfficialYahtzeeBonusPreScoreAction)
 		scorer.PostScoreActions = append(scorer.PostScoreActions, OfficialYahtzeeBonusPostScoreAction)
 
@@ -192,7 +192,7 @@ func NewUser(name string) *User {
 	return &u
 }
 
-func ContainsFeature(s []Feature, e Feature) bool {
+func containsFeature(s []Feature, e Feature) bool {
 	for _, a := range s {
 		if a == e {
 			return true
@@ -202,5 +202,5 @@ func ContainsFeature(s []Feature, e Feature) bool {
 }
 
 func (g *Game) HasFeature(f Feature) bool {
-	return ContainsFeature(g.Features, f)
+	return containsFeature(g.Features, f)
 }
