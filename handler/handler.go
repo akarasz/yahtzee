@@ -136,6 +136,9 @@ func hints(game *yahtzee.Game) (map[yahtzee.Category]int, error) {
 	res := map[yahtzee.Category]int{}
 	for c, scorer := range game.Scorer.ScoreActions {
 		res[c] = scorer(game)
+		if game.HasFeature(yahtzee.Ordered) && game.Round < len(yahtzee.Categories()) && yahtzee.Categories()[game.Round] != c {
+			res[c] = 0
+		}
 	}
 
 	return res, nil
@@ -421,6 +424,11 @@ func (h *handler) Score(w http.ResponseWriter, r *http.Request) {
 	}
 	if _, ok := currentPlayer.ScoreSheet[category]; ok {
 		writeError(w, r, nil, "category is already used", http.StatusBadRequest)
+		return
+	}
+
+	if g.HasFeature(yahtzee.Ordered) && yahtzee.Categories()[g.Round] != category {
+		writeError(w, r, nil, "invalid category", http.StatusBadRequest)
 		return
 	}
 
