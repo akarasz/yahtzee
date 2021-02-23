@@ -137,6 +137,18 @@ func NewGame(features ...Feature) *Game {
 		}
 	}
 
+	scorer := ComposeScorer(features...)
+
+	return &Game{
+		Players:  []*Player{},
+		Dices:    dd,
+		Features: features,
+		Scorer:   scorer,
+		Context:  map[string]interface{}{},
+	}
+}
+
+func ComposeScorer(features ...Feature) *Score {
 	scorer := &Score{
 		PreScoreActions: []func(game *Game){},
 		ScoreActions:    NewDefaultScorer(),
@@ -175,13 +187,7 @@ func NewGame(features ...Feature) *Game {
 		scorer.ScoreActions[LargeStraight] = OfficialLargeStraight
 	}
 
-	return &Game{
-		Players:  []*Player{},
-		Dices:    dd,
-		Features: features,
-		Scorer:   scorer,
-		Context:  map[string]interface{}{},
-	}
+	return scorer
 }
 
 type User string

@@ -55,6 +55,8 @@ func (r *Redis) Load(id string) (yahtzee.Game, error) {
 
 	err = json.Unmarshal(raw, &res)
 
+	res.Scorer = yahtzee.ComposeScorer(res.Features...)
+
 	return res, err
 }
 
