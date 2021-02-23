@@ -50,6 +50,7 @@ func (ts *TestSuite) TestLoad() {
 		ts.Exactly(saved.RollCount, got.RollCount)
 		ts.Exactly(saved.Round, got.Round)
 		ts.NotNil(got.Scorer)
+		ts.NotNil(got.Context)
 	}
 }
 
@@ -136,5 +137,6 @@ func (ts *TestSuite) newAdvancedGame() *yahtzee.Game {
 		CurrentPlayer: 1,
 		RollCount:     1,
 		Scorer:        yahtzee.ComposeScorer(),
+		Context:       map[string]interface{}{},
 	}
 }
