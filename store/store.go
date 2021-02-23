@@ -43,7 +43,14 @@ func (ts *TestSuite) TestLoad() {
 	ts.Require().NoError(s.Save("aaaaa", saved))
 
 	if got, err := s.Load("aaaaa"); ts.NoError(err) {
-		ts.Exactly(saved, got)
+		ts.Exactly(saved.CurrentPlayer, got.CurrentPlayer)
+		ts.Exactly(saved.Players, got.Players)
+		ts.Exactly(saved.Dices, got.Dices)
+		ts.Exactly(saved.Features, got.Features)
+		ts.Exactly(saved.RollCount, got.RollCount)
+		ts.Exactly(saved.Round, got.Round)
+		ts.NotNil(got.Scorer)
+		ts.NotNil(got.Context)
 	}
 }
 
@@ -129,5 +136,7 @@ func (ts *TestSuite) newAdvancedGame() *yahtzee.Game {
 		Round:         5,
 		CurrentPlayer: 1,
 		RollCount:     1,
+		Scorer:        yahtzee.ComposeScorer(),
+		Context:       map[string]interface{}{},
 	}
 }
